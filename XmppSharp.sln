@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2595C1ED-C96B-4680-87E5-0E1FF5F5AAE2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XmppSharp", "src\XmppSharp\XmppSharp.csproj", "{2D35D05F-AF6F-4340-B076-EDA02C4709B2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2D35D05F-AF6F-4340-B076-EDA02C4709B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D35D05F-AF6F-4340-B076-EDA02C4709B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D35D05F-AF6F-4340-B076-EDA02C4709B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D35D05F-AF6F-4340-B076-EDA02C4709B2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2D35D05F-AF6F-4340-B076-EDA02C4709B2} = {2595C1ED-C96B-4680-87E5-0E1FF5F5AAE2}
+	EndGlobalSection
+EndGlobal
