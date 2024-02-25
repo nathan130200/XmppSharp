@@ -130,11 +130,8 @@ public class XmppServer
         return result;
     }
 
-    public IEnumerable<XmppSession> GetSessions()
+    public IReadOnlyList<XmppSession> GetSessions()
     {
-        if (_sessions is null)
-            return [];
-
         lock (_sessions)
         {
             XmppSession[] result;
@@ -142,7 +139,7 @@ public class XmppServer
             lock (_sessions)
                 result = _sessions.ToArray();
 
-            return result;
+            return result.ToList();
         }
     }
 
