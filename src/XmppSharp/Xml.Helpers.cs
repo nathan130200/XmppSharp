@@ -81,18 +81,20 @@ public static partial class Xml
 
         return temp.ToLowerInvariant() switch
         {
-            "true" or "1" => true,
-            "false" or "0" => false,
+            BOOL_TRUE or BIT_TRUE => true,
+            BOOL_FALSE or BIT_FALSE => false,
             _ => defaultValue
         };
     }
 
-    const string BIT_ON = "1";
-    const string BIT_OFF = "0";
+    const string BOOL_TRUE = "true";
+    const string BOOL_FALSE = "false";
+    const string BIT_TRUE = "1";
+    const string BIT_FALSE = "0";
 
     public static XmlElement SetAttributeBool(this XmlElement e, string name, bool value, bool valueAsBit = true, IFormatProvider? formatProvider = default)
     {
-        var tempValue = valueAsBit ? (value ? BIT_ON : BIT_OFF) : value.ToString(formatProvider);
+        var tempValue = valueAsBit ? (value ? BIT_TRUE : BIT_FALSE) : (value ? BOOL_TRUE : BOOL_FALSE);
         e.SetAttribute(name, tempValue);
         return e;
     }
