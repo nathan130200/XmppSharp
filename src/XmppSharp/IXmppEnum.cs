@@ -1,4 +1,4 @@
-﻿namespace Jabber;
+﻿namespace XmppSharp;
 
 public interface IXmppEnum
 {

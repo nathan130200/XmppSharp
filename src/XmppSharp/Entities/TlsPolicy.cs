@@ -1,4 +1,4 @@
-﻿namespace Jabber.Entities;
+﻿namespace XmppSharp.Entities;
 
 public enum TlsPolicy
 {

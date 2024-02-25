@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Text;
 
-namespace Jabber;
+namespace XmppSharp;
 
 public static class StringBuilderPool
 {

@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
 
-namespace Jabber.Entities;
+namespace XmppSharp.Entities;
 
 public sealed class XmppServerConfiguration
 {

@@ -4,13 +4,13 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Xml;
-using Jabber.Entities;
-using Jabber.Enums;
-using Jabber.Exceptions;
-using Jabber.Protocol;
-using Jabber.Xmpp;
+using XmppSharp.Entities;
+using XmppSharp.Enums;
+using XmppSharp.Exceptions;
+using XmppSharp.Protocol;
+using XmppSharp.Xmpp;
 
-namespace Jabber.Net;
+namespace XmppSharp.Net;
 
 public class XmppSession : IDisposable
 {

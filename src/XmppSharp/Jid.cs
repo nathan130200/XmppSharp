@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Web;
 
-namespace Jabber;
+namespace XmppSharp;
 
 [DebuggerDisplay("{ToString(),nq}")]
 public readonly struct Jid

@@ -1,6 +1,6 @@
 ﻿using System.Xml;
 
-namespace Jabber;
+namespace XmppSharp;
 
 [RunStaticCtor]
 public readonly struct Namespace

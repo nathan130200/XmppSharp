@@ -2,9 +2,9 @@
 using System.Globalization;
 using System.Text;
 using System.Xml;
-using Jabber.Net;
+using XmppSharp.Net;
 
-namespace Jabber;
+namespace XmppSharp;
 
 public static partial class Xml
 {

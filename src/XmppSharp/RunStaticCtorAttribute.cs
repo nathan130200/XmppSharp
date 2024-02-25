@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace Jabber;
+namespace XmppSharp;
 
 #pragma warning disable
 

@@ -1,17 +1,17 @@
 ﻿using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
-using Jabber.Entities;
-using Jabber.Protocol;
+using XmppSharp.Entities;
+using XmppSharp.Protocol;
 
-namespace Jabber.Net;
+namespace XmppSharp.Net;
 
 public class XmppServer
 {
     internal readonly XmppServerConfiguration _config;
     private Socket? _socket;
-    private List<XmppSession> _sessions;
     private CancellationTokenSource? _cts;
+    private readonly List<XmppSession> _sessions = [];
     private readonly IPEndPoint _endpoint;
 
     public event ParameterizedAsyncEventHandler<XmppSession> OnClientConnected = default!;
@@ -81,7 +81,7 @@ public class XmppServer
 
     async Task BeginAccept()
     {
-        _sessions = [];
+        _sessions.Clear();
 
         while (_cts != null && !_cts.IsCancellationRequested)
         {

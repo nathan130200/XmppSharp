@@ -1,7 +1,7 @@
 ﻿using System.Xml;
-using Jabber.Protocol;
+using XmppSharp.Protocol;
 
-namespace Jabber.Exceptions;
+namespace XmppSharp.Exceptions;
 
 public class JabberStreamException : Exception
 {

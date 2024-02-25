@@ -2,10 +2,10 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
-using Jabber.Exceptions;
-using Jabber.Protocol;
+using XmppSharp.Exceptions;
+using XmppSharp.Protocol;
 
-namespace Jabber.Xmpp;
+namespace XmppSharp.Xmpp;
 
 public class XmppParser : IDisposable
 {

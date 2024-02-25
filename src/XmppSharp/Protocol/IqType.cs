@@ -1,4 +1,4 @@
-﻿namespace Jabber.Protocol;
+﻿namespace XmppSharp.Protocol;
 
 [RunStaticCtor]
 public readonly struct IqType : IXmppEnum<IqType>

@@ -1,4 +1,4 @@
-﻿namespace Jabber.Enums;
+﻿namespace XmppSharp.Enums;
 
 [Flags]
 internal enum StreamState

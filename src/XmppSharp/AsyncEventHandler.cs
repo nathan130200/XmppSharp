@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace Jabber;
+namespace XmppSharp;
 
 public delegate Task AsyncEventHandler();
 public delegate Task<R> AsyncEventHandler<R>();
