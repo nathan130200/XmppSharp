@@ -139,7 +139,7 @@ public class XmppServer
             lock (_sessions)
                 result = _sessions.ToArray();
 
-            return result.ToList();
+            return result;
         }
     }
 
