@@ -1,15 +1,16 @@
-﻿namespace XmppSharp;
+﻿using System.Numerics;
+
+namespace XmppSharp;
 
 public interface IXmppEnum
 {
-    bool HasValue { get; }
-    string Value { get; }
-    abstract static object Parse(string value);
+	string Value { get; init; }
+	bool HasValue { get; }
 }
 
-public interface IXmppEnum<T> : IXmppEnum
-    where T : notnull
+public interface IXmppEnum<TEnum> : IXmppEnum,
+	IEqualityOperators<TEnum, TEnum, bool>
+	where TEnum : struct, IXmppEnum<TEnum>
 {
-    abstract static new T Parse(string value);
-    abstract static IEnumerable<T> Values { get; }
+	static abstract IEnumerable<TEnum> Values { get; }
 }

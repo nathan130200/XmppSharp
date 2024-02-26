@@ -1,102 +1,77 @@
-﻿using System.Xml;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Xml.Linq;
+using XmppSharp.Utilities;
 
 namespace XmppSharp.Protocol;
 
 [RunStaticCtor]
 public readonly struct StanzaErrorType : IXmppEnum<StanzaErrorType>
 {
-    private readonly string _value;
-    private readonly static Dictionary<string, StanzaErrorType> s_cache = [];
+	private static readonly Dictionary<string, StanzaErrorType> s_cache = [];
 
-    StanzaErrorType(string value)
-    {
-        _value = value;
-        s_cache.Add(value, this);
-    }
+	public string Value { get; init; }
+	public bool HasValue => Value != null;
 
-    #region IStructEnum Members
+	StanzaErrorType(string value)
+		=> s_cache.Add(Value = value, this);
 
-    public bool HasValue => _value != null;
-    public string Value => _value;
+	public static StanzaErrorType Parse(string value)
+		=> s_cache[value];
 
-    public static StanzaErrorType Parse(string value)
-    {
-        if (s_cache.TryGetValue(value, out var result))
-            return result;
+	public static IEnumerable<StanzaErrorType> Values
+		=> s_cache.Values;
 
-        return default;
-    }
+	public static implicit operator string(StanzaErrorType self)
+		=> self.Value;
 
-    public static IEnumerable<StanzaErrorType> Values
-        => s_cache.Values;
+	public override int GetHashCode()
+		=> Value?.GetHashCode() ?? -1;
 
-    static object IXmppEnum.Parse(string value)
-        => Parse(value);
+	public override bool Equals([NotNullWhen(true)] object? obj)
+		=> XmppEnumUtil.EqualityComparer(this, obj);
 
-    #endregion
+	public static bool operator ==(StanzaErrorType lhs, StanzaErrorType rhs)
+		=> lhs.Equals(rhs);
 
-    #region ErrorType Struct Members
+	public static bool operator !=(StanzaErrorType lhs, StanzaErrorType rhs)
+		=> !(lhs == rhs);
 
-    public override int GetHashCode() => _value?.GetHashCode() ?? -1;
+	public XElement CreateElement(string xmlns, StanzaErrorCondition? condition = default, string? message = default)
+	{
+		var element = Xml.Element("error", xmlns);
+		element.SetAttributeValue("type", Value);
 
-    public override bool Equals(object? obj)
-    {
-        if (obj is not StanzaErrorType other)
-            return false;
+		if (condition.TryUnwrap(out var v))
+			element.C(v.CreateElement());
 
-        if (!HasValue || !other.HasValue)
-            return false;
+		if (!string.IsNullOrEmpty(message))
+			element.C("text", Namespaces.Stanzas).Text(message);
 
-        return _value == other._value;
-    }
+		return element;
+	}
 
-    public static implicit operator string(StanzaErrorType v)
-        => v._value;
+	/// <summary>
+	/// Retry after providing credentials
+	/// </summary>
+	public static StanzaErrorType Auth { get; } = new("auth");
 
-    public static bool operator ==(StanzaErrorType lhs, StanzaErrorType rhs)
-        => lhs.Equals(rhs);
+	/// <summary>
+	/// Do not retry (the error cannot be remedied)
+	/// </summary>
+	public static StanzaErrorType Cancel { get; } = new("cancel");
 
-    public static bool operator !=(StanzaErrorType lhs, StanzaErrorType rhs)
-        => !(lhs == rhs);
+	/// <summary>
+	/// Proceed (the condition was only a warning)
+	/// </summary>
+	public static StanzaErrorType Continue { get; } = new("continue");
 
-    public XmlElement CreateElement(string ns, StanzaErrorCondition condition, string? message = default, XmlDocument? document = default)
-    {
-        var element = Xml.Element("error", ns, document);
-        document ??= element.OwnerDocument;
+	/// <summary>
+	/// Retry after changing the data sent
+	/// </summary>
+	public static StanzaErrorType Modify { get; } = new("modify");
 
-        element.SetAttribute("type", _value);
-        element.AppendChild(condition.CreateElement(document));
-
-        if (!string.IsNullOrEmpty(message))
-            element.C("text", Namespace.Stanzas).T(message);
-
-        return element;
-    }
-
-    #endregion
-
-    /// <summary>
-    /// Retry after providing credentials
-    /// </summary>
-    public static StanzaErrorType Auth { get; } = new("auth");
-
-    /// <summary>
-    /// Do not retry (the error cannot be remedied)
-    /// </summary>
-    public static StanzaErrorType Cancel { get; } = new("cancel");
-
-    /// <summary>
-    /// Proceed (the condition was only a warning)
-    /// </summary>
-    public static StanzaErrorType Continue { get; } = new("continue");
-
-    /// <summary>
-    /// Retry after changing the data sent
-    /// </summary>
-    public static StanzaErrorType Modify { get; } = new("modify");
-
-    /// <summary>
-    /// Retry after waiting (the error is temporary)
-    /// </summary>
-    public static StanzaErrorType Wait { get; } = new("wait");
+	/// <summary>
+	/// Retry after waiting (the error is temporary)
+	/// </summary>
+	public static StanzaErrorType Wait { get; } = new("wait");
 }

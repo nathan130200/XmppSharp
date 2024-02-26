@@ -2,158 +2,196 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
-using XmppSharp.Exceptions;
+using System.Xml.Linq;
 using XmppSharp.Protocol;
+using XmppSharp.Utilities;
 
 namespace XmppSharp.Xmpp;
 
 public class XmppParser : IDisposable
 {
-    private XmlReader? _reader;
-    private volatile bool _disposed;
+	private XmlReader? _reader;
+	private volatile bool _disposed;
 
-    public event ParameterizedAsyncEventHandler<XmlElement> OnStreamStart;
-    public event ParameterizedAsyncEventHandler<XmlElement> OnStreamElement;
-    public event AsyncEventHandler OnStreamEnd;
+	public event ParameterizedAsyncEventHandler<XElement>? OnStreamStart;
+	public event ParameterizedAsyncEventHandler<XElement>? OnStreamElement;
+	public event AsyncEventHandler? OnStreamEnd;
 
-    public XmppParser(Stream stream, Encoding? encoding = default, int bufferSize = 1024, bool leaveOpen = true)
-    {
-        _reader = XmlReader.Create(new StreamReader(stream, encoding ?? Encoding.UTF8, false, bufferSize, leaveOpen), new()
-        {
-            Async = true,
-            CloseInput = true,
-            IgnoreWhitespace = true,
-            XmlResolver = XmlResolver.ThrowingResolver,
-            IgnoreProcessingInstructions = true,
-            IgnoreComments = true,
-            DtdProcessing = DtdProcessing.Prohibit, // https://en.wikipedia.org/wiki/Billion_laughs_attack
-        });
-    }
+	public XmppParser(Stream stream, Encoding? encoding = default, int bufferSize = 1024, bool leaveOpen = true)
+	{
+		_reader = XmlReader.Create(new StreamReader(stream, encoding ?? Encoding.UTF8, false, bufferSize, leaveOpen), new()
+		{
+			Async = true,
+			CloseInput = true,
+			IgnoreWhitespace = true,
+			XmlResolver = XmlResolver.ThrowingResolver,
+			IgnoreProcessingInstructions = true,
+			IgnoreComments = true,
+			DtdProcessing = DtdProcessing.Prohibit, // https://en.wikipedia.org/wiki/Billion_laughs_attack
+		});
+	}
 
-    private XmlElement? _currentElement;
+	private XElement? _current;
 
-    void CheckDisposed()
-        => ObjectDisposedException.ThrowIf(_disposed, this);
+	void CheckDisposed()
+		=> ObjectDisposedException.ThrowIf(_disposed, this);
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    int GetLine(bool isLineNum)
-    {
-        if (_disposed)
-            return 0;
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+	int GetLine(bool isLineNum)
+	{
+		if (_disposed)
+			return 0;
 
-        if (_reader is not IXmlLineInfo info)
-            return 0;
+		if (_reader is not IXmlLineInfo info)
+			return 0;
 
-        if (info.HasLineInfo())
-            return isLineNum ? info.LineNumber : info.LinePosition;
+		if (info.HasLineInfo())
+			return isLineNum ? info.LineNumber : info.LinePosition;
 
-        return 0;
-    }
+		return 0;
+	}
 
-    public int LineNumber => GetLine(false);
-    public int LinePosition => GetLine(true);
+	public int LineNumber => GetLine(false);
+	public int LinePosition => GetLine(true);
 
-    public async Task UpdateAsync()
-    {
-        CheckDisposed();
+	protected virtual XElement CreateElement()
+	{
+		XName elementName;
 
-        var result = await _reader.ReadAsync();
+		{
+			var localName = _reader!.LocalName;
+			var namespaceUri = _reader!.NamespaceURI;
 
-        if (!result)
-            throw new JabberStreamException(StreamErrorCondition.HostGone);
+			if (namespaceUri != null)
+				elementName = XName.Get(localName, namespaceUri);
+			else
+				elementName = localName;
+		}
 
-        switch (_reader.NodeType)
-        {
-            case XmlNodeType.Element:
-                {
-                    var element = Xml.Element(_reader.Name, _reader.NamespaceURI, _currentElement?.OwnerDocument);
+		var element = new XElement(elementName);
 
-                    if (_reader.HasAttributes)
-                    {
-                        while (_reader.MoveToNextAttribute())
-                            element.SetAttribute(_reader.Name, _reader.Value);
+		if (_reader.HasAttributes)
+		{
+			while (_reader.MoveToNextAttribute())
+			{
+				if (_reader.Name.Contains(':'))
+				{
+					var ofs = _reader.Name.IndexOf(':');
+					var prefix = _reader.Name[0..ofs];
+					var localName = _reader.Name[(ofs + 1)..];
 
-                        _reader.MoveToElement();
-                    }
+					XNamespace ns = prefix switch
+					{
+						"xml" => XNamespace.Xml,
+						"xmlns" => XNamespace.Xmlns,
+						_ => _reader.LookupNamespace(prefix)!
+					};
 
-                    if (element.Name == "stream:stream")
-                        await OnStreamStart.InvokeAsync(element);
-                    else
-                    {
-                        if (_reader.IsEmptyElement)
-                        {
-                            if (_currentElement != null)
-                                _currentElement.AppendChild(element);
-                            else
-                                await OnStreamElement.InvokeAsync(element);
-                        }
-                        else
-                        {
-                            _currentElement?.AppendChild(element);
-                            _currentElement = element;
-                        }
-                    }
-                }
-                break;
+					element.SetAttributeValue(ns + localName, _reader.Value);
+				}
+				else
+				{
+					element.SetAttributeValue(_reader.Name, _reader.Value);
+				}
+			}
 
-            case XmlNodeType.EndElement:
-                {
-                    if (_reader.Name == "stream:stream")
-                        await OnStreamEnd.InvokeAsync();
-                    else
-                    {
-                        if (_reader.Name != _currentElement.Name)
-                            throw new JabberStreamException(StreamErrorCondition.UnsupportedStanzaType);
-                        else
-                        {
-                            Debug.Assert(_currentElement != null);
+			_reader.MoveToElement();
+		}
 
-                            var parent = _currentElement.ParentNode as XmlElement;
+		return element;
+	}
 
-                            if (parent == null)
-                                await OnStreamElement.InvokeAsync(_currentElement);
+	public async Task UpdateAsync()
+	{
+		CheckDisposed();
 
-                            _currentElement = parent;
-                        }
-                    }
-                }
-                break;
+		var result = await _reader!.ReadAsync();
 
-            case XmlNodeType.SignificantWhitespace:
-            case XmlNodeType.Text:
-                {
-                    Debug.Assert(_currentElement != null);
+		if (!result)
+			throw new JabberStreamException(StreamErrorCondition.HostGone);
 
-                    if (_currentElement.PreviousText is XmlText text)
-                        text.Value += _reader.Value;
-                    else
-                    {
-                        text = _currentElement.OwnerDocument.CreateTextNode(_reader.Value);
-                        _currentElement?.AppendChild(text);
-                    }
-                }
-                break;
+		switch (_reader.NodeType)
+		{
+			case XmlNodeType.Element:
+				{
+					var element = CreateElement();
 
-            case XmlNodeType.XmlDeclaration:
-                break;
+					if (element.Name == "stream:stream")
+						await OnStreamStart.InvokeAsync(element);
+					else
+					{
+						if (_reader.IsEmptyElement)
+						{
+							if (_current != null)
+								_current.Add(element);
+							else
+								await OnStreamElement.InvokeAsync(element);
+						}
+						else
+						{
+							_current?.Add(element);
+							_current = element;
+						}
+					}
+				}
+				break;
 
-            default:
-                throw new JabberStreamException(StreamErrorCondition.RestrictedXml);
-        }
-    }
+			case XmlNodeType.EndElement:
+				{
+					if (_reader.Name == "stream:stream")
+						await OnStreamEnd.InvokeAsync();
+					else
+					{
+						Debug.Assert(_current != null);
+
+						if (_reader.Name != _current.TagName())
+							throw new JabberStreamException(StreamErrorCondition.UnsupportedStanzaType);
+						else
+						{
+							var parent = _current.Parent;
+
+							if (parent == null)
+								await OnStreamElement.InvokeAsync(_current);
+
+							_current = parent;
+						}
+					}
+				}
+				break;
+
+			case XmlNodeType.SignificantWhitespace:
+			case XmlNodeType.Text:
+				{
+					Debug.Assert(_current != null);
+
+					if (_current.LastNode is XText text)
+						text.Value += _reader.Value;
+					else
+						_current.Add(new XText(_reader.Value));
+				}
+				break;
+
+			case XmlNodeType.XmlDeclaration:
+				// skip xml decl
+				break;
+
+			default:
+				throw new JabberStreamException(StreamErrorCondition.RestrictedXml);
+		}
+	}
 
 
-    public void Dispose()
-    {
-        if (_disposed)
-            return;
+	public void Dispose()
+	{
+		if (_disposed)
+			return;
 
-        _disposed = true;
+		_disposed = true;
 
-        _currentElement = null;
-        _reader?.Dispose();
-        _reader = null;
+		_current = null;
+		_reader?.Dispose();
+		_reader = null;
 
-        GC.SuppressFinalize(this);
-    }
+		GC.SuppressFinalize(this);
+	}
 }

@@ -1,66 +1,45 @@
-﻿namespace XmppSharp.Protocol;
+﻿using XmppSharp.Utilities;
+
+namespace XmppSharp.Protocol;
 
 [RunStaticCtor]
 public readonly struct IqType : IXmppEnum<IqType>
 {
-    private readonly string _value;
-    private readonly static Dictionary<string, IqType> s_cache = [];
+	static readonly Dictionary<string, IqType> s_cache = [];
 
-    IqType(string value)
-    {
-        _value = value;
-        s_cache.Add(value, this);
-    }
+	public string Value { get; init; }
+	public bool HasValue => Value != null;
 
-    #region IStructEnum Members
+	IqType(string s)
+		=> s_cache[Value = s] = this;
 
-    public bool HasValue => _value != null;
-    public string Value => _value;
+	public static IqType Parse(string value)
+		=> s_cache[value];
 
-    public static IEnumerable<IqType> Values
-        => s_cache.Values;
+	public static IEnumerable<IqType> Values
+		=> s_cache.Values;
 
-    public static IqType Parse(string value)
-    {
-        if (s_cache.TryGetValue(value, out var result))
-            return result;
+	#region Values
 
-        return default;
-    }
+	public static IqType Get { get; } = new("get");
+	public static IqType Set { get; } = new("set");
+	public static IqType Result { get; } = new("result");
+	public static IqType Error { get; } = new("error");
 
-    static object IXmppEnum.Parse(string value)
-        => Parse(value);
+	#endregion
 
-    #endregion
+	public override int GetHashCode()
+		=> Value?.GetHashCode() ?? -1;
 
-    #region IqType Members
+	public override bool Equals(object? obj)
+		=> XmppEnumUtil.EqualityComparer(this, obj);
 
-    public override bool Equals(object? obj)
-    {
-        if (obj is not IqType other)
-            return false;
+	public static implicit operator string(IqType self)
+		=> self.Value;
 
-        if (_value == null || other._value == null)
-            return false;
+	public static bool operator ==(IqType lhs, IqType rhs)
+		=> lhs.Equals(rhs);
 
-        return _value.Equals(other._value);
-    }
-
-    public override int GetHashCode() => _value?.GetHashCode() ?? -1;
-
-    public static implicit operator string(IqType obj)
-        => obj._value;
-
-    public static bool operator ==(IqType lhs, IqType rhs)
-        => lhs.Equals(rhs);
-
-    public static bool operator !=(IqType lhs, IqType rhs)
-        => !(lhs == rhs);
-
-    #endregion
-
-    public static IqType Get { get; } = new("get");
-    public static IqType Set { get; } = new("set");
-    public static IqType Result { get; } = new("result");
-    public static IqType Error { get; } = new("error");
+	public static bool operator !=(IqType lhs, IqType rhs)
+		=> !(lhs == rhs);
 }

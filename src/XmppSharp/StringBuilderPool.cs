@@ -6,30 +6,30 @@ namespace XmppSharp;
 
 public static class StringBuilderPool
 {
-    private readonly static ConcurrentBag<StringBuilder> _pool = [];
+	private static readonly ConcurrentBag<StringBuilder> _pool = [];
 
-    public static Scoped<StringBuilder> Rent(string? initialValue = default)
-    {
-        if (!_pool.TryTake(out var result))
-            result = new(initialValue);
-        else
-            result.Append(initialValue);
+	public static StringBuilder Rent(string? initialValue = default)
+	{
+		if (!_pool.TryTake(out var result))
+			result = new(initialValue);
+		else
+			result.Append(initialValue);
 
-        return new Scoped<StringBuilder>(result, Return!);
-    }
+		return result;
+	}
 
-    public static StringBuilder Take()
-    {
-        if (!_pool.TryTake(out var result))
-            return new();
+	public static StringBuilder Take()
+	{
+		if (!_pool.TryTake(out var result))
+			return new();
 
-        return result;
-    }
+		return result;
+	}
 
-    public static void Return(StringBuilder sb)
-    {
-        Debug.Assert(sb != null);
-        sb.Clear();
-        _pool.Add(sb);
-    }
+	public static void Return(StringBuilder sb)
+	{
+		Debug.Assert(sb != null);
+		sb.Clear();
+		_pool.Add(sb);
+	}
 }

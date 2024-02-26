@@ -11,23 +11,23 @@ namespace XmppSharp;
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum)]
 internal class RunStaticCtorAttribute : Attribute
 {
-    [ModuleInitializer]
-    internal static void InvokeStaticCtors()
-    {
-        foreach (var type in typeof(RunStaticCtorAttribute).Assembly.GetTypes())
-        {
-            if (type.GetCustomAttributes<RunStaticCtorAttribute>().Any())
-            {
-                try
-                {
-                    RuntimeHelpers.RunClassConstructor(type.TypeHandle);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex);
-                }
-            }
-        }
-    }
+	[ModuleInitializer]
+	internal static void InvokeStaticCtors()
+	{
+		foreach (var type in typeof(RunStaticCtorAttribute).Assembly.GetTypes())
+		{
+			if (type.GetCustomAttributes<RunStaticCtorAttribute>().Any())
+			{
+				try
+				{
+					RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+				}
+				catch (Exception ex)
+				{
+					Debug.WriteLine(ex);
+				}
+			}
+		}
+	}
 }
 #pragma warning restore
