@@ -54,6 +54,9 @@ public class XmppSession : IDisposable
 
 		_disposed = true;
 
+		_tlsCert?.Dispose();
+		_tlsCert = default;
+
 		_sessionState = XmppSessionState.None;
 		_streamState = StreamState.None;
 
