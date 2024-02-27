@@ -1,4 +1,6 @@
-﻿namespace XmppSharp.Entities;
+﻿using System.Security.Authentication;
+
+namespace XmppSharp.Entities;
 
 public class TlsConfiguration
 {
@@ -13,4 +15,5 @@ public class TlsConfiguration
 	public bool UseSelfSignedCert { get; set; } = true;
 	public string? CertificatePath { get; set; }
 	public string? CertificatePassword { get; set; }
+	public SslProtocols EnabledProtocols { get; set; } = SslProtocols.Tls12 | SslProtocols.Tls13;
 }

@@ -1,8 +1,11 @@
 ﻿using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using XmppSharp.Entities;
 using XmppSharp.Protocol;
+using XmppSharp.Test;
 
 namespace XmppSharp.Net;
 
@@ -14,12 +17,27 @@ public class XmppServer
 	private readonly List<XmppSession> _sessions = [];
 	private readonly IPEndPoint _endpoint;
 
+	private ICertificateProvider? _certProvider;
+
+	public ICertificateProvider? CertificateProvider
+	{
+		get => _certProvider!;
+		set
+		{
+			_certProvider?.Dispose();
+			_certProvider = value;
+		}
+	}
+
 	public event ParameterizedAsyncEventHandler<XmppSession> OnClientConnected = default!;
 	public event ParameterizedAsyncEventHandler<XmppSession> OnClientDisconnected = default!;
 
 	public XmppServer(XmppServerConfiguration? config = default)
 	{
 		_config = config ?? new();
+
+		if (_config.Tls.UseSelfSignedCert)
+			CertificateProvider = new SelfSignedCertificateProvider();
 
 		if (!IPAddress.TryParse(_config.EndPoint.Host, out var address))
 			address = IPAddress.Loopback;
@@ -148,4 +166,30 @@ public class XmppServer
 
 	public XmppSession? GetSession(Func<XmppSession, bool> predicate)
 		=> GetSessions().FirstOrDefault(predicate);
+}
+
+file class SelfSignedCertificateProvider : ICertificateProvider
+{
+	private readonly byte[] _certData;
+
+	public SelfSignedCertificateProvider()
+	{
+		var now = DateTimeOffset.UtcNow;
+		var startTime = now.AddDays(-1);
+		var endTime = now.AddDays(1);
+
+		using var rsa = RSA.Create();
+		var certReq = new CertificateRequest("CN=localhost", rsa!, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+		using var cert = certReq.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1));
+		_certData = cert.Export(X509ContentType.Pfx);
+	}
+
+	public Task<X509Certificate2> ProvideAsync(CancellationToken token = default)
+		=> Task.FromResult(new X509Certificate2(_certData, (string) null!));
+
+	public void Dispose()
+	{
+		// ignore
+	}
 }

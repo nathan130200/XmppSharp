@@ -149,7 +149,7 @@ public readonly struct Jid
 			return false;
 
 		return string.Equals(_user, other._user)
-			&& string.Equals(_server, other._server)
+			&& string.Equals(_server, other._server, StringComparison.OrdinalIgnoreCase)
 			&& string.Equals(_resource, other._resource);
 	}
 

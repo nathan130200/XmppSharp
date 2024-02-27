@@ -24,6 +24,42 @@ public static class Xml
 			: string.Concat(prefix, ':', name.LocalName);
 	}
 
+	public static bool Is(this XElement element, XName name)
+		=> element.Name == name;
+
+	public static bool Is(this XElement element, string name, string? xmlns = default)
+	{
+		var uri = element.Name.NamespaceName;
+		return element.Name.LocalName == name && (xmlns == null || uri == xmlns);
+	}
+
+	public static bool Is(this XElement element, string name, Namespace? ns)
+	{
+		var uri = element.Name.Namespace;
+		var targetUri = ns?.Get() ?? null;
+		return element.Name.LocalName == name && (targetUri == null || targetUri == uri);
+	}
+
+
+	public static XElement SwitchDirection(this XElement e)
+	{
+		var to = e.Attribute("to")?.Value;
+		var from = e.Attribute("from")?.Value;
+		e.RemoveAttribute(nameof(to));
+		e.RemoveAttribute(nameof(to));
+
+		if (to != null)
+			e.SetAttribute(nameof(from), to);
+
+		if (from != null)
+			e.SetAttribute(nameof(to), from);
+
+		return e;
+	}
+
+	public static XElement FirstChild(this XElement e)
+		=> e.Descendants().FirstOrDefault();
+
 	/// <summary>
 	/// Gets the element's opening tag.
 	/// </summary>
@@ -116,7 +152,7 @@ public static class Xml
 	public static XElement C(this XElement parent, XElement child)
 	{
 		parent.Add(child);
-		return parent;
+		return child;
 	}
 
 	/// <summary>

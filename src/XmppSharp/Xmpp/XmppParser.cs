@@ -116,7 +116,7 @@ public class XmppParser : IDisposable
 				{
 					var element = CreateElement();
 
-					if (element.Name == "stream:stream")
+					if (element.TagName() == "stream:stream")
 						await OnStreamStart.InvokeAsync(element);
 					else
 					{

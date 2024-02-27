@@ -1,7 +1,9 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
@@ -116,10 +118,9 @@ public class XmppSession : IDisposable
 	{
 		var sb = new StringBuilder();
 
-		if (!reason.TryUnwrap(out var v))
-			v = StreamErrorCondition.SystemShutdown;
+		if (reason.TryUnwrap(out var self))
+			sb.Append(self.CreateElement(description).ToString(false));
 
-		sb.Append(v.CreateElement(description).ToString(false));
 		sb.Append(XmppEndTag);
 
 		await SendAsync(sb.ToString());
@@ -244,8 +245,7 @@ public class XmppSession : IDisposable
 			condition = StreamErrorCondition.ImproperAddressing;
 		else if (targetHostname != e.GetAttribute("to"))
 			condition = StreamErrorCondition.HostUnknown;
-
-		if (e.GetNamespaceOfPrefix(string.Empty) != Namespace.Client.Get())
+		else if (e.GetDefaultNamespace() != Namespace.Client.Get())
 			condition = StreamErrorCondition.UnsupportedStanzaType;
 
 		e.RemoveAttribute("to");
@@ -259,7 +259,7 @@ public class XmppSession : IDisposable
 			return;
 		}
 
-		var features = Namespace.Stream.CreateElement("stream:features");
+		var features = Namespace.Stream.CreateElement("features");
 		{
 			if (!_sessionState.HasFlag(XmppSessionState.Authenticated))
 			{
@@ -289,31 +289,6 @@ public class XmppSession : IDisposable
 		}
 
 		await SendAsync(features);
-	}
-
-	public event ParameterizedAsyncEventHandler<XElement>? OnElement;
-
-	async Task OnXmppElement(XElement e)
-	{
-		await Task.Yield();
-		LogXml(this, StreamState.Read, e.ToString(true));
-
-		if (!_sessionState.HasFlag(XmppSessionState.Authenticated))
-		{
-
-		}
-		else
-		{
-
-		}
-
-		goto _fallback;
-
-	//return;
-
-	_fallback:
-		await OnElement.InvokeAsync(e);
-		return;
 	}
 
 	#region Xml Logging
@@ -417,4 +392,173 @@ public class XmppSession : IDisposable
 	}
 
 	#endregion
+
+	public event ParameterizedAsyncEventHandler<XElement>? OnElement;
+
+	async Task OnXmppElement(XElement e)
+	{
+		await Task.Yield();
+		LogXml(this, StreamState.Read, e.ToString(true));
+
+		if (!_sessionState.HasFlag(XmppSessionState.Authenticated))
+		{
+			if (e.Is("starttls", Namespace.Tls))
+			{
+				if (_sessionState.HasFlag(XmppSessionState.TlsStarted))
+					await DisconnectAsync(StreamErrorCondition.InvalidXml);
+				else
+				{
+					_streamState &= ~StreamState.Read;
+					await SendAsync(Namespace.Tls.CreateElement("proceed"));
+					await InitializeTlsAsync();
+				}
+			}
+			else if (e.Is("auth", Namespace.Sasl))
+			{
+				// TODO: Handle auth later.
+				Jid = Jid with { User = Guid.NewGuid().ToString("D") };
+				_sessionState |= XmppSessionState.Authenticated;
+				await SendAsync($"<success xmlns='{e.GetDefaultNamespace()}' />");
+			}
+		}
+		else
+		{
+			if (e.Is("presence") || e.Is("message"))
+			{
+				if (!_sessionState.HasFlag(XmppSessionState.SessionStarted))
+				{
+					e.SwitchDirection();
+					e.Add(StanzaErrorCondition.UnexpectedRequest.CreateElement(e.GetDefaultNamespace(), StanzaErrorType.Cancel));
+					await SendAsync(e);
+				}
+				else
+				{
+					// Handle presence, message tags
+				}
+			}
+
+			if (e.Is("iq"))
+			{
+				var child = e.FirstChild();
+
+				if (child.Is("bind", Namespace.Bind))
+				{
+					StanzaErrorCondition? condition = default;
+
+					var resource = child.Descendants().First(x => x.TagName() == "resource")?.Value;
+
+					if (resource == null)
+						condition = StanzaErrorCondition.BadRequest;
+					else
+					{
+						var fullJid = Jid with { Resource = resource };
+
+						if (_server!.GetSession(x => x.Jid == fullJid) != null)
+							condition = StanzaErrorCondition.Conflict;
+						else
+						{
+							Jid = Jid with { Resource = resource };
+							_sessionState |= XmppSessionState.ResourceBinded;
+						}
+					}
+
+					e.SwitchDirection();
+					e.SetAttribute("type", condition.HasValue ? "error" : "result");
+
+					if (condition.TryUnwrap(out var v))
+					{
+						e.Add(v.CreateElement(e.GetDefaultNamespace()));
+						await SendAsync(e);
+						await DisconnectAsync();
+					}
+					else
+					{
+						child.Value = string.Empty;
+						child.C("jid", Jid.ToString());
+						_sessionState |= XmppSessionState.ResourceBinded;
+						await SendAsync(e);
+					}
+				}
+				else if (child.Is("session", Namespace.Session))
+				{
+					if (!_sessionState.HasFlag(XmppSessionState.ResourceBinded))
+					{
+						e.SwitchDirection();
+						e.SetAttribute("type", "error");
+						e.Add(StanzaErrorCondition.UnexpectedRequest.CreateElement(e.GetDefaultNamespace(), StanzaErrorType.Modify));
+						await SendAsync(e);
+					}
+
+					// TODO: handle session.
+					e.SwitchDirection();
+					e.SetAttribute("type", "result");
+					_sessionState |= XmppSessionState.SessionStarted;
+					await SendAsync(e);
+				}
+				else
+				{
+					if (!_sessionState.HasFlag(XmppSessionState.ResourceBinded | XmppSessionState.SessionStarted))
+					{
+						e.SwitchDirection();
+						e.SetAttribute("type", "error");
+						e.Add(StanzaErrorCondition.NotAllowed.CreateElement(e.GetDefaultNamespace(), StanzaErrorType.Cancel));
+						await SendAsync(e);
+					}
+				}
+			}
+		}
+
+		goto _fallback;
+
+	//return;
+
+	_fallback:
+		await OnElement.InvokeAsync(e);
+		return;
+	}
+
+	private X509Certificate2 _tlsCert;
+
+	async Task InitializeTlsAsync()
+	{
+		{
+			// flush write queue before we start tls handshake.
+
+			var tcs = new TaskCompletionSource();
+
+			_queue!.Enqueue(([], ex => _ = ex != null
+				? tcs.TrySetException(ex)
+				: tcs.TrySetResult()));
+
+			await tcs.Task;
+		}
+
+		//_parser.Reset();
+		_streamState = StreamState.None;
+		_parser?.Dispose();
+		_tlsCert = await _server!.CertificateProvider!.ProvideAsync(_cts!.Token)!;
+
+		if (_tlsCert == null)
+		{
+			Dispose();
+			return;
+		}
+
+		try
+		{
+			var newStream = new SslStream(_stream!, false);
+			await newStream.AuthenticateAsServerAsync(_tlsCert, false, _server!._config.Tls.EnabledProtocols, true);
+			_stream = newStream;
+
+			_sessionState |= XmppSessionState.TlsStarted;
+			InitParser(false);
+			_streamState = StreamState.ReadWrite;
+		}
+		catch (Exception e)
+		{
+			Console.WriteLine(e);
+			Dispose();
+			return;
+		}
+	}
 }
