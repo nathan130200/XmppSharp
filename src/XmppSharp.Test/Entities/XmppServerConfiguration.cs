@@ -4,7 +4,7 @@ namespace XmppSharp.Entities;
 
 public sealed class XmppServerConfiguration
 {
-	public TlsSettings Tls { get; set; } = new();
+	public TlsConfiguration Tls { get; set; } = new();
 
 	/// <summary>
 	/// Defines which IP and port the server will listen to.
@@ -49,19 +49,4 @@ public sealed class XmppServerConfiguration
 		var hash = Convert.ToHexString(MD5.HashData(buf));
 		return SystemAccounts.Any(x => x.User == user && string.Equals(x.Hash, hash, StringComparison.OrdinalIgnoreCase));
 	}
-}
-
-public class TlsSettings
-{
-	/// <summary>
-	/// Defines what the encryption policy is on the server.
-	/// </summary>
-	public TlsPolicy Policy { get; set; } = TlsPolicy.Required;
-
-	/// <summary>
-	/// Determines whether we should use a self-signed certificate.
-	/// </summary>
-	public bool UseSelfSignedCert { get; set; } = true;
-	public string? CertificatePath { get; set; }
-	public string? CertificatePassword { get; set; }
 }

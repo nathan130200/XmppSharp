@@ -6,4 +6,13 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<Using Include="BetterEnumsGen" />
+		<Using Include="XmppSharp.Utilities" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="BetterEnums" Version="1.0.2" />
+	</ItemGroup>
+
 </Project>

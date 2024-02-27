@@ -83,36 +83,29 @@ public readonly struct Jid
 		if (string.IsNullOrEmpty(node))
 			return node;
 
-		var sb = StringBuilderPool.Rent();
+		var sb = new StringBuilder();
 
-		try
+		for (int i = 0; i < node.Length; i++)
 		{
-			for (int i = 0; i < node.Length; i++)
+			char c = node[i];
+
+			switch (c)
 			{
-				char c = node[i];
-
-				switch (c)
-				{
-					case ' ': sb.Append(@"\20"); break;
-					case '"': sb.Append(@"\22"); break;
-					case '&': sb.Append(@"\26"); break;
-					case '\'': sb.Append(@"\27"); break;
-					case '/': sb.Append(@"\2f"); break;
-					case ':': sb.Append(@"\3a"); break;
-					case '<': sb.Append(@"\3c"); break;
-					case '>': sb.Append(@"\3e"); break;
-					case '@': sb.Append(@"\40"); break;
-					case '\\': sb.Append(@"\5c"); break;
-					default: sb.Append(c); break;
-				}
+				case ' ': sb.Append(@"\20"); break;
+				case '"': sb.Append(@"\22"); break;
+				case '&': sb.Append(@"\26"); break;
+				case '\'': sb.Append(@"\27"); break;
+				case '/': sb.Append(@"\2f"); break;
+				case ':': sb.Append(@"\3a"); break;
+				case '<': sb.Append(@"\3c"); break;
+				case '>': sb.Append(@"\3e"); break;
+				case '@': sb.Append(@"\40"); break;
+				case '\\': sb.Append(@"\5c"); break;
+				default: sb.Append(c); break;
 			}
+		}
 
-			return sb.ToString();
-		}
-		finally
-		{
-			StringBuilderPool.Return(sb);
-		}
+		return sb.ToString();
 	}
 
 	[StackTraceHidden]
@@ -133,25 +126,18 @@ public readonly struct Jid
 		CheckByteSize(_server, nameof(Server));
 		CheckByteSize(_resource, nameof(Resource));
 
-		var sb = StringBuilderPool.Rent();
+		var sb = new StringBuilder();
 
-		try
-		{
-			if (!string.IsNullOrEmpty(_user))
-				sb.Append(_user).Append('@');
+		if (!string.IsNullOrEmpty(_user))
+			sb.Append(_user).Append('@');
 
-			if (!string.IsNullOrEmpty(_server))
-				sb.Append(_server);
+		if (!string.IsNullOrEmpty(_server))
+			sb.Append(_server);
 
-			if (!string.IsNullOrEmpty(_resource))
-				sb.Append('/').Append(_resource);
+		if (!string.IsNullOrEmpty(_resource))
+			sb.Append('/').Append(_resource);
 
-			return sb.ToString();
-		}
-		finally
-		{
-			StringBuilderPool.Return(sb);
-		}
+		return sb.ToString();
 	}
 
 	public override bool Equals(object? obj)
@@ -207,14 +193,6 @@ public readonly struct Jid
 	}
 
 	public static implicit operator string(Jid j) => j.ToString();
-
-	public static bool operator ==(Jid left, Jid right)
-	{
-		return left.Equals(right);
-	}
-
-	public static bool operator !=(Jid left, Jid right)
-	{
-		return !(left == right);
-	}
+	public static bool operator ==(Jid left, Jid right) => left.Equals(right);
+	public static bool operator !=(Jid left, Jid right) => !(left == right);
 }

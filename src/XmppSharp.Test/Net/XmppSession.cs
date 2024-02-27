@@ -6,7 +6,6 @@ using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using XmppSharp.Entities;
-using XmppSharp.Enums;
 using XmppSharp.Exceptions;
 using XmppSharp.Protocol;
 using XmppSharp.Utilities;
@@ -44,7 +43,7 @@ public class XmppSession : IDisposable
 		Debug.Assert(RemoteAddress != null);
 	}
 
-	static readonly string DefaultEndTag = "</stream:stream>";
+	static readonly string XmppEndTag = "</stream:stream>";
 
 	public void Dispose()
 	{
@@ -115,28 +114,22 @@ public class XmppSession : IDisposable
 
 	public async Task DisconnectAsync(StreamErrorCondition? reason = default, string? description = default)
 	{
-		var sb = StringBuilderPool.Rent();
+		var sb = new StringBuilder();
 
-		try
-		{
-			if (reason.TryUnwrap(out var v))
-				sb.Append(v.CreateElement(description).ToXml());
+		if (!reason.TryUnwrap(out var v))
+			v = StreamErrorCondition.SystemShutdown;
 
-			sb.Append(DefaultEndTag);
+		sb.Append(v.CreateElement(description).ToString(false));
+		sb.Append(XmppEndTag);
 
-			await SendAsync(sb.ToString());
-		}
-		finally
-		{
-			StringBuilderPool.Return(sb);
-		}
+		await SendAsync(sb.ToString());
 
 		CheckDisposed();
 	}
 
 	async Task OnXmppEndTag()
 	{
-		LogXml(this, StreamState.Read, DefaultEndTag);
+		LogXml(this, StreamState.Read, XmppEndTag);
 		await DisconnectAsync();
 	}
 
@@ -144,8 +137,8 @@ public class XmppSession : IDisposable
 
 	async Task BeginReceive()
 	{
-		StreamErrorCondition? errorType = default;
-		string? errorMsg = default;
+		StreamErrorCondition? condition = default;
+		string? description = default;
 
 		try
 		{
@@ -166,19 +159,19 @@ public class XmppSession : IDisposable
 		}
 		catch (JabberStreamException ex)
 		{
-			errorType = ex.Condition;
-			errorMsg = ex.Message;
+			condition = ex.Error;
+			description = ex.Message;
 		}
 		catch (XmlException)
 		{
-			errorType = StreamErrorCondition.NotWellFormed;
+			condition = StreamErrorCondition.NotWellFormed;
 		}
 		catch (Exception)
 		{
-			errorType = StreamErrorCondition.InternalServerError;
+			condition = StreamErrorCondition.InternalServerError;
 		}
 
-		await DisconnectAsync(errorType, errorMsg);
+		await DisconnectAsync(condition, description);
 	}
 
 	#endregion
@@ -252,7 +245,7 @@ public class XmppSession : IDisposable
 		else if (targetHostname != e.GetAttribute("to"))
 			condition = StreamErrorCondition.HostUnknown;
 
-		if (e.GetNamespaceOfPrefix(string.Empty) != Namespaces.Client)
+		if (e.GetNamespaceOfPrefix(string.Empty) != Namespace.Client.Get())
 			condition = StreamErrorCondition.UnsupportedStanzaType;
 
 		e.RemoveAttribute("to");
@@ -266,20 +259,20 @@ public class XmppSession : IDisposable
 			return;
 		}
 
-		var features = Namespaces.Stream.CreateElement("stream:features");
+		var features = Namespace.Stream.CreateElement("stream:features");
 		{
 			if (!_sessionState.HasFlag(XmppSessionState.Authenticated))
 			{
 				if (!_sessionState.HasFlag(XmppSessionState.TlsStarted)
 					&& _server._config.Tls.Policy > TlsPolicy.None)
 				{
-					var tls = features.C("starttls", Namespaces.Tls);
+					var tls = features.C(Namespace.Tls.CreateElement("starttls"));
 
 					if (_server._config.Tls.Policy == TlsPolicy.Required)
 						tls.C("required");
 				}
 
-				var m = features.C("mechanisms", Namespaces.Sasl);
+				var m = features.C(Namespace.Sasl.CreateElement("mechanisms"));
 				{
 					foreach (var mechanismName in _server._config.SupportedMechanisms)
 						m.C("mechanism", text: mechanismName);
@@ -288,10 +281,10 @@ public class XmppSession : IDisposable
 			else
 			{
 				if (!_sessionState.HasFlag(XmppSessionState.ResourceBinded))
-					features.C("bind", Namespaces.Bind);
+					features.C(Namespace.Bind.CreateElement("bind"));
 
 				if (!_sessionState.HasFlag(XmppSessionState.SessionStarted))
-					features.C("session", Namespaces.Session);
+					features.C(Namespace.Session.CreateElement("session"));
 			}
 		}
 
@@ -303,7 +296,7 @@ public class XmppSession : IDisposable
 	async Task OnXmppElement(XElement e)
 	{
 		await Task.Yield();
-		LogXml(this, StreamState.Read, e.ToXml(true));
+		LogXml(this, StreamState.Read, e.ToString(true));
 
 		if (!_sessionState.HasFlag(XmppSessionState.Authenticated))
 		{
@@ -378,10 +371,10 @@ public class XmppSession : IDisposable
 				? tcs.TrySetResult()
 				: tcs.TrySetException(ex);
 
-			LogXml(this, StreamState.Write, element.ToXml(true), ex);
+			LogXml(this, StreamState.Write, element.ToString(true), ex);
 		};
 
-		var buffer = element.ToXml().GetBytes();
+		var buffer = element.GetBytes();
 		_queue.Enqueue((buffer, callback));
 
 		return tcs.Task;
@@ -416,10 +409,10 @@ public class XmppSession : IDisposable
 
 		var callback = (Exception? ex) =>
 		{
-			LogXml(this, StreamState.Write, element.ToXml(true), ex);
+			LogXml(this, StreamState.Write, element.ToString(true), ex);
 		};
 
-		var buffer = element.ToXml().GetBytes();
+		var buffer = element.GetBytes();
 		_queue.Enqueue((buffer, callback));
 	}
 

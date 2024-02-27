@@ -14,7 +14,10 @@ public static class Utils
 	public static byte[] GetBytes(this string s, Encoding? encoding = default)
 		=> (encoding ?? Encoding.UTF8).GetBytes(s);
 
-	public static string ToXml(this XNode node, bool indent = false)
+	public static byte[] GetBytes(this XNode node, Encoding? encoding = default)
+		=> node.ToString(false).GetBytes(encoding);
+
+	public static string ToString(this XNode node, bool indent)
 	{
 		var options = SaveOptions.OmitDuplicateNamespaces;
 

@@ -1,4 +1,4 @@
-﻿namespace XmppSharp.Enums;
+﻿namespace XmppSharp.Protocol;
 
 [Flags]
 public enum XmppSessionState

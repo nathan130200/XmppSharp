@@ -5,27 +5,23 @@ namespace XmppSharp.Exceptions;
 
 public class JabberStreamException : Exception
 {
-	public StreamErrorCondition? Condition { get; }
+	public StreamErrorCondition? Error { get; }
 
-	public JabberStreamException(StreamErrorCondition? type) : this(string.Empty, type)
+	public JabberStreamException(StreamErrorCondition? error) : this(string.Empty, error)
 	{
 
 	}
 
-	public JabberStreamException(string? message, StreamErrorCondition? condition) : base(message)
+	public JabberStreamException(string? message, StreamErrorCondition? error) : base(message)
 	{
-		Condition = condition;
+		Error = error;
 	}
 
-	public XElement GetTag()
+	public XElement GetTag(string lang = "en", XElement? child = default)
 	{
-		var error = Namespaces.Stream.CreateElement("stream:error");
+		if (!Error.TryUnwrap(out var self))
+			self = StreamErrorCondition.InternalServerError;
 
-		if (!Condition.TryUnwrap(out var v))
-			v = StreamErrorCondition.InternalServerError;
-
-		error.Add(v.CreateElement(Message));
-
-		return error;
+		return self.CreateElement(Message, lang, child);
 	}
 }

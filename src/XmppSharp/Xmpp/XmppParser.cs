@@ -3,8 +3,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using XmppSharp.Exceptions;
 using XmppSharp.Protocol;
-using XmppSharp.Utilities;
 
 namespace XmppSharp.Xmpp;
 

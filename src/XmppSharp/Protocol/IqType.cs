@@ -1,45 +1,34 @@
-﻿using XmppSharp.Utilities;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol;
 
-[RunStaticCtor]
-public readonly struct IqType : IXmppEnum<IqType>
+/// <summary>
+/// This enum lists the types of stanzas that can be sent or received and how they will be handled.
+/// </summary>
+[BetterEnum]
+public enum IqType
 {
-	static readonly Dictionary<string, IqType> s_cache = [];
+	/// <summary>
+	/// The stanza requests information, inquires about what data is needed in order to complete further operations, etc.
+	/// </summary>
+	[XmppEnumMember("get")]
+	Get,
 
-	public string Value { get; init; }
-	public bool HasValue => Value != null;
+	/// <summary>
+	/// The stanza provides data that is needed for an operation to be completed, sets new values, replaces existing values, etc.
+	/// </summary>
+	[XmppEnumMember("set")]
+	Set,
 
-	IqType(string s)
-		=> s_cache[Value = s] = this;
+	/// <summary>
+	/// The stanza is a response to a successful get or set request.
+	/// </summary>
+	[XmppEnumMember("result")]
+	Result,
 
-	public static IqType Parse(string value)
-		=> s_cache[value];
-
-	public static IEnumerable<IqType> Values
-		=> s_cache.Values;
-
-	#region Values
-
-	public static IqType Get { get; } = new("get");
-	public static IqType Set { get; } = new("set");
-	public static IqType Result { get; } = new("result");
-	public static IqType Error { get; } = new("error");
-
-	#endregion
-
-	public override int GetHashCode()
-		=> Value?.GetHashCode() ?? -1;
-
-	public override bool Equals(object? obj)
-		=> XmppEnumUtil.EqualityComparer(this, obj);
-
-	public static implicit operator string(IqType self)
-		=> self.Value;
-
-	public static bool operator ==(IqType lhs, IqType rhs)
-		=> lhs.Equals(rhs);
-
-	public static bool operator !=(IqType lhs, IqType rhs)
-		=> !(lhs == rhs);
+	/// <summary>
+	/// The stanza reports an error that has occurred regarding processing or delivery of a get or set request.
+	/// </summary>
+	[XmppEnumMember("error")]
+	Error
 }
