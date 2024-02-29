@@ -444,6 +444,12 @@ public class XmppSession : IDisposable
 			{
 				var child = e.FirstChild();
 
+				if (child == null)
+				{
+					await DisconnectAsync(StreamErrorCondition.InvalidXml);
+					return;
+				}
+
 				if (child.Is("bind", Namespace.Bind))
 				{
 					StanzaErrorCondition? condition = default;
@@ -481,6 +487,8 @@ public class XmppSession : IDisposable
 						_sessionState |= XmppSessionState.ResourceBinded;
 						await SendAsync(e);
 					}
+
+					return;
 				}
 				else if (child.Is("session", Namespace.Session))
 				{
@@ -491,12 +499,16 @@ public class XmppSession : IDisposable
 						e.Add(StanzaErrorCondition.UnexpectedRequest.CreateElement(e.GetDefaultNamespace(), StanzaErrorType.Modify));
 						await SendAsync(e);
 					}
+					else
+					{
+						// TODO: handle session.
+						e.SwitchDirection();
+						e.SetAttribute("type", "result");
+						_sessionState |= XmppSessionState.SessionStarted;
+						await SendAsync(e);
+					}
 
-					// TODO: handle session.
-					e.SwitchDirection();
-					e.SetAttribute("type", "result");
-					_sessionState |= XmppSessionState.SessionStarted;
-					await SendAsync(e);
+					return;
 				}
 				else
 				{
@@ -506,6 +518,7 @@ public class XmppSession : IDisposable
 						e.SetAttribute("type", "error");
 						e.Add(StanzaErrorCondition.NotAllowed.CreateElement(e.GetDefaultNamespace(), StanzaErrorType.Cancel));
 						await SendAsync(e);
+						return;
 					}
 				}
 			}
@@ -520,7 +533,7 @@ public class XmppSession : IDisposable
 		return;
 	}
 
-	private X509Certificate2 _tlsCert;
+	private X509Certificate2? _tlsCert;
 
 	async Task InitializeTlsAsync()
 	{

@@ -1,198 +1,93 @@
-﻿using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Web;
+﻿using System.Text;
 
 namespace XmppSharp;
 
-[DebuggerDisplay("{ToString(),nq}")]
-public readonly struct Jid
+public record class Jid : IParsable<Jid>
 {
-	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-	private readonly string? _user, _resource;
+    public string User
+    {
+        get;
+        init;
+    }
 
-	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-	private readonly string _server = default!;
+    public required string Server
+    {
+        get;
+        init;
+    }
 
-	public Jid()
-	{
-		_user = _server = _resource = null!;
-	}
+    public string Resource
+    {
+        get;
+        init;
+    }
 
-	public Jid(string? user, string server, string? resource)
-	{
-		User = user;
-		Server = server;
-		Resource = resource;
-	}
+    public Jid()
+    {
 
-	public string? User
-	{
-		get => _user;
-		init => _user = Validate(EscapeNode(value));
-	}
+    }
 
-	public string Server
-	{
-		get => _server;
-		init
-		{
-			ArgumentException.ThrowIfNullOrWhiteSpace(value, nameof(Server));
-			_server = Validate(value.ToLowerInvariant())!;
-		}
-	}
+    static Jid IParsable<Jid>.Parse(string s, IFormatProvider provider)
+        => Parse(s);
 
-	public string? Resource
-	{
-		get => _resource;
-		init => Validate(_resource = HttpUtility.UrlEncode(value));
-	}
+    static bool IParsable<Jid>.TryParse(string s, IFormatProvider provider, out Jid result)
+    {
+        result = default;
 
-	static string? Validate(string? value, [CallerMemberName] string memberName = default!)
-	{
-		foreach (char c in value.AsSpan())
-		{
-			if (!char.IsAscii(c))
-				throw new ArgumentException($"Jid '{memberName}' contains non-ASCII chars.");
-		}
+        if (string.IsNullOrWhiteSpace(s))
+            return false;
+        else
+            result = Parse(s);
 
-		return value;
-	}
+        return result != null;
+    }
 
-	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-	public bool IsEmpty
-		=> string.IsNullOrEmpty(_user)
-		&& string.IsNullOrEmpty(_server)
-		&& string.IsNullOrEmpty(_resource);
+    public static Jid Parse(string s)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(s);
 
-	public override int GetHashCode()
-	{
-		int hash = _server?.GetHashCode() ?? 0;
+        var ofs = s.IndexOf('@');
 
-		if (!string.IsNullOrEmpty(_user))
-			hash = HashCode.Combine(hash, _user);
+        string user = null,
+            resource = null,
+            server;
 
-		if (!string.IsNullOrEmpty(_resource))
-			hash = HashCode.Combine(hash, _resource);
+        if (ofs != -1)
+        {
+            user = s[0..ofs];
+            s = s[(ofs + 1)..];
+        }
 
-		return hash;
-	}
+        ofs = s.IndexOf('/');
 
-	static string? EscapeNode(string? node)
-	{
-		if (string.IsNullOrEmpty(node))
-			return node;
+        if (ofs == -1)
+            server = s;
+        else
+        {
+            server = s[0..ofs];
+            resource = s[(ofs + 1)..];
+        }
 
-		var sb = new StringBuilder();
+        return new Jid
+        {
+            User = user,
+            Server = server,
+            Resource = resource
+        };
+    }
 
-		for (int i = 0; i < node.Length; i++)
-		{
-			char c = node[i];
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
 
-			switch (c)
-			{
-				case ' ': sb.Append(@"\20"); break;
-				case '"': sb.Append(@"\22"); break;
-				case '&': sb.Append(@"\26"); break;
-				case '\'': sb.Append(@"\27"); break;
-				case '/': sb.Append(@"\2f"); break;
-				case ':': sb.Append(@"\3a"); break;
-				case '<': sb.Append(@"\3c"); break;
-				case '>': sb.Append(@"\3e"); break;
-				case '@': sb.Append(@"\40"); break;
-				case '\\': sb.Append(@"\5c"); break;
-				default: sb.Append(c); break;
-			}
-		}
+        if (!string.IsNullOrWhiteSpace(User))
+            sb.Append(User).Append('@');
 
-		return sb.ToString();
-	}
+        sb.Append(Server);
 
-	[StackTraceHidden]
-	static void CheckByteSize(string? value, string memberName)
-	{
-		if (string.IsNullOrWhiteSpace(value))
-			return;
+        if (!string.IsNullOrWhiteSpace(Resource))
+            sb.Append('/').Append(Resource);
 
-		var numBytes = Encoding.UTF8.GetByteCount(value);
-
-		if (numBytes > 1023)
-			throw new ArgumentException($"Jid '{memberName}' cannot be 1023 bytes long.");
-	}
-
-	public override string ToString()
-	{
-		CheckByteSize(_user, nameof(User));
-		CheckByteSize(_server, nameof(Server));
-		CheckByteSize(_resource, nameof(Resource));
-
-		var sb = new StringBuilder();
-
-		if (!string.IsNullOrEmpty(_user))
-			sb.Append(_user).Append('@');
-
-		if (!string.IsNullOrEmpty(_server))
-			sb.Append(_server);
-
-		if (!string.IsNullOrEmpty(_resource))
-			sb.Append('/').Append(_resource);
-
-		return sb.ToString();
-	}
-
-	public override bool Equals(object? obj)
-	{
-		if (obj is not Jid other)
-			return false;
-
-		if (IsEmpty || other.IsEmpty)
-			return false;
-
-		return string.Equals(_user, other._user)
-			&& string.Equals(_server, other._server, StringComparison.OrdinalIgnoreCase)
-			&& string.Equals(_resource, other._resource);
-	}
-
-	public bool IsBare
-		=> string.IsNullOrEmpty(_resource);
-
-	public Jid Bare
-		=> this with { Resource = null };
-
-	public static Jid Parse(string? text)
-	{
-		if (string.IsNullOrWhiteSpace(text))
-			return default;
-
-		var ofs = text.IndexOf('@');
-
-		string? user = null,
-			resource = null;
-
-		if (ofs != -1)
-		{
-			user = text[0..ofs];
-			text = text[(ofs + 1)..];
-		}
-
-		ofs = text.IndexOf('/');
-
-		string server;
-
-		if (ofs == -1)
-			server = text;
-		else
-		{
-			server = text[0..ofs];
-			resource = text[(ofs + 1)..];
-		}
-
-		ArgumentException.ThrowIfNullOrWhiteSpace(server);
-
-		return new Jid { User = user, Server = server, Resource = resource };
-	}
-
-	public static implicit operator string(Jid j) => j.ToString();
-	public static bool operator ==(Jid left, Jid right) => left.Equals(right);
-	public static bool operator !=(Jid left, Jid right) => !(left == right);
+        return sb.ToString();
+    }
 }
