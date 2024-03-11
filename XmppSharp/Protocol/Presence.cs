@@ -41,7 +41,7 @@ public class Presence : Stanza
             if (value == 0)
                 RemoveTag("priority");
             else
-                ReplaceTag("priority", value.ToString());
+                SetTag("priority", value.ToString());
         }
     }
 
@@ -53,7 +53,7 @@ public class Presence : Stanza
             if (!value.TryGetValue(out var newValue))
                 RemoveTag("show");
             else
-                ReplaceTag("show", XmppEnum.ToXml(newValue));
+                SetTag("show", XmppEnum.ToXml(newValue));
         }
     }
 
@@ -62,9 +62,9 @@ public class Presence : Stanza
         get => GetTag("status");
         set
         {
-            RemoveTag("status");
-
-            if (value != null)
+            if (string.IsNullOrWhiteSpace(value))
+                RemoveTag("status");
+            else
                 SetTag("status", value);
         }
     }

@@ -97,10 +97,6 @@ public class XmppEnum<T>
         return fallbackValue;
     }
 
-    [Conditional("DEBUG")]
-    static void LogWarning(string msg)
-        => Debug.WriteLine(msg);
-
     static XmppEnum()
     {
         var baseType = typeof(T);

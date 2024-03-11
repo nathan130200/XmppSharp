@@ -6,9 +6,6 @@ namespace XmppSharp;
 
 public static class Xml
 {
-    static string getLocalName(this string s)
-        => XmlConvert.EncodeLocalName(s);
-
     public static (bool HasPrefix, string LocalName, string Prefix) ExtractQName(string input)
     {
         ArgumentException.ThrowIfNullOrEmpty(input);
@@ -16,41 +13,17 @@ public static class Xml
         var ofs = input.IndexOf(':');
 
         if (ofs == -1)
-            return (false, input.getLocalName(), null);
+            return (false, input, null);
         else
         {
             var prefix = input[0..ofs];
             var localName = input[(ofs + 1)..];
 
             if (string.IsNullOrWhiteSpace(localName))
-                return (false, input.getLocalName(), null);
+                return (false, input, null);
 
-            return (true, prefix.getLocalName(), localName.getLocalName());
+            return (true, prefix, localName);
         }
-    }
-
-    public static IEnumerable<T> ForEach<T>(this IEnumerable<T> enumerable, Action<T> callback)
-    {
-        ArgumentNullException.ThrowIfNull(enumerable);
-        ArgumentNullException.ThrowIfNull(callback);
-
-        if (enumerable.Any())
-        {
-            foreach (var item in enumerable)
-                callback(item);
-        }
-
-        return enumerable;
-    }
-
-    public static string ToString(this Element element, bool indent)
-    {
-        var (result, writer) = CreateXmlWriter(indent);
-
-        using (writer)
-            ToStringInternal(element, writer);
-
-        return result.ToString();
     }
 
     internal static (StringBuilder Output, XmlWriter Writer) CreateXmlWriter(bool indent)
@@ -73,16 +46,16 @@ public static class Xml
         return (output, XmlWriter.Create(new StringWriter(output), settings));
     }
 
-    internal static void ToStringInternal(Element element, XmlWriter writer)
+    internal static void WriteXmlTree(Element element, XmlWriter writer)
     {
         writer.WriteStartElement(element.TagName, element.GetNamespace(element.Prefix));
 
-        foreach (var (attrName, attrVal) in element.Attributes)
+        foreach (var (name, value) in element.Attributes)
         {
-            var result = ExtractQName(attrName);
+            var result = ExtractQName(name);
 
             if (!result.HasPrefix)
-                writer.WriteAttributeString(result.LocalName, attrVal);
+                writer.WriteAttributeString(result.LocalName, value);
             else
             {
                 var ns = result.Prefix switch
@@ -92,7 +65,7 @@ public static class Xml
                     _ => element.GetNamespace(result.Prefix)
                 };
 
-                writer.WriteAttributeString(result.LocalName, ns, attrVal);
+                writer.WriteAttributeString(result.LocalName, ns, value);
             }
         }
 
@@ -100,7 +73,7 @@ public static class Xml
             writer.WriteString(element.Value);
 
         foreach (var child in element.Children())
-            ToStringInternal(child, writer);
+            WriteXmlTree(child, writer);
 
         writer.WriteEndElement();
     }

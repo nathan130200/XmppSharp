@@ -111,6 +111,16 @@ public class Element : ICloneable
         }
     }
 
+    public string ToString(bool indented)
+    {
+        var (output, writer) = Xml.CreateXmlWriter(indented);
+
+        using (writer)
+            Xml.WriteXmlTree(this, writer);
+
+        return output.ToString();
+    }
+
     public void Remove()
     {
         _parent?.RemoveChild(this);
@@ -225,7 +235,7 @@ public class Element : ICloneable
 
     public void ReplaceChild<T>(T newElement) where T : Element
     {
-        Child<T>()?.Remove();
+        Child(x => DefaultElementFilterImpl(x, newElement.TagName, newElement.GetNamespace()))?.Remove();
 
         if (newElement != null)
             AddChild(newElement);
@@ -233,7 +243,7 @@ public class Element : ICloneable
 
     public void ReplaceChild(Element element)
     {
-        Child(x => x.TagName == element.TagName && x.GetNamespace() == element.GetNamespace())?.Remove();
+        Child(x => DefaultElementFilterImpl(x, element.TagName, element.GetNamespace()))?.Remove();
         AddChild(element);
     }
 
@@ -308,39 +318,40 @@ public class Element : ICloneable
         return _parent?.GetNamespace(prefix);
     }
 
+    // ------------------------------------------------------------------------------------
+
+    static bool DefaultElementFilterImpl(Element e, string name, string xmlns)
+        => e.TagName == name && (xmlns == null || xmlns == e.GetNamespace());
+
+    public Element GetChild(string name, string xmlns = default)
+        => Child(x => DefaultElementFilterImpl(x, name, xmlns));
+
+    // ------------------------------------------------------------------------------------
+
     public bool HasTag(string name, string? xmlns = default)
-        => Child(x => x.TagName == name && (xmlns == null || x.GetNamespace() == xmlns)) != null;
+        => Child(x => DefaultElementFilterImpl(x, name, xmlns)) != null;
 
     public string GetTag(string name, string? xmlns = default)
-        => Child(x => x.TagName == name && (xmlns == null || x.GetNamespace() == xmlns))?.Value;
+        => Child(x => DefaultElementFilterImpl(x, name, xmlns))?.Value;
 
     public void SetTag(string name)
         => SetTag(name, null, null);
 
     public void RemoveTag(string name, string xmlns = default)
-        => Child(x => x.TagName == name && (xmlns == null || x.GetNamespace() == xmlns))?.Remove();
+        => Child(x => DefaultElementFilterImpl(x, name, xmlns))?.Remove();
 
     public void SetTag(string name, string? value = default)
         => SetTag(name, null, value);
 
-    public void ReplaceTag(string name)
-        => ReplaceTag(name, null, null);
-
-    public void ReplaceTag(string name, string? value = default)
-        => ReplaceTag(name, null, value);
-
-    public void ReplaceTag(string name, string? xmlns = default, string? value = default)
-    {
-        var el = Child(x => x.TagName == name && (xmlns == null || x.GetNamespace() == xmlns));
-
-        if (el != null)
-            el.Value = value;
-        else
-            SetTag(name, xmlns, value);
-    }
-
     public void SetTag(string name, string? xmlns = default, string? value = default)
-        => AddChild(new Element(name, xmlns, value));
+    {
+        var element = Child(x => DefaultElementFilterImpl(x, name, xmlns));
+
+        if (element != null)
+            element.Value = value;
+        else
+            AddChild(new Element(name, xmlns, value));
+    }
 
     public override string ToString()
         => StartTag();
@@ -365,7 +376,7 @@ public class Element : ICloneable
             using (writer)
             {
                 foreach (var child in Children())
-                    Xml.ToStringInternal(child, writer);
+                    Xml.WriteXmlTree(child, writer);
             }
 
             return result.ToString();
@@ -374,7 +385,7 @@ public class Element : ICloneable
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public string OuterXml
-        => this.ToString(false);
+        => ToString(false);
 
     public byte[] GetContentFromBase64()
     {
