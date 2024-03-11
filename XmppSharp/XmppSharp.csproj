@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>annotations</Nullable>
+		<AnalysisMode>minimum</AnalysisMode>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Title>XmppSharp</Title>
+		<Company>FRNathan13</Company>
+		<Description>Lightweight xmpp library inspired on classic xmpp library agsXMPP.</Description>
+		<PackageProjectUrl>https://github.com/nathan130200/XmppSharp</PackageProjectUrl>
+		<PackageTags>xml, jabber, xmpp, xmpp-client, xmpp-server, xmpp-component</PackageTags>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<Version>1.1.0</Version>
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>embedded</DebugType>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Folder Include="Factory\" />
+	</ItemGroup>
+
+</Project>
