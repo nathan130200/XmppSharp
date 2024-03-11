@@ -4,7 +4,7 @@ using XmppSharp.Attributes;
 
 namespace XmppSharp;
 
-public class XmppEnum
+public static class XmppEnum
 {
     [StackTraceHidden]
     static void CheckEnum<T>(out string ns)
@@ -15,6 +15,9 @@ public class XmppEnum
         if (attr == null)
             throw new InvalidOperationException("Type is not valid xmpp enum!");
     }
+
+    public static string GetXmlName<T>(this T value) where T : struct, Enum
+        => ToXml(value);
 
     public static IEnumerable<string> GetNames<T>() where T : struct, Enum
     {

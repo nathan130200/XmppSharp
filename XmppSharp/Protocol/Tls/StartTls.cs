@@ -18,17 +18,16 @@ public class StartTls : Element
     {
         get
         {
-            foreach (var (name, value) in XmppEnum.GetValues<TlsPolicy>())
-            {
-                if (HasTag(name))
-                    return value;
-            }
+            if (HasTag("optional"))
+                return TlsPolicy.Optional;
+            if (HasTag("required"))
+                return TlsPolicy.Required;
 
             return null;
         }
         set
         {
-            Descendants().Remove();
+            Children().Remove();
 
             if (value.TryGetValue(out var result))
                 SetTag(XmppEnum.ToXml(result));
