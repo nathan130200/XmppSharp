@@ -28,8 +28,7 @@ public class StartTls : Element
         }
         set
         {
-            if (Policy.TryGetValue(out var oldValue))
-                RemoveTag(XmppEnum.ToXml(oldValue));
+            Descendants().Remove();
 
             if (value.TryGetValue(out var result))
                 SetTag(XmppEnum.ToXml(result));
