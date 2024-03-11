@@ -46,7 +46,7 @@ for enum in params:
         text.writeln('{')
         text.indent()
     
-    text.writeln('[XmppEnum, GeneratedCode("Python","{}")]'.format(sys.version))
+    text.writeln('[XmppEnum, GeneratedCode("Python", "{}")]'.format(sys.version))
     text.writeln('public enum {}'.format(enum['name']))
     text.writeln('{')
     text.indent()

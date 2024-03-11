@@ -5,7 +5,7 @@ def kebab_to_pascal_case(input_string: str) -> str:
     return "".join([word.title() for word in words])
 
 class IndentedStringIO(StringIO):
-    def __init__(self, indent_chars: str = '\t', initial_value: str = None, newline_chars: str = '\n'):
+    def __init__(self, indent_chars: str = '  ', newline_chars: str = '\n'):
         StringIO.__init__(self)
         self._depth = 0
         self._newline_chars = newline_chars
