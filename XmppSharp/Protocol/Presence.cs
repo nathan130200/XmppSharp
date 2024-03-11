@@ -50,7 +50,7 @@ public class Presence : Stanza
         get => XmppEnum.FromXml<PresenceShow>(GetTag("show"));
         set
         {
-            if (!value.TryUnwrap(out var newValue))
+            if (!value.TryGetValue(out var newValue))
                 RemoveTag("show");
             else
                 ReplaceTag("show", XmppEnum.ToXml(newValue));

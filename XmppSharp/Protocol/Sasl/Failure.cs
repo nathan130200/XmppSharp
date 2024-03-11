@@ -31,10 +31,10 @@ public class Failure : Element
         }
         set
         {
-            if (Condition.TryUnwrap(out var oldValue))
+            if (Condition.TryGetValue(out var oldValue))
                 RemoveTag(XmppEnum.ToXml(oldValue));
 
-            if (value.TryUnwrap(out var result))
+            if (value.TryGetValue(out var result))
                 SetTag(XmppEnum.ToXml(result));
         }
     }

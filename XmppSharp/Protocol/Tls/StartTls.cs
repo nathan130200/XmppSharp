@@ -28,10 +28,10 @@ public class StartTls : Element
         }
         set
         {
-            if (Policy.TryUnwrap(out var oldValue))
+            if (Policy.TryGetValue(out var oldValue))
                 RemoveTag(XmppEnum.ToXml(oldValue));
 
-            if (value.TryUnwrap(out var result))
+            if (value.TryGetValue(out var result))
                 SetTag(XmppEnum.ToXml(result));
         }
     }

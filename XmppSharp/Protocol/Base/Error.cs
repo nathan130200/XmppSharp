@@ -16,7 +16,7 @@ public class Error : Element
     public ErrorType? Type
     {
         get => XmppEnum.FromXml<ErrorType>(GetAttribute("type"));
-        set => SetAttribute("type", value.TryUnwrap(out var newValue) ? XmppEnum.ToXml(newValue) : null);
+        set => SetAttribute("type", value.TryGetValue(out var newValue) ? XmppEnum.ToXml(newValue) : null);
     }
 
     public ErrorCondition? Condition
@@ -33,10 +33,10 @@ public class Error : Element
         }
         set
         {
-            if (Condition.TryUnwrap(out var oldValue))
+            if (Condition.TryGetValue(out var oldValue))
                 RemoveTag(XmppEnum.ToXml(oldValue));
 
-            if (value.TryUnwrap(out var newValue))
+            if (value.TryGetValue(out var newValue))
                 SetTag(XmppEnum.ToXml(newValue));
         }
     }
