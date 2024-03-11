@@ -23,6 +23,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<Compile Include="..\Scripts\generate_enums.g.cs">
+			<AutoGen>true</AutoGen>
+			<Link>XmppEnum.Generated.cs</Link>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
 	  <Folder Include="Factory\" />
 	</ItemGroup>
 
