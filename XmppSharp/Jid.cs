@@ -4,7 +4,7 @@ using System.Text;
 namespace XmppSharp;
 
 [DebuggerDisplay("{ToString(),nq}")]
-public readonly struct Jid
+public record class Jid
 {
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly string _local, _domain, _resource;

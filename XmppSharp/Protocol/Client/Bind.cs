@@ -23,14 +23,13 @@ public class Bind : Element
         }
     }
 
-    public Jid? Jid
+    public Jid Jid
     {
         get
         {
-            if (!HasTag("jid"))
-                return null;
+            var jid = GetTag("jid");
 
-            if (XmppSharp.Jid.TryParse(GetTag("jid"), out var result))
+            if (Jid.TryParse(jid, out var result))
                 return result;
 
             return null;

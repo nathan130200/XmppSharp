@@ -16,14 +16,13 @@ public class DirectionalElement : Element
     {
     }
 
-    public Jid? From
+    public Jid From
     {
         get
         {
-            if (!HasAttribute("from"))
-                return null;
+            var jid = GetAttribute("from");
 
-            if (Jid.TryParse(GetAttribute("from"), out var result))
+            if (Jid.TryParse(jid, out var result))
                 return result;
 
             return null;
@@ -31,17 +30,16 @@ public class DirectionalElement : Element
         set => SetAttribute("from", value?.ToString());
     }
 
-    public Jid? To
+    public Jid To
     {
         get
         {
-            if (!HasAttribute("to"))
-                return null;
+            var jid = GetAttribute("to");
 
-            if (Jid.TryParse(GetAttribute("to"), out var result))
+            if (Jid.TryParse(jid, out var result))
                 return result;
 
-            return default;
+            return null;
         }
         set => SetAttribute("to", value?.ToString());
     }
