@@ -31,8 +31,7 @@ public class StreamError : Element
             Children().Where(x => x.TagName != "text")
                 .Remove();
 
-            if (Enum.IsDefined(value))
-                SetTag(XmppEnum.ToXml(value));
+            SetTag(XmppEnum.ToXml(value));
         }
     }
 

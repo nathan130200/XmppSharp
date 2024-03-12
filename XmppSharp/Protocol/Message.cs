@@ -4,8 +4,9 @@ using XmppSharp.Protocol.Base;
 namespace XmppSharp.Protocol;
 
 [XmppTag("message", Namespace.Client)]
-[XmppTag("message", Namespace.Accept)]
 [XmppTag("message", Namespace.Server)]
+[XmppTag("message", Namespace.Accept)]
+[XmppTag("message", Namespace.Connect)]
 public class Message : Stanza
 {
     public Message() : base("message")

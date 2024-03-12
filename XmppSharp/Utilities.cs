@@ -1,4 +1,5 @@
-﻿using XmppSharp.Xmpp.Dom;
+﻿using System.Text;
+using XmppSharp.Xmpp.Dom;
 
 namespace XmppSharp;
 
@@ -17,6 +18,22 @@ public static class Utilities
             foreach (var element in elements)
                 element.Remove();
         }
+    }
+
+    public static string GetString(this byte[] buffer, Encoding? encoding = default)
+        => (encoding ?? Encoding.UTF8).GetString(buffer);
+
+    public static byte[] GetBytes(this string s, Encoding? encoding = default)
+        => (encoding ?? Encoding.UTF8).GetBytes(s);
+
+    public static string GetHex(this byte[] buffer, bool lowercase = true)
+    {
+        var result = Convert.ToHexString(buffer);
+
+        if (lowercase)
+            return result.ToLowerInvariant();
+
+        return result;
     }
 
     public static IEnumerable<T> ForEach<T>(this IEnumerable<T> enumerable, Action<T> callback)

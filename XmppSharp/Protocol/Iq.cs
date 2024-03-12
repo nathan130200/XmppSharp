@@ -6,8 +6,9 @@ using XmppSharp.Xmpp.Dom;
 namespace XmppSharp.Protocol;
 
 [XmppTag("iq", Namespace.Client)]
-[XmppTag("iq", Namespace.Accept)]
 [XmppTag("iq", Namespace.Server)]
+[XmppTag("iq", Namespace.Accept)]
+[XmppTag("iq", Namespace.Connect)]
 public class Iq : Stanza
 {
     public Iq() : base("iq")

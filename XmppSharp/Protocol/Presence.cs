@@ -4,8 +4,9 @@ using XmppSharp.Protocol.Base;
 namespace XmppSharp.Protocol;
 
 [XmppTag("presence", Namespace.Client)]
-[XmppTag("presence", Namespace.Accept)]
 [XmppTag("presence", Namespace.Server)]
+[XmppTag("presence", Namespace.Accept)]
+[XmppTag("presence", Namespace.Connect)]
 public class Presence : Stanza
 {
     public Presence() : base("presence")
