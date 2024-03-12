@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Xml;
+using XmppSharp.Xmpp;
 using XmppSharp.Xmpp.Dom;
 
 namespace XmppSharp;
@@ -44,6 +45,46 @@ public static class Xml
         };
 
         return (output, XmlWriter.Create(new StringWriter(output), settings));
+    }
+
+    public static Task<Element> ParseFromFileAsync(string fileName, Encoding? encoding = default, int bufferSize = -1)
+    {
+        using (var stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+            return ParseFromStreamAsync(stream, encoding, bufferSize);
+    }
+
+    public static Task<Element> ParseFromBufferAsync(byte[] buffer, Encoding? encoding = default, int bufferSize = -1)
+    {
+        using (var ms = new MemoryStream(buffer))
+            return ParseFromStreamAsync(ms, encoding, bufferSize);
+    }
+
+    public static async Task<Element> ParseFromStreamAsync(Stream stream, Encoding? encoding = default, int bufferSize = -1)
+    {
+        using (var parser = new Parser(encoding, bufferSize))
+        {
+            parser.Reset(stream);
+
+            var tcs = new TaskCompletionSource<Element>();
+
+            {
+                AsyncAction<Element> handler = default;
+
+                handler = e =>
+                {
+                    parser.OnStreamElement -= handler;
+                    tcs.TrySetResult(e);
+                    return Task.CompletedTask;
+                };
+
+                parser.OnStreamElement += handler;
+
+                while (await parser.ReadAsync())
+                    await Task.Delay(0);
+            }
+
+            return await tcs.Task;
+        }
     }
 
     internal static void WriteXmlTree(Element element, XmlWriter writer)
