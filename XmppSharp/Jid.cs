@@ -1,9 +1,12 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 
 namespace XmppSharp;
 
+[DebuggerDisplay("{ToString(),nq}")]
 public readonly struct Jid
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly string _local, _domain, _resource;
 
     public string Local

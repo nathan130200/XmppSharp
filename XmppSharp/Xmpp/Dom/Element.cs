@@ -6,9 +6,16 @@ using XmppSharp.Factory;
 
 namespace XmppSharp.Xmpp.Dom;
 
-[DebuggerDisplay("{StartTag(),nq}")]
+[DebuggerDisplay("{DebugString,nq}")]
 public class Element : ICloneable
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    protected string DebugString
+        => string.Format("Element(LocalName={0}; Prefix={1}; Namespace={2})",
+            LocalName,
+            Prefix,
+            GetNamespace(Prefix));
+
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly List<Element> _children;
 
