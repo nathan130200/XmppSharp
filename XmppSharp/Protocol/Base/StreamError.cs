@@ -37,11 +37,11 @@ public class StreamError : Element
 
     public string Text
     {
-        get => GetTag("text");
+        get => GetTag("text", Namespace.Streams);
         set
         {
             if (value == null)
-                RemoveTag("text");
+                RemoveTag("text", Namespace.Streams);
             else
                 SetTag("text", Namespace.Streams, value);
         }
