@@ -7,6 +7,8 @@ namespace XmppSharp;
 
 public static class Xml
 {
+    public const string JabberEndTag = "</stream:stream>";
+
     public static (bool HasPrefix, string LocalName, string Prefix) ExtractQName(string input)
     {
         ArgumentException.ThrowIfNullOrEmpty(input);
@@ -23,7 +25,7 @@ public static class Xml
             if (string.IsNullOrWhiteSpace(localName))
                 return (false, input, null);
 
-            return (true, prefix, localName);
+            return (true, localName, prefix);
         }
     }
 
@@ -89,7 +91,7 @@ public static class Xml
 
     internal static void WriteXmlTree(Element element, XmlWriter writer)
     {
-        writer.WriteStartElement(element.TagName, element.GetNamespace(element.Prefix));
+        writer.WriteStartElement(element.Prefix, element.LocalName, element.GetNamespace(element.Prefix));
 
         foreach (var (name, value) in element.Attributes)
         {

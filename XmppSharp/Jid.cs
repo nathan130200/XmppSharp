@@ -2,7 +2,7 @@
 
 namespace XmppSharp;
 
-public record class Jid
+public readonly struct Jid
 {
     private readonly string _local, _domain, _resource;
 
@@ -12,7 +12,7 @@ public record class Jid
         init => _local = value?.ToLowerInvariant();
     }
 
-    public required string Domain
+    public string Domain
     {
         get => _domain;
         init
@@ -32,29 +32,23 @@ public record class Jid
         init => _resource = value;
     }
 
-    public static Jid Parse(string input, bool thrown = true)
+    public static Jid Parse(string input)
     {
-        if (!thrown)
-        {
-            _ = TryParse(input, out var result);
-            return result;
-        }
-        else
-        {
-            ArgumentException.ThrowIfNullOrEmpty(input);
+        ArgumentException.ThrowIfNullOrEmpty(input);
 
-            if (!TryParse(input, out var result))
-                throw new FormatException();
+        if (!TryParse(input, out var result))
+            throw new FormatException("Invalid jid.");
 
-            return result;
-        }
+        return result;
     }
+
+    static readonly char[] SearchChars = { '@', '/' };
 
     public static bool TryParse(string input, out Jid result)
     {
         result = default;
 
-        if (input.IndexOfAny(new[] { '@', '/' }, 0) == -1)
+        if (input.IndexOfAny(SearchChars) == -1)
         {
             result = new Jid { Domain = input };
             return true;
@@ -88,9 +82,9 @@ public record class Jid
                 Domain = domain,
                 Resource = resource
             };
-        }
 
-        return result != null;
+            return true;
+        }
     }
 
     public override string ToString()

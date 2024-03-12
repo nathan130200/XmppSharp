@@ -9,4 +9,10 @@ public class Stream : Stanza
     {
 
     }
+
+    public string Version
+    {
+        get => GetAttribute("version");
+        set => SetAttribute("version", value);
+    }
 }

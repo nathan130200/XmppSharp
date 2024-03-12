@@ -14,12 +14,33 @@ public class Bind : Element
     public string Resource
     {
         get => GetTag("resource");
-        set => SetTag("resource", value);
+        set
+        {
+            if (value == null)
+                RemoveTag("resource");
+            else
+                SetTag("resource", value);
+        }
     }
 
-    public Jid Jid
+    public Jid? Jid
     {
-        get => Jid.Parse(GetTag("jid"), false);
-        set => GetTag("jid", value?.ToString());
+        get
+        {
+            if (!HasTag("jid"))
+                return null;
+
+            if (XmppSharp.Jid.TryParse(GetTag("jid"), out var result))
+                return result;
+
+            return null;
+        }
+        set
+        {
+            if (!value.TryGetValue(out var result))
+                RemoveTag("jid");
+            else
+                SetTag("jid", result.ToString());
+        }
     }
 }

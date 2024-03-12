@@ -15,11 +15,6 @@ public class Parser : IDisposable
     private readonly Encoding _encoding;
     private readonly int _bufferSize;
 
-    protected string Name => _reader.Name;
-    protected string LocalName => _reader?.LocalName;
-    protected string Prefix => _reader?.Prefix;
-    protected string NamespaceURI => _reader?.NamespaceURI;
-    protected string Value => _reader?.Value;
     protected NameTable NameTable => _nameTable;
 
     public const int DefaultBufferSize = 64;
@@ -30,7 +25,7 @@ public class Parser : IDisposable
         _bufferSize = bufferSize <= 0 ? DefaultBufferSize : bufferSize;
     }
 
-    public event AsyncAction<Element> OnStreamStart;
+    public event AsyncAction<Protocol.Base.Stream> OnStreamStart;
     public event AsyncAction<Element> OnStreamElement;
     public event AsyncAction OnStreamEnd;
 
@@ -97,16 +92,59 @@ public class Parser : IDisposable
             switch (_reader.NodeType)
             {
                 case XmlNodeType.Element:
-                    await OnStartElement().ConfigureAwait(true);
+                    {
+                        var element = ElementFactory.Create(_reader.LocalName, _reader.Prefix, _reader.NamespaceURI);
+
+                        if (_reader.HasAttributes)
+                        {
+                            while (_reader.MoveToNextAttribute())
+                                element.SetAttribute(_reader.Name, _reader.Value);
+
+                            _reader.MoveToElement();
+                        }
+
+                        if (_reader.Name == "stream:stream")
+                            await OnStreamStart.InvokeAsync((Protocol.Base.Stream)element);
+                        else
+                        {
+                            if (_reader.IsEmptyElement)
+                            {
+                                if (_currentElement != null)
+                                    _currentElement.AddChild(element);
+                                else
+                                    await OnStreamElement.InvokeAsync(element);
+                            }
+                            else
+                            {
+                                _currentElement?.AddChild(element);
+                                _currentElement = element;
+                            }
+                        }
+                    }
                     break;
 
                 case XmlNodeType.EndElement:
-                    await OnEndElement().ConfigureAwait(true);
+                    {
+                        if (_reader.Name == "stream:stream")
+                            await OnStreamEnd.InvokeAsync();
+                        else
+                        {
+                            var parent = _currentElement.Parent;
+
+                            if (parent == null)
+                                await OnStreamElement.InvokeAsync(_currentElement);
+
+                            _currentElement = parent;
+                        }
+                    }
                     break;
 
                 case XmlNodeType.SignificantWhitespace:
                 case XmlNodeType.Text:
-                    await OnText().ConfigureAwait(true);
+                    {
+                        if (_currentElement != null)
+                            _currentElement.Value += _reader.Value;
+                    }
                     break;
 
                 default:
@@ -118,100 +156,4 @@ public class Parser : IDisposable
 
         return false;
     }
-
-    protected Task FireStreamStart(Element e)
-        => OnStreamStart.InvokeAsync(e);
-
-    protected Task FireStreamElement(Element e)
-        => OnStreamElement.InvokeAsync(e);
-
-    protected Task FireStreamEnd()
-        => OnStreamEnd.InvokeAsync();
-
-    protected bool HasAttributes()
-        => _reader.HasAttributes;
-
-    protected bool GetNextAttribute(out (string LocalName, string Prefix) name, out string value)
-    {
-        name = default;
-        value = default;
-
-        if (_reader.MoveToNextAttribute())
-        {
-            name = (_reader.LocalName, _reader.Prefix);
-            value = _reader.Value;
-        }
-
-        return false;
-    }
-
-    protected bool MoveToElement()
-        => _reader.MoveToElement();
-
-    protected bool IsEmptyElement()
-        => _reader.IsEmptyElement;
-
-    protected virtual async Task OnStartElement()
-    {
-        await Task.Yield();
-
-        var element = ElementFactory.Create(LocalName, Prefix, NamespaceURI);
-
-        if (HasAttributes())
-        {
-            while (GetNextAttribute(out var key, out var value))
-            {
-                if (!string.IsNullOrWhiteSpace(key.Prefix))
-                    element.SetAttribute($"{key.Prefix}:{key.LocalName}", value);
-                else
-                    element.SetAttribute(key.LocalName, value);
-            }
-
-            MoveToElement();
-        }
-
-        if (Name == "stream:stream")
-            await FireStreamStart(element);
-        else
-        {
-            if (IsEmptyElement())
-            {
-                if (_currentElement != null)
-                    _currentElement.AddChild(element);
-                else
-                    await FireStreamElement(element);
-            }
-            else
-            {
-                _currentElement?.AddChild(element);
-                _currentElement = element;
-            }
-        }
-    }
-
-    protected virtual async Task OnEndElement()
-    {
-        if (Name == "stream:stream")
-            await FireStreamEnd();
-        else
-        {
-            var parent = _currentElement.Parent;
-
-            if (parent == null)
-                await FireStreamElement(_currentElement);
-
-            _currentElement = parent;
-        }
-    }
-
-    protected virtual async Task OnText()
-    {
-        await Task.Yield();
-
-        if (_currentElement != null)
-            _currentElement.Value += _reader.Value;
-    }
-
-    protected string LookupNamespace(string? prefix = default)
-        => _reader?.LookupNamespace(prefix ?? string.Empty);
 }

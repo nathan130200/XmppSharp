@@ -7,7 +7,7 @@ namespace XmppSharp.Protocol.StreamFeatures;
 [XmppTag("mechanisms", Namespace.Sasl)]
 public class Mechanisms : Element
 {
-    public Mechanisms() : base("mechanism", Namespace.Sasl)
+    public Mechanisms() : base("mechanisms", Namespace.Sasl)
     {
 
     }

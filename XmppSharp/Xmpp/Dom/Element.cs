@@ -1,11 +1,12 @@
 ﻿using System.Diagnostics;
-using System.Reflection;
 using System.Text;
 using System.Web;
 using System.Xml;
+using XmppSharp.Factory;
 
 namespace XmppSharp.Xmpp.Dom;
 
+[DebuggerDisplay("{StartTag(),nq}")]
 public class Element : ICloneable
 {
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -26,11 +27,18 @@ public class Element : ICloneable
         _attributes = new();
     }
 
-    static readonly ConstructorInfo s_DefaultConstructor = typeof(Element)
-        .GetConstructor(BindingFlags.CreateInstance | BindingFlags.NonPublic, new[] { typeof(Element) });
-
     public Element Clone()
-        => s_DefaultConstructor.Invoke(new object[] { this }) as Element;
+    {
+        var result = ElementFactory.Create(_localName, _prefix, GetNamespace(_prefix));
+
+        foreach (var (key, value) in Attributes)
+            result.SetAttribute(key, value);
+
+        foreach (var child in Children())
+            result.AddChild(child.Clone());
+
+        return result;
+    }
 
     object ICloneable.Clone()
         => Clone();
@@ -299,11 +307,11 @@ public class Element : ICloneable
         {
             lock (_children)
             {
-                if (string.IsNullOrEmpty(_value) || _children.Count == 0)
-                    return false;
+                if (string.IsNullOrEmpty(_value) && _children.Count == 0)
+                    return true;
             }
 
-            return true;
+            return false;
         }
     }
 
@@ -354,7 +362,7 @@ public class Element : ICloneable
     }
 
     public override string ToString()
-        => StartTag();
+        => ToString(false);
 
     public string StartTag()
     {

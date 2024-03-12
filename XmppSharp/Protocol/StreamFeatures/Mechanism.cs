@@ -12,10 +12,10 @@ public class Mechanism : Element
 
     }
 
-    public Mechanism(MechanismType type)
+    public Mechanism(MechanismType type) : this()
         => MechanismType = type;
 
-    public Mechanism(string name)
+    public Mechanism(string name) : this()
         => MechanismName = name;
 
     public MechanismType MechanismType

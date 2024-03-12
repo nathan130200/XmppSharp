@@ -11,7 +11,7 @@ public class Failure : Element
 
     }
 
-    public Failure(FailureCondition? condition, string? message = default)
+    public Failure(FailureCondition? condition, string? message = default) : this()
     {
         Condition = condition;
         Message = message;
