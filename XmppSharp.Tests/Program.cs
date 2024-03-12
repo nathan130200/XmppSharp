@@ -2,10 +2,13 @@
 using System.Net.Sockets;
 using XmppSharp;
 using XmppSharp.Protocol;
+using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Sasl;
 using XmppSharp.Protocol.StreamFeatures;
 using XmppSharp.Xmpp;
 using XmppSharp.Xmpp.Dom;
+
+var syncLock = new object();
 
 using var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
 socket.Bind(new IPEndPoint(IPAddress.Any, 5222));
@@ -24,7 +27,7 @@ while (true)
             {
                 await semaphore.WaitAsync();
                 await stream.WriteAsync(e.ToString().GetBytes());
-                Console.WriteLine("{0}|send >>\n{1}\n", e.GetType().FullName, e.ToString(true));
+                OnXml(true, e);
             }
             finally
             {
@@ -38,7 +41,7 @@ while (true)
             {
                 await semaphore.WaitAsync();
                 await stream.WriteAsync(xml.GetBytes());
-                Console.WriteLine("send >>\n{0}\n", xml);
+                OnXml(true, xml);
             }
             finally
             {
@@ -55,7 +58,7 @@ while (true)
 
             parser.OnStreamStart += async e =>
             {
-                Console.WriteLine("recv <<\n{0}\n", e.StartTag());
+                OnXml(false, e.StartTag());
 
                 if (!isAuthenticated)
                 {
@@ -92,7 +95,7 @@ while (true)
 
             parser.OnStreamElement += async e =>
             {
-                Console.WriteLine("{0}|recv <<\n{1}\n", e.GetType().FullName, e.ToString(true));
+                OnXml(false, e);
 
                 if (!isAuthenticated)
                 {
@@ -134,13 +137,25 @@ while (true)
                             iq.Type = IqType.Result;
                             await SendXml(iq);
                         }
+                        else
+                        {
+                            iq.SwitchDirection();
+                            iq.Type = IqType.Error;
+                            iq.Error = new Error
+                            {
+                                Type = ErrorType.Cancel,
+                                Condition = ErrorCondition.RecipientUnavailable
+                            };
+
+                            await SendXml(iq);
+                        }
                     }
                 }
             };
 
             parser.OnStreamEnd += () =>
             {
-                Console.WriteLine("recv <<\n{0}\n", Xml.JabberEndTag);
+                OnXml(false, Xml.JabberEndTag);
                 parser.Dispose();
                 return Task.CompletedTask;
             };
@@ -151,4 +166,39 @@ while (true)
     }
 
     await Task.Delay(0);
+}
+
+void OnXml<T>(bool isSend, T value)
+{
+    lock (syncLock)
+    {
+        string xml = value is Element e
+            ? e.ToString(true)
+            : value.ToString();
+
+        var type = value.GetType();
+
+        if (value is string)
+            type = typeof(Element);
+        {
+
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.Write('[');
+
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write(type.FullName);
+
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.Write("] ");
+        }
+
+        Console.ForegroundColor = isSend ? ConsoleColor.Red : ConsoleColor.Green;
+        Console.Write(isSend ? "send" : "recv");
+
+        Console.ForegroundColor = ConsoleColor.Gray;
+        Console.Write((isSend ? " >>" : " <<") + ":\n");
+
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine($"{xml}\n");
+    }
 }

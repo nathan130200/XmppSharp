@@ -37,7 +37,7 @@ public class Error : Element
                 RemoveTag(XmppEnum.ToXml(oldValue));
 
             if (value.TryGetValue(out var newValue))
-                SetTag(XmppEnum.ToXml(newValue));
+                SetTag(XmppEnum.ToXml(newValue), xmlns: Namespace.Stanzas);
         }
     }
 }

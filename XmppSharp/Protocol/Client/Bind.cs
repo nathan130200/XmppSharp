@@ -36,10 +36,10 @@ public class Bind : Element
         }
         set
         {
-            if (!value.TryGetValue(out var result))
+            if (value == null)
                 RemoveTag("jid");
             else
-                SetTag("jid", result.ToString());
+                SetTag("jid", value.ToString());
         }
     }
 }

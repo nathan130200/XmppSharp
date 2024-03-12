@@ -45,13 +45,16 @@ public record class Jid
         return result;
     }
 
-    static readonly char[] SearchChars = { '@', '/' };
+    private static readonly char[] JidSearchChars = { '@', '/' };
 
     public static bool TryParse(string input, out Jid result)
     {
         result = default;
 
-        if (input.IndexOfAny(SearchChars) == -1)
+        if (string.IsNullOrWhiteSpace(input))
+            return false;
+
+        if (input.IndexOfAny(JidSearchChars) == -1)
         {
             result = new Jid { Domain = input };
             return true;
@@ -61,12 +64,12 @@ public record class Jid
             string local = default, resource = default,
                 domain;
 
-            var at = input.IndexOf('@');
+            var at = input.IndexOf(JidSearchChars[0]);
 
             if (at != -1)
                 local = input[0..at];
 
-            var slash = input.IndexOf('/');
+            var slash = input.IndexOf(JidSearchChars[1]);
 
             if (slash == -1)
                 domain = input[(at + 1)..];
@@ -97,12 +100,20 @@ public record class Jid
         if (_local != null)
             sb.Append(_local).Append('@');
 
-        sb.Append(_domain);
+        if (_domain != null)
+            sb.Append(_domain);
 
         if (_resource != null)
             sb.Append('/').Append(_resource);
 
-
         return sb.ToString();
     }
+
+    public bool IsBare
+        => _resource is null;
+
+    public Jid Bare => this with
+    {
+        Resource = null
+    };
 }
