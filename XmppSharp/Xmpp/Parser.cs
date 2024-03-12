@@ -131,7 +131,7 @@ public class Parser : IDisposable
     protected bool HasAttributes()
         => _reader.HasAttributes;
 
-    protected bool GetNextAttribute(out (string localName, string prefix) name, out string value)
+    protected bool GetNextAttribute(out (string LocalName, string Prefix) name, out string value)
     {
         name = default;
         value = default;
@@ -159,12 +159,12 @@ public class Parser : IDisposable
 
         if (HasAttributes())
         {
-            while (GetNextAttribute(out var entry, out var value))
+            while (GetNextAttribute(out var key, out var value))
             {
-                if (!string.IsNullOrWhiteSpace(entry.prefix))
-                    element.SetAttribute($"{entry.prefix}:{entry.localName}", value);
+                if (!string.IsNullOrWhiteSpace(key.Prefix))
+                    element.SetAttribute($"{key.Prefix}:{key.LocalName}", value);
                 else
-                    element.SetAttribute(entry.localName, value);
+                    element.SetAttribute(key.LocalName, value);
             }
 
             MoveToElement();
