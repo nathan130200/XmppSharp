@@ -7,6 +7,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XmppSharp", "XmppSharp\Xmpp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XmppSharp.Tests", "XmppSharp.Tests\XmppSharp.Tests.csproj", "{0ACCFAB7-001D-44EC-AE99-DB1574A959A6}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AD44FA4E-7106-4BFD-BA8B-9F0A8BE4669A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{C3639C68-0EDF-4AE1-86F5-23D540451C79}"
+	ProjectSection(SolutionItems) = preProject
+		Scripts\generate_enums.py = Scripts\generate_enums.py
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,6 +31,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9524D04E-04EA-4BE2-866D-36513B852BB5} = {AD44FA4E-7106-4BFD-BA8B-9F0A8BE4669A}
+		{0ACCFAB7-001D-44EC-AE99-DB1574A959A6} = {AD44FA4E-7106-4BFD-BA8B-9F0A8BE4669A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FF796FE1-8AC0-485A-90DB-02FCDA04B143}
