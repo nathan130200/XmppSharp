@@ -20,7 +20,7 @@ public class StreamError : Element
         {
             foreach (var (name, value) in XmppEnum.GetValues<StreamErrorCondition>())
             {
-                if (HasTag(name))
+                if (HasTag(name, Namespace.Streams))
                     return value;
             }
 
@@ -28,10 +28,10 @@ public class StreamError : Element
         }
         set
         {
-            Children().Where(x => x.TagName != "text")
-                .Remove();
+            foreach (var tag in XmppEnum.GetNames<StreamErrorCondition>())
+                RemoveTag(tag, Namespace.Stanzas);
 
-            SetTag(XmppEnum.ToXml(value));
+            SetTag(XmppEnum.ToXml(value), xmlns: Namespace.Streams);
         }
     }
 
@@ -43,7 +43,7 @@ public class StreamError : Element
             if (value == null)
                 RemoveTag("text");
             else
-                SetTag("text", value);
+                SetTag("text", Namespace.Streams, value);
         }
     }
 }
