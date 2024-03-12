@@ -22,8 +22,8 @@ public readonly struct Jid
         {
             value = value.ToLowerInvariant();
 
-            if (Uri.CheckHostName(value) != UriHostNameType.Dns)
-                throw new ArgumentException("Invalid hostname.", nameof(value));
+            if (Uri.CheckHostName(value) == UriHostNameType.Unknown)
+                throw new ArgumentException("Invalid domain.", nameof(value));
 
             _domain = value;
         }
