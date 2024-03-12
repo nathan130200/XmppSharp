@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XmppSharp", "XmppSharp\XmppSharp.csproj", "{9524D04E-04EA-4BE2-866D-36513B852BB5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XmppSharp.Server", "XmppSharp.Server\XmppSharp.Server.csproj", "{0ACCFAB7-001D-44EC-AE99-DB1574A959A6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XmppSharp.Tests", "XmppSharp.Tests\XmppSharp.Tests.csproj", "{0ACCFAB7-001D-44EC-AE99-DB1574A959A6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,5 +24,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FF796FE1-8AC0-485A-90DB-02FCDA04B143}
 	EndGlobalSection
 EndGlobal
