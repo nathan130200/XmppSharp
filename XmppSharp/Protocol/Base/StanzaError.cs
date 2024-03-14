@@ -6,24 +6,24 @@ namespace XmppSharp.Protocol.Base;
 [XmppTag("error", Namespace.Client)]
 [XmppTag("error", Namespace.Accept)]
 [XmppTag("error", Namespace.Server)]
-public class Error : Element
+public class StanzaError : Element
 {
-    public Error() : base("error")
+    public StanzaError() : base("error")
     {
 
     }
 
-    public ErrorType? Type
+    public StanzaErrorType? Type
     {
-        get => XmppEnum.FromXml<ErrorType>(GetAttribute("type"));
+        get => XmppEnum.FromXml<StanzaErrorType>(GetAttribute("type"));
         set => SetAttribute("type", value.TryGetValue(out var newValue) ? XmppEnum.ToXml(newValue) : null);
     }
 
-    public ErrorCondition? Condition
+    public StanzaErrorCondition? Condition
     {
         get
         {
-            foreach (var (name, value) in XmppEnum.GetValues<ErrorCondition>())
+            foreach (var (name, value) in XmppEnum.GetValues<StanzaErrorCondition>())
             {
                 if (HasTag(name))
                     return value;

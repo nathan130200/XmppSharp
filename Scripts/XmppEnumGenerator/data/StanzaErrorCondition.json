@@ -1,0 +1,28 @@
+{
+    "name": "StanzaErrorCondition",
+    "namespace": "XmppSharp.Protocol.Base",
+    "values": [
+        "bad-request",
+        "conflict",
+        "feature-not-implemented",
+        "forbidden",
+        "gone",
+        "internal-server-error",
+        "item-not-found",
+        "jid-malformed",
+        "not-acceptable",
+        "not-allowed",
+        "not-authorized",
+        "policy-violation",
+        "recipient-unavailable",
+        "redirect",
+        "registration-required",
+        "remote-server-not-found",
+        "remote-server-timeout",
+        "resource-constraint",
+        "service-unavailable",
+        "subscription-required",
+        "undefined-condition",
+        "unexpected-request"
+    ]
+}

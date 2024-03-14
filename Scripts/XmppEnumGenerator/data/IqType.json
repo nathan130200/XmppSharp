@@ -1,0 +1,10 @@
+{
+    "name": "IqType",
+    "namespace": "XmppSharp.Protocol",
+    "values": [
+        "error",
+        "set",
+        "get",
+        "result"
+    ]
+}

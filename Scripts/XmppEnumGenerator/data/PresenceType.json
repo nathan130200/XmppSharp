@@ -1,0 +1,16 @@
+{
+    "name": "PresenceType",
+    "namespace": "XmppSharp.Protocol",
+    "values": [
+        "error",
+        {
+            "memberName": "Available"
+        },
+        "unavailable",
+        "probe",
+        "subscribe",
+        "subscribed",
+        "unsubscribe",
+        "unsubscribed"
+    ]
+}

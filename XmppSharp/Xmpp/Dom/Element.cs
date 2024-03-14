@@ -247,7 +247,14 @@ public class Element : ICloneable
 
     public void ReplaceChild<T>(T newElement) where T : Element
     {
-        Child(x => DefaultElementFilterImpl(x, newElement.TagName, newElement.GetNamespace()))?.Remove();
+        foreach (var entry in ElementFactory.OfType<T>())
+        {
+            Child(x =>
+            {
+                return x.LocalName == entry.LocalName
+                    && (entry.Namespace == null || entry.Namespace == x.DefaultNamespace);
+            })?.Remove();
+        }
 
         if (newElement != null)
             AddChild(newElement);

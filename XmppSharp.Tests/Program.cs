@@ -141,10 +141,10 @@ while (true)
                         {
                             iq.SwitchDirection();
                             iq.Type = IqType.Error;
-                            iq.Error = new Error
+                            iq.Error = new StanzaError
                             {
-                                Type = ErrorType.Cancel,
-                                Condition = ErrorCondition.RecipientUnavailable
+                                Type = StanzaErrorType.Cancel,
+                                Condition = StanzaErrorCondition.RecipientUnavailable
                             };
 
                             await SendXml(iq);

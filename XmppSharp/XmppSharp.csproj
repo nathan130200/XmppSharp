@@ -17,16 +17,20 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.1.0</Version>
+		<Version>1.2.0</Version>
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Include="..\Scripts\generate_enums.g.cs">
+		<Compile Include="..\Scripts\XmppEnumGenerator\dist\*">
 			<AutoGen>true</AutoGen>
-			<Link>XmppEnum.Generated.cs</Link>
+			<LinkBase>_Generated\$(ProjectItem)</LinkBase>
 		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="_Generated\" />
 	</ItemGroup>
 
 </Project>

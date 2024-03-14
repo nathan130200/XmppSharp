@@ -5,27 +5,32 @@ using XmppSharp.Xmpp.Dom;
 
 namespace XmppSharp;
 
+public readonly record struct ParsedXmlQName(
+    bool HasPrefix,
+    string LocalName,
+    string? Prefix = default);
+
 public static class Xml
 {
     public const string JabberEndTag = "</stream:stream>";
 
-    public static (bool HasPrefix, string LocalName, string Prefix) ExtractQName(string input)
+    public static ParsedXmlQName ExtractQName(string input)
     {
         ArgumentException.ThrowIfNullOrEmpty(input);
 
         var ofs = input.IndexOf(':');
 
         if (ofs == -1)
-            return (false, input, null);
+            return new(false, input, null);
         else
         {
             var prefix = input[0..ofs];
             var localName = input[(ofs + 1)..];
 
             if (string.IsNullOrWhiteSpace(localName))
-                return (false, input, null);
+                return new(false, input, null);
 
-            return (true, localName, prefix);
+            return new(true, localName, prefix);
         }
     }
 

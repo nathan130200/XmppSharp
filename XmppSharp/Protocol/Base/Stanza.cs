@@ -42,9 +42,9 @@ public class Stanza : DirectionalElement
         Id = Convert.ToHexString(buffer).ToLowerInvariant();
     }
 
-    public Error Error
+    public StanzaError Error
     {
-        get => Child<Error>();
+        get => Child<StanzaError>();
         set => ReplaceChild(value);
     }
 }

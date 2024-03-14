@@ -1,0 +1,11 @@
+{
+    "name": "StanzaErrorType",
+    "namespace": "XmppSharp.Protocol.Base",
+    "values": [
+        "auth",
+        "cancel",
+        "continue",
+        "modify",
+        "wait"
+    ]
+}
