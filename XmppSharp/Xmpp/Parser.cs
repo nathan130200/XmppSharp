@@ -25,7 +25,7 @@ public class Parser : IDisposable
         _bufferSize = bufferSize <= 0 ? DefaultBufferSize : bufferSize;
     }
 
-    public event AsyncAction<Protocol.Base.Stream> OnStreamStart;
+    public event AsyncAction<Element> OnStreamStart;
     public event AsyncAction<Element> OnStreamElement;
     public event AsyncAction OnStreamEnd;
 
@@ -43,7 +43,7 @@ public class Parser : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    protected XmlReaderSettings CreateReaderSettings() => new()
+    static XmlReaderSettings CreateReaderSettings(NameTable nameTable) => new()
     {
         CloseInput = true,
         Async = true,
@@ -54,7 +54,7 @@ public class Parser : IDisposable
         DtdProcessing = DtdProcessing.Prohibit,
         XmlResolver = XmlResolver.ThrowingResolver,
         ValidationFlags = System.Xml.Schema.XmlSchemaValidationFlags.AllowXmlAttributes,
-        NameTable = _nameTable
+        NameTable = nameTable
     };
 
     public void Reset(Stream stream)
@@ -66,7 +66,7 @@ public class Parser : IDisposable
             throw new ObjectDisposedException(GetType().FullName);
 
         _charStream = new StreamReader(stream, _encoding, false, _bufferSize, true);
-        _reader = XmlReader.Create(_charStream, CreateReaderSettings());
+        _reader = XmlReader.Create(_charStream, CreateReaderSettings(_nameTable));
     }
 
     private Element _currentElement;
@@ -104,7 +104,7 @@ public class Parser : IDisposable
                         }
 
                         if (_reader.Name == "stream:stream")
-                            await OnStreamStart.InvokeAsync((Protocol.Base.Stream)element);
+                            await OnStreamStart.InvokeAsync(element);
                         else
                         {
                             if (_reader.IsEmptyElement)

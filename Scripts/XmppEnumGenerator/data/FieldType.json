@@ -1,0 +1,16 @@
+{
+  "name": "FieldType",
+  "namespace": "XmppSharp.Protocol.DataForms",
+  "values": [
+    "boolean",
+    "fixed",
+    "hidden",
+    "jid-multi",
+    "jid-single",
+    "list-multi",
+    "list-single",
+    "text-multi",
+    "text-private",
+    "text-single"
+  ]
+}

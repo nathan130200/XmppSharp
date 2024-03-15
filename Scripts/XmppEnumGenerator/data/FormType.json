@@ -1,0 +1,10 @@
+{
+  "name": "FormType",
+  "namespace": "XmppSharp.Protocol.DataForms",
+  "values": [
+    "form",
+    "cancel",
+    "submit",
+    "result"
+  ]
+}

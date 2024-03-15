@@ -30,6 +30,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Folder Include="Net\" />
 	  <Folder Include="_Generated\" />
 	</ItemGroup>
 

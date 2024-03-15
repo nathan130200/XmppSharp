@@ -242,7 +242,13 @@ public class Element : ICloneable
             return _children.ToArray();
     }
 
-    public T Child<T>() where T : Element
+    public IEnumerable<T> Children<T>() where T : Element
+        => Children().OfType<T>();
+
+    public IEnumerable<Element> Children(Func<Element, bool> predicate)
+        => Children().Where(predicate);
+
+    public T? Child<T>() where T : Element
         => Children().OfType<T>().FirstOrDefault();
 
     public void ReplaceChild<T>(T newElement) where T : Element
@@ -344,6 +350,11 @@ public class Element : ICloneable
 
     public Element GetChild(string name, string xmlns = default)
         => Child(x => DefaultElementFilterImpl(x, name, xmlns));
+
+    // ------------------------------------------------------------------------------------
+
+    public string GetElementContent() => Value;
+    public void SetElementContent(string s) => Value = s;
 
     // ------------------------------------------------------------------------------------
 

@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Text;
 using XmppSharp.Xmpp.Dom;
 
 namespace XmppSharp;
@@ -48,5 +50,49 @@ public static class Utilities
         }
 
         return enumerable;
+    }
+
+    public static Element GetAttr<T>(this Element e, string name, out T result, IFormatProvider provider = default)
+        where T : IParsable<T>
+    {
+        result = default;
+
+        if (e.HasAttribute(name))
+            T.TryParse(e.GetAttribute(name), provider ?? CultureInfo.InvariantCulture, out result);
+
+        return e;
+    }
+
+    public static T GetAttr<T>(this Element e, string name, T defaultValue = default, IFormatProvider provider = default) where T : IParsable<T>
+    {
+        Unsafe.SkipInit(out T result);
+
+        if (e.HasAttribute(name))
+            if (!T.TryParse(e.GetAttribute(name), provider ?? CultureInfo.InvariantCulture, out result))
+                result = defaultValue;
+
+        return result;
+    }
+
+    public static Element SetAttr<T>(this Element e, string name, T rawValue, string format = default, IFormatProvider provider = default)
+    {
+        provider ??= CultureInfo.InvariantCulture;
+
+        string value;
+
+        if (rawValue is null)
+            value = string.Empty;
+        else if (rawValue is string s)
+            value = s;
+        else if (rawValue is IFormattable fmt)
+            value = fmt.ToString(format, provider);
+        else if (rawValue is IConvertible conv)
+            value = conv.ToString(provider);
+        else
+            value = rawValue.ToString();
+
+        e.SetAttribute(name, value);
+
+        return e;
     }
 }

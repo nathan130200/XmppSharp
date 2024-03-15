@@ -56,8 +56,10 @@ while (true)
         {
             parser.Reset(stream);
 
-            parser.OnStreamStart += async e =>
+            parser.OnStreamStart += async n =>
             {
+                var e = n as XmppSharp.Protocol.Base.Stream;
+
                 OnXml(false, e.StartTag());
 
                 if (!isAuthenticated)

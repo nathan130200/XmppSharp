@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Xml;
+using XmppSharp.Abstractions;
 using XmppSharp.Xmpp;
 using XmppSharp.Xmpp.Dom;
 
@@ -96,33 +97,38 @@ public static class Xml
 
     internal static void WriteXmlTree(Element element, XmlWriter writer)
     {
-        writer.WriteStartElement(element.Prefix, element.LocalName, element.GetNamespace(element.Prefix));
-
-        foreach (var (name, value) in element.Attributes)
+        if (element is IXmlSerializer self)
+            self.Serialize(writer);
+        else
         {
-            var result = ExtractQName(name);
+            writer.WriteStartElement(element.Prefix, element.LocalName, element.GetNamespace(element.Prefix));
 
-            if (!result.HasPrefix)
-                writer.WriteAttributeString(result.LocalName, value);
-            else
+            foreach (var (name, value) in element.Attributes)
             {
-                var ns = result.Prefix switch
+                var result = ExtractQName(name);
+
+                if (!result.HasPrefix)
+                    writer.WriteAttributeString(result.LocalName, value);
+                else
                 {
-                    "xml" => Namespace.Xml,
-                    "xmlns" => Namespace.Xmlns,
-                    _ => element.GetNamespace(result.Prefix)
-                };
+                    var ns = result.Prefix switch
+                    {
+                        "xml" => Namespace.Xml,
+                        "xmlns" => Namespace.Xmlns,
+                        _ => element.GetNamespace(result.Prefix)
+                    };
 
-                writer.WriteAttributeString(result.LocalName, ns, value);
+                    writer.WriteAttributeString(result.LocalName, ns, value);
+                }
             }
+
+            if (element.Value != null)
+                writer.WriteString(element.Value);
+
+            foreach (var child in element.Children())
+                WriteXmlTree(child, writer);
+
+            writer.WriteEndElement();
         }
-
-        if (element.Value != null)
-            writer.WriteString(element.Value);
-
-        foreach (var child in element.Children())
-            WriteXmlTree(child, writer);
-
-        writer.WriteEndElement();
     }
 }
