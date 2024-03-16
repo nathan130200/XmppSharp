@@ -75,7 +75,7 @@ public record class Jid
                 domain = input[(at + 1)..];
             else
             {
-                domain = input[at..slash];
+                domain = input[(at + 1)..slash];
                 resource = input[(slash + 1)..];
             }
 
