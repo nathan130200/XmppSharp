@@ -35,6 +35,15 @@ public static class Xml
         }
     }
 
+    static class SingletonElement<T>
+        where T : Element, new()
+    {
+        public static T Instance => new();
+    }
+
+    public static TElement CreateElement<TElement>() where TElement : Element, new()
+        => SingletonElement<TElement>.Instance;
+
     internal static (StringBuilder Output, XmlWriter Writer) CreateXmlWriter(bool indent)
     {
         var output = new StringBuilder();
