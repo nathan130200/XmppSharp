@@ -21,6 +21,11 @@
 		<DebugSymbols>true</DebugSymbols>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<Copyright>nathan130200</Copyright>
+		<PackageReadmeFile>CHANGELOG.md</PackageReadmeFile>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -33,6 +38,17 @@
 	<ItemGroup>
 		<Folder Include="Net\" />
 		<Folder Include="_Generated\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="..\CHANGELOG.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\LICENSE">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
 	</ItemGroup>
 
 </Project>
