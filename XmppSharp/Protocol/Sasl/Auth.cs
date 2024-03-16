@@ -11,6 +11,12 @@ public sealed class Auth : Element
 
     }
 
+    public Auth(MechanismType type) : this()
+        => MechanismType = type;
+
+    public Auth(string name) : this()
+        => MechanismName = name;
+
     public MechanismType MechanismType
     {
         get => XmppEnum.FromXml(MechanismName, MechanismType.Unspecified);

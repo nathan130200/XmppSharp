@@ -60,7 +60,7 @@ while (true)
 
                 parser.OnStreamStart += async n =>
                 {
-                    var e = n as XmppSharp.Protocol.Base.Stream;
+                    var e = n as XmppSharp.Protocol.Base.StreamStream;
 
                     OnXml(false, e.StartTag());
 

@@ -14,7 +14,7 @@ public class Message : Stanza
 
     }
 
-    public Message(MessageType type)
+    public Message(MessageType type) : this()
         => Type = type;
 
     public new MessageType Type

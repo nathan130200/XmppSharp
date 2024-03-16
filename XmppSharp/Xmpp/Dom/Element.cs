@@ -25,7 +25,7 @@ public class Element : ICloneable
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private string _localName, _prefix, _value;
 
-    protected Element()
+    Element()
     {
         _children = new();
         _attributes = new();

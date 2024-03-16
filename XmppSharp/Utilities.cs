@@ -95,4 +95,72 @@ public static class Utilities
 
         return e;
     }
+
+    public static Element C(this Element e, string name, string xmlns = default, string value = default)
+    {
+        var child = new Element(name, xmlns, value);
+        e.AddChild(child);
+        return child;
+    }
+
+    public static Element Up(this Element e)
+        => e.Parent;
+
+    public static Element Root(this Element e)
+    {
+        while (!e.IsRootElement)
+            e = e.Parent;
+
+        return e;
+    }
+
+    public static Element Attr(this Element e, string name, object rawValue = default, string format = default, IFormatProvider provider = default)
+    {
+        provider ??= CultureInfo.InvariantCulture;
+        e.SetAttribute(name, ToStringValue(rawValue, format, provider));
+        return e;
+    }
+
+    static string ToStringValue(object rawValue, string format, IFormatProvider provider)
+    {
+        string value;
+
+        if (rawValue is null)
+            value = string.Empty;
+        else if (rawValue is string s)
+            value = s;
+        else if (rawValue is IFormattable fmt)
+            value = fmt.ToString(format, provider);
+        else if (rawValue is IConvertible conv)
+            value = conv.ToString(provider);
+        else
+            value = rawValue.ToString();
+
+        return value;
+    }
+
+    public static Element Attrs(this Element e, params ITuple[] entries)
+    {
+        if (entries?.Any() == true)
+        {
+            foreach (var entry in entries)
+            {
+                var attrName = (string)entry[0];
+                var rawValue = entry[1];
+
+                string format = default;
+                IFormatProvider provider = null;
+
+                if (entry.Length > 2)
+                    format = entry[2] as string;
+
+                if (entry.Length > 3)
+                    provider = entry[3] as IFormatProvider;
+
+                e.SetAttr(attrName, ToStringValue(rawValue, format, provider));
+            }
+        }
+
+        return e;
+    }
 }

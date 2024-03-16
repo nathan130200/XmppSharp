@@ -11,6 +11,12 @@ public class Bind : Element
 
     }
 
+    public Bind(string resource) : this()
+        => Resource = resource;
+
+    public Bind(Jid jid) : this()
+        => Jid = jid;
+
     public string Resource
     {
         get => GetTag("resource");

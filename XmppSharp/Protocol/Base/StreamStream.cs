@@ -3,9 +3,9 @@
 namespace XmppSharp.Protocol.Base;
 
 [XmppTag("stream", Namespace.Stream)]
-public class Stream : DirectionalElement
+public class StreamStream : DirectionalElement
 {
-    public Stream() : base("stream:stream", Namespace.Stream)
+    public StreamStream() : base("stream:stream", Namespace.Stream)
     {
 
     }

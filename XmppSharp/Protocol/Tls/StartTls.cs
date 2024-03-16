@@ -11,7 +11,7 @@ public class StartTls : Element
 
     }
 
-    public StartTls(TlsPolicy policy)
+    public StartTls(TlsPolicy policy) : this()
         => Policy = policy;
 
     public TlsPolicy? Policy

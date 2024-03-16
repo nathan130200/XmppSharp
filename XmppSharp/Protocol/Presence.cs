@@ -14,6 +14,9 @@ public class Presence : Stanza
 
     }
 
+    public Presence(PresenceType type) : this()
+        => Type = type;
+
     public new PresenceType Type
     {
         get => XmppEnum.FromXml(base.Type, PresenceType.Available);

@@ -11,8 +11,11 @@ public class StreamError : Element
 
     }
 
-    public StreamError(StreamErrorCondition condition) : this()
-        => Condition = condition;
+    public StreamError(StreamErrorCondition condition, string? text = default) : this()
+    {
+        Condition = condition;
+        Text = text;
+    }
 
     public StreamErrorCondition Condition
     {

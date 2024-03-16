@@ -9,10 +9,6 @@ public class Stanza : DirectionalElement
     {
     }
 
-    protected Stanza()
-    {
-    }
-
     protected Stanza(Element other) : base(other)
     {
     }

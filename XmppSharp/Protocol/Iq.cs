@@ -16,7 +16,7 @@ public class Iq : Stanza
 
     }
 
-    public Iq(IqType type)
+    public Iq(IqType type) : this()
         => Type = type;
 
     public new IqType? Type

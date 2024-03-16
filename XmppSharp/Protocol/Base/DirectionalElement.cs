@@ -8,10 +8,6 @@ public class DirectionalElement : Element
     {
     }
 
-    protected DirectionalElement()
-    {
-    }
-
     protected DirectionalElement(Element other) : base(other)
     {
     }
