@@ -19,7 +19,8 @@
 	<PropertyGroup>
 		<Version>1.3.0</Version>
 		<DebugSymbols>true</DebugSymbols>
-		<DebugType>embedded</DebugType>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -30,8 +31,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Net\" />
-	  <Folder Include="_Generated\" />
+		<Folder Include="Net\" />
+		<Folder Include="_Generated\" />
 	</ItemGroup>
 
 </Project>
