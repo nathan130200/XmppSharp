@@ -47,7 +47,7 @@ public class Element : ICloneable
     object ICloneable.Clone()
         => Clone();
 
-    public Element FirstChild
+    public Element? FirstChild
     {
         get
         {
@@ -56,7 +56,7 @@ public class Element : ICloneable
         }
     }
 
-    public Element LastChild
+    public Element? LastChild
     {
         get
         {
@@ -86,7 +86,7 @@ public class Element : ICloneable
         _value = other._value;
     }
 
-    public Element(string name, string xmlns = default, string text = default) : this()
+    public Element(string name, string? xmlns = default, string? text = default) : this()
     {
         var result = Xml.ExtractQName(name);
 
@@ -115,7 +115,7 @@ public class Element : ICloneable
         }
     }
 
-    public string Prefix
+    public string? Prefix
     {
         get => _prefix;
         set
@@ -125,7 +125,7 @@ public class Element : ICloneable
         }
     }
 
-    public string Value
+    public string? Value
     {
         get => _value;
         set => _value = value;

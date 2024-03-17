@@ -43,7 +43,7 @@ public class Jid
     public Jid(string domain)
         => Domain = domain;
 
-    public Jid(string local, string domain, string resource)
+    public Jid(string? local, string domain, string? resource)
         => (Local, Domain, Resource) = (local, domain, resource);
 
     public static Jid Parse(string input)

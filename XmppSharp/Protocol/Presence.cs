@@ -9,7 +9,7 @@ namespace XmppSharp.Protocol;
 [XmppTag("presence", Namespace.Connect)]
 public class Presence : Stanza
 {
-    public Presence() : base("presence")
+    public Presence() : base("presence", Namespace.Client)
     {
 
     }

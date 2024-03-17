@@ -32,7 +32,7 @@ public class StreamError : Element
         set
         {
             foreach (var tag in XmppEnum.GetNames<StreamErrorCondition>())
-                RemoveTag(tag, Namespace.Stanzas);
+                RemoveTag(tag, Namespace.Streams);
 
             SetTag(XmppEnum.ToXml(value), xmlns: Namespace.Streams);
         }

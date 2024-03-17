@@ -9,7 +9,7 @@ namespace XmppSharp.Protocol;
 [XmppTag("message", Namespace.Connect)]
 public class Message : Stanza
 {
-    public Message() : base("message")
+    public Message() : base("message", Namespace.Client)
     {
 
     }

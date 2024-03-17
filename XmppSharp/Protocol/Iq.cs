@@ -11,7 +11,7 @@ namespace XmppSharp.Protocol;
 [XmppTag("iq", Namespace.Connect)]
 public class Iq : Stanza
 {
-    public Iq() : base("iq")
+    public Iq() : base("iq", Namespace.Client)
     {
 
     }

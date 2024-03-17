@@ -13,13 +13,13 @@ public class StanzaError : Element
 
     }
 
-    public StanzaErrorType? Type
+    public StanzaErrorType Type
     {
-        get => XmppEnum.FromXml<StanzaErrorType>(GetAttribute("type"));
-        set => SetAttribute("type", value.TryGetValue(out var newValue) ? XmppEnum.ToXml(newValue) : null);
+        get => XmppEnum.FromXml(GetAttribute("type"), StanzaErrorType.Cancel);
+        set => SetAttribute("type", XmppEnum.ToXml(value));
     }
 
-    public StanzaErrorCondition? Condition
+    public StanzaErrorCondition Condition
     {
         get
         {
@@ -29,15 +29,26 @@ public class StanzaError : Element
                     return value;
             }
 
-            return null;
+            return StanzaErrorCondition.UndefinedCondition;
         }
         set
         {
-            if (Condition.TryGetValue(out var oldValue))
-                RemoveTag(XmppEnum.ToXml(oldValue));
+            foreach (var tag in XmppEnum.GetNames<StanzaErrorCondition>())
+                RemoveTag(tag, Namespace.Stanzas);
 
-            if (value.TryGetValue(out var newValue))
-                SetTag(XmppEnum.ToXml(newValue), xmlns: Namespace.Stanzas);
+            SetTag(XmppEnum.ToXml(value), xmlns: Namespace.Stanzas);
+        }
+    }
+
+    public string Text
+    {
+        get => GetTag("text", Namespace.Stanzas);
+        set
+        {
+            if (value == null)
+                RemoveTag("text", Namespace.Stanzas);
+            else
+                SetTag("text", Namespace.Stanzas, value);
         }
     }
 }
