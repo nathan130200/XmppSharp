@@ -11,3 +11,5 @@ A manipulation library and utility for XMPP inspired by the classic agsXMPP libr
 	- Make JID class not be immutable, if you need an immutable version, wrap inside a record.
 	- Added `FirstChild` and `LastChild` in element class, for fast access first and last elements in current scope.
 	- Added missing Multi User Chat namespace.
+- 1.3.4:
+	- Add support for both .NET 7 and .NET 8 versions.
