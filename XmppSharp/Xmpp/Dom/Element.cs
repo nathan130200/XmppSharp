@@ -47,6 +47,24 @@ public class Element : ICloneable
     object ICloneable.Clone()
         => Clone();
 
+    public Element FirstChild
+    {
+        get
+        {
+            lock (_children)
+                return _children.Count > 0 ? _children[0] : default;
+        }
+    }
+
+    public Element LastChild
+    {
+        get
+        {
+            lock (_children)
+                return _children.Count > 0 ? _children[^1] : default;
+        }
+    }
+
     protected Element(Element other) : this()
     {
         if (other.GetType() != GetType())

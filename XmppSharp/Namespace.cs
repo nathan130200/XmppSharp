@@ -98,6 +98,11 @@ public static class Namespace
     public const string UserMood = "http://jabber.org/protocol/mood";
 
     /// <summary>
+    /// <a href="https://xmpp.org/extensions/xep-0045.html">XEP-0045: Multi-User Chat</a> — <c>http://jabber.org/protocol/muc</c>
+    /// </summary>
+    public const string Muc = "http://jabber.org/protocol/muc";
+
+    /// <summary>
     /// <a href="https://xmpp.org/extensions/xep-0045.html">XEP-0045: Multi-User Chat</a> — <c>http://jabber.org/protocol/muc#admin</c>
     /// </summary>
     public const string MucAdmin = "http://jabber.org/protocol/muc#admin";
