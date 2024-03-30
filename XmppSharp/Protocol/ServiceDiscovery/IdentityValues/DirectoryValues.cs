@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Attributes;
 
-namespace XmppSharp.Protocol.Disco.IdentityValues;
+namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 
 /// <summary>
 /// The directory category consists of information retrieval services that enable users to search online directories or otherwise be informed about the existence of other XMPP entities.

@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Attributes;
 
-namespace XmppSharp.Protocol.Disco.IdentityValues;
+namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 
 /// <summary>
 /// The gateway category consists of translators between Jabber/XMPP services and non-XMPP services.

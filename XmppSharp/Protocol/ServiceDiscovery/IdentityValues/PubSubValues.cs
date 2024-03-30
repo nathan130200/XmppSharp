@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Attributes;
 
-namespace XmppSharp.Protocol.Disco.IdentityValues;
+namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 
 /// <summary>
 /// Services and nodes that adhere to <b>XEP-0060</b>.

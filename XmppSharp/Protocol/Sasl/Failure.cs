@@ -3,20 +3,42 @@ using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Sasl;
 
+/// <summary>
+/// Represents a "failure" element used in Simple Authentication and Security Layer (SASL) negotiation within XMPP.
+/// </summary>
 [XmppTag("failure", Namespaces.Sasl)]
 public class Failure : Element
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Failure"/> class with default properties.
+    /// </summary>
     public Failure() : base("failure", Namespaces.Sasl)
     {
 
     }
 
-    public Failure(FailureCondition? condition, string? message = default) : this()
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Failure"/> class with the specified failure condition.
+    /// </summary>
+    /// <param name="condition">The condition that caused the authentication failure.</param>
+    public Failure(FailureCondition condition) : this()
     {
         Condition = condition;
-        Message = message;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Failure"/> class with the specified failure condition and explanatory text.
+    /// </summary>
+    /// <param name="condition">The condition that caused the authentication failure.</param>
+    /// <param name="text">Additional text providing more information about the failure.</param>
+    public Failure(FailureCondition condition, string text) : this(condition)
+    {
+        Text = text;
+    }
+
+    /// <summary>
+    /// Gets or sets the failure condition that caused the authentication failure.
+    /// </summary>
     public FailureCondition? Condition
     {
         get
@@ -39,9 +61,18 @@ public class Failure : Element
         }
     }
 
-    public string Message
+    /// <summary>
+    /// Gets or sets additional text providing more information about the authentication failure.
+    /// </summary>
+    public string? Text
     {
-        get => GetTag("text");
-        set => SetTag("text", value);
+        get => GetTag("text", Namespaces.Sasl);
+        set
+        {
+            if (value == null)
+                RemoveTag("text", Namespaces.Sasl);
+            else
+                SetTag("text", Namespaces.Sasl, value);
+        }
     }
 }

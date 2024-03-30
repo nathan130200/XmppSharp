@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Attributes;
 
-namespace XmppSharp.Protocol.Disco.IdentityValues;
+namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 
 /// <summary>
 /// The component category consists of services that are internal to server implementations and not normally exposed outside a server.

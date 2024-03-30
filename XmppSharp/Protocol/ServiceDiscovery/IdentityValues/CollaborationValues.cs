@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Attributes;
 
-namespace XmppSharp.Protocol.Disco.IdentityValues;
+namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 
 /// <summary>
 /// The collaboration category consists of services that enable multiple individuals to work together in real time.

@@ -1,7 +1,7 @@
 ﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
-namespace XmppSharp.Protocol.Disco;
+namespace XmppSharp.Protocol.ServiceDiscovery;
 
 /// <summary>
 /// Represents a service discovery information (disco#info) query element in XMPP.

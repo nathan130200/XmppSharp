@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Attributes;
 
-namespace XmppSharp.Protocol.Disco.IdentityValues;
+namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 
 /// <summary>
 /// This  category is to be used by a server when responding to a disco request sent to the bare <see cref="Jid"/> (<c>user@host</c>) of an account hosted by the server.

@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Attributes;
 
-namespace XmppSharp.Protocol.Disco.IdentityValues;
+namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 
 /// <summary>
 /// The hierarchy category is used to describe nodes within a hierarchy of nodes; the <see cref="Branch"/> and <see cref="Leaf"> types are exhaustive.
