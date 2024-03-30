@@ -1,18 +1,19 @@
 ﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace XmppSharp;
 
 [DebuggerDisplay("{ToString(),nq}")]
-public class Jid
+public sealed record Jid : IEquatable<Jid>
 {
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private string _local, _domain, _resource;
+    internal string _local, _domain, _resource;
 
-    public string Local
+    public string? Local
     {
         get => _local;
-        set => _local = value?.ToLowerInvariant();
+        set => _local = EnsureByteSize(value?.ToLowerInvariant());
     }
 
     public string Domain
@@ -20,35 +21,51 @@ public class Jid
         get => _domain;
         set
         {
-            value = value?.ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(value))
+                throw new InvalidOperationException("Domain part cannot be null or empty.");
 
-            if (Uri.CheckHostName(value) == UriHostNameType.Unknown)
-                throw new ArgumentException("Invalid domain.", nameof(value));
-
-            _domain = value;
+            _domain = EnsureByteSize(value);
         }
     }
 
-    public string Resource
+    public string? Resource
     {
         get => _resource;
-        set => _resource = value;
+        set => _resource = EnsureByteSize(value);
     }
 
-    Jid()
+    internal static string EnsureByteSize(string? s, [CallerMemberName] string param = null)
+    {
+        if (string.IsNullOrEmpty(s))
+            return s;
+
+        int len;
+
+        if ((len = Encoding.UTF8.GetByteCount(s)) > 1023)
+            throw new ArgumentOutOfRangeException(param, len, $"{param} part exceeds the maximum bytes allowed.");
+
+        return s;
+    }
+
+    internal Jid()
     {
 
     }
 
-    public Jid(string domain)
-        => Domain = domain;
+    public static Jid Empty => new();
+
+    public Jid(string jid)
+    {
+        if (!TryParseComponents(jid, out _local, out _domain, out _resource))
+            Domain = jid;
+    }
 
     public Jid(string? local, string domain, string? resource)
         => (Local, Domain, Resource) = (local, domain, resource);
 
     public static Jid Parse(string input)
     {
-        ArgumentException.ThrowIfNullOrEmpty(input);
+        Require.NotNullOrEmpty(input);
 
         if (!TryParse(input, out var result))
             throw new FormatException("Invalid jid.");
@@ -56,7 +73,8 @@ public class Jid
         return result;
     }
 
-    static readonly char[] JidTokens = { '@', '/' };
+    internal const char LocalPart = '@';
+    internal const char ResourcePart = '/';
 
     static bool TryParseComponents(string input, out string local, out string domain, out string resource)
     {
@@ -65,19 +83,19 @@ public class Jid
         if (string.IsNullOrWhiteSpace(input))
             return false;
 
-        if (input.IndexOfAny(JidTokens) == -1)
+        if (!input.Contains(LocalPart) && !input.Contains(ResourcePart))
         {
             domain = input;
             return true;
         }
         else
         {
-            var at = input.IndexOf(JidTokens[0]);
+            var at = input.IndexOf(LocalPart);
 
             if (at != -1)
                 local = input[0..at];
 
-            var slash = input.IndexOf(JidTokens[1]);
+            var slash = input.IndexOf(ResourcePart);
 
             if (slash == -1)
                 domain = input[(at + 1)..];
@@ -137,26 +155,17 @@ public class Jid
         _resource = null
     };
 
-    public override int GetHashCode()
-        => HashCode.Combine(_local?.GetHashCode(), _domain?.GetHashCode(), _resource?.GetHashCode());
-
-    public override bool Equals(object? obj)
-    {
-        if (obj is not Jid other)
-            return false;
-
-        if (IsBare && other.IsBare)
-            return IsBareEquals(this, other);
-
-        return IsFullEqual(this, other);
-    }
+    public override int GetHashCode() => HashCode.Combine(
+        _local?.GetHashCode() ?? 0,
+        _domain?.GetHashCode() ?? 0,
+        _resource?.GetHashCode() ?? 0);
 
     public static bool IsBareEquals(Jid lhs, Jid rhs)
     {
-        if (lhs is null || rhs is null)
-            return false;
+        if (lhs is null)
+            return rhs is null;
 
-        if (!lhs.IsBare || !rhs.IsBare)
+        if (rhs is null)
             return false;
 
         return string.Equals(lhs._local, rhs._local, StringComparison.OrdinalIgnoreCase)
@@ -165,10 +174,10 @@ public class Jid
 
     public static bool IsFullEqual(Jid lhs, Jid rhs)
     {
-        if (lhs is null || rhs is null)
-            return false;
+        if (lhs is null)
+            return rhs is null;
 
-        if (lhs.IsBare || rhs.IsBare)
+        if (rhs is null)
             return false;
 
         return string.Equals(lhs._local, rhs._local, StringComparison.OrdinalIgnoreCase)
@@ -176,14 +185,14 @@ public class Jid
              && string.Equals(lhs._resource, rhs.Resource, StringComparison.Ordinal);
     }
 
-    public static bool operator ==(Jid lhs, Jid rhs)
-        => lhs?.Equals(rhs) == true;
-
-    public static bool operator !=(Jid lhs, Jid rhs)
-        => !(lhs == rhs);
+    public bool Equals(Jid other)
+        => IsFullEqual(this, other);
 
     public static implicit operator Jid(string s)
     {
+        if (string.IsNullOrWhiteSpace(s))
+            return null;
+
         if (TryParse(s, out var jid))
             return jid;
 

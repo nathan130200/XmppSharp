@@ -1,12 +1,12 @@
 ﻿using XmppSharp.Attributes;
-using XmppSharp.Xmpp.Dom;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Sasl;
 
-[XmppTag("abort", Namespace.Sasl)]
+[XmppTag("abort", Namespaces.Sasl)]
 public class Abort : Element
 {
-    public Abort() : base("abort", Namespace.Sasl)
+    public Abort() : base("abort", Namespaces.Sasl)
     {
 
     }

@@ -1,20 +1,20 @@
 ﻿using XmppSharp.Attributes;
-using XmppSharp.Xmpp.Dom;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.DataForms;
 
-[XmppTag("x", Namespace.DataForms)]
+[XmppTag("x", Namespaces.DataForms)]
 public class Form : Element
 {
-    public Form() : base("x", Namespace.DataForms)
+    public Form() : base("x", Namespaces.DataForms)
     {
 
     }
 
     public FormType Type
     {
-        get => XmppEnum.FromXml(GetAttribute("type"), FormType.Form);
-        set => SetAttribute("type", XmppEnum.ToXml(value));
+        get => XmppEnum.ParseOrDefault(GetAttribute("type"), FormType.Form);
+        set => SetAttribute("type", XmppEnum.ToXmppName(value));
     }
 
     public string? Instructions

@@ -1,17 +1,16 @@
 ﻿using XmppSharp.Attributes;
 using XmppSharp.Protocol.Base;
-using XmppSharp.Protocol.Client;
-using XmppSharp.Xmpp.Dom;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol;
 
-[XmppTag("iq", Namespace.Client)]
-[XmppTag("iq", Namespace.Server)]
-[XmppTag("iq", Namespace.Accept)]
-[XmppTag("iq", Namespace.Connect)]
+[XmppTag("iq", Namespaces.Client)]
+[XmppTag("iq", Namespaces.Server)]
+[XmppTag("iq", Namespaces.Accept)]
+[XmppTag("iq", Namespaces.Connect)]
 public class Iq : Stanza
 {
-    public Iq() : base("iq", Namespace.Client)
+    public Iq() : base("iq", Namespaces.Client)
     {
 
     }
@@ -19,39 +18,33 @@ public class Iq : Stanza
     public Iq(IqType type) : this()
         => Type = type;
 
-    public new IqType? Type
+    public new IqType Type
     {
-        get => XmppEnum.FromXml<IqType>(base.Type);
+        get => XmppEnum.ParseOrThrow<IqType>(base.Type);
+        set => base.Type = value.ToXmppName();
+    }
+
+    public Element Query
+    {
+        get
+        {
+            Element result;
+
+            _ = TryGetChild("query", Namespaces.CryOnline, out result)
+                || TryGetChild("bind", Namespaces.Bind, out result)
+                || TryGetChild("session", Namespaces.Session, out result)
+                || TryGetChild("query", Namespaces.DiscoInfo, out result)
+                || TryGetChild("query", Namespaces.DiscoItems, out result)
+                || TryGetChild("ping", Namespaces.Ping, out result);
+
+            return result;
+        }
         set
         {
-            if (!value.TryGetValue(out var result))
-                base.Type = null;
-            else
-                base.Type = XmppEnum.ToXml(result);
+            Query?.Remove();
+
+            if (value != null)
+                AddChild(value);
         }
     }
-
-    public Bind Bind
-    {
-        get => Child<Bind>();
-        set => ReplaceChild(value);
-    }
-
-    public Session Session
-    {
-        get => Child<Session>();
-        set => ReplaceChild(value);
-    }
-
-    public Element GetQuery()
-        => GetChild("query");
-
-    public void SetQuery(Element e)
-        => ReplaceChild(e);
-
-    public Q GetQuery<Q>() where Q : Element
-        => Child<Q>();
-
-    public void SetQuery<Q>(Q value) where Q : Element
-        => ReplaceChild(value);
 }

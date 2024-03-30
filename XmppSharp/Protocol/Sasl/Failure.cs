@@ -1,12 +1,12 @@
 ﻿using XmppSharp.Attributes;
-using XmppSharp.Xmpp.Dom;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Sasl;
 
-[XmppTag("failure", Namespace.Sasl)]
+[XmppTag("failure", Namespaces.Sasl)]
 public class Failure : Element
 {
-    public Failure() : base("failure", Namespace.Sasl)
+    public Failure() : base("failure", Namespaces.Sasl)
     {
 
     }
@@ -32,10 +32,10 @@ public class Failure : Element
         set
         {
             if (Condition.TryGetValue(out var oldValue))
-                RemoveTag(XmppEnum.ToXml(oldValue));
+                RemoveTag(XmppEnum.ToXmppName(oldValue));
 
             if (value.TryGetValue(out var result))
-                SetTag(XmppEnum.ToXml(result));
+                SetTag(XmppEnum.ToXmppName(result));
         }
     }
 

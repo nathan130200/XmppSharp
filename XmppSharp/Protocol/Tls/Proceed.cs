@@ -1,12 +1,12 @@
 ﻿using XmppSharp.Attributes;
-using XmppSharp.Xmpp.Dom;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Tls;
 
-[XmppTag("proceed", Namespace.Tls)]
+[XmppTag("proceed", Namespaces.Tls)]
 public class Proceed : Element
 {
-    public Proceed() : base("proceed", Namespace.Tls)
+    public Proceed() : base("proceed", Namespaces.Tls)
     {
 
     }

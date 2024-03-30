@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>annotations</Nullable>
-		<AnalysisMode>minimum</AnalysisMode>
+		<NoWarn>CA2255,CS1998</NoWarn>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -17,7 +17,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.3.4</Version>
+		<Version>1.4.0</Version>
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>embedded</DebugType>
 		<Copyright>nathan130200</Copyright>
@@ -28,15 +28,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Include="..\Scripts\XmppEnumGenerator\dist\*">
-			<AutoGen>true</AutoGen>
-			<LinkBase>_Generated\$(ProjectItem)</LinkBase>
-		</Compile>
-	</ItemGroup>
-
-	<ItemGroup>
-		<Folder Include="Net\" />
-		<Folder Include="_Generated\" />
+		<Folder Include="Protocol\Core\" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -48,6 +40,10 @@
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="DotNetZip" Version="1.16.0" />
 	</ItemGroup>
 
 </Project>

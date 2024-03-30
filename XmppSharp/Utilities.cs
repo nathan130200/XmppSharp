@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
-using XmppSharp.Xmpp.Dom;
+using XmppSharp.Dom;
 
 namespace XmppSharp;
 
@@ -52,6 +52,8 @@ public static class Utilities
         return enumerable;
     }
 
+#if NET7_0_OR_GREATER
+
     public static Element GetAttr<T>(this Element e, string name, out T result, IFormatProvider provider = default)
         where T : IParsable<T>
     {
@@ -73,6 +75,8 @@ public static class Utilities
 
         return result;
     }
+
+#endif
 
     public static Element SetAttr<T>(this Element e, string name, T rawValue, string format = default, IFormatProvider provider = default)
     {

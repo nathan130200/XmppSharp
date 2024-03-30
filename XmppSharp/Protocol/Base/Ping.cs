@@ -1,12 +1,12 @@
 ﻿using XmppSharp.Attributes;
-using XmppSharp.Xmpp.Dom;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Base;
 
-[XmppTag("ping", Namespace.Ping)]
+[XmppTag("ping", Namespaces.Ping)]
 public class Ping : Element
 {
-    public Ping() : base("ping", Namespace.Ping)
+    public Ping() : base("ping", Namespaces.Ping)
     {
 
     }

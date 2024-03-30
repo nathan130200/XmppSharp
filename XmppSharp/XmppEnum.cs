@@ -7,75 +7,69 @@ namespace XmppSharp;
 public static class XmppEnum
 {
     [StackTraceHidden]
-    static void CheckEnum<T>(out string ns)
+    static void EnsureXmppEnumType<T>()
     {
-        var attr = typeof(T).GetCustomAttribute<XmppEnumAttribute>();
-        ns = attr?.Namespace;
-
-        if (attr == null)
-            throw new InvalidOperationException("Type is not valid xmpp enum!");
+        _ = typeof(T).GetCustomAttribute<XmppEnumAttribute>()
+            ?? throw new InvalidOperationException($"Type '{typeof(T).FullName}' is not valid xmpp enum!");
     }
-
-    public static string GetXmlName<T>(this T value) where T : struct, Enum
-        => ToXml(value);
 
     public static IEnumerable<string> GetNames<T>() where T : struct, Enum
     {
-        CheckEnum<T>(out _);
+        EnsureXmppEnumType<T>();
         return XmppEnum<T>.Values.Select(x => x.Key);
     }
 
     public static IReadOnlyDictionary<string, T> GetValues<T>() where T : struct, Enum
     {
-        CheckEnum<T>(out _);
+        EnsureXmppEnumType<T>();
         return XmppEnum<T>.Values;
     }
 
-    public static string? ToXml<T>(T value) where T : struct, Enum
+    public static string? ToXmppName<T>(this T value) where T : struct, Enum
     {
-        CheckEnum<T>(out _);
+        EnsureXmppEnumType<T>();
         return XmppEnum<T>.ToXml(value);
     }
 
-    public static T? FromXml<T>(string value) where T : struct, Enum
+    public static T? Parse<T>(string value) where T : struct, Enum
     {
-        CheckEnum<T>(out _);
-        return XmppEnum<T>.FromXml(value);
+        EnsureXmppEnumType<T>();
+        return XmppEnum<T>.Parse(value);
     }
 
-    public static T FromXml<T>(string value, T fallbackValue) where T : struct, Enum
+    public static T ParseOrDefault<T>(string value, T defaultValue) where T : struct, Enum
     {
-        CheckEnum<T>(out _);
-        return XmppEnum<T>.FromXml(value, fallbackValue);
+        EnsureXmppEnumType<T>();
+        return XmppEnum<T>.ParseOrDefault(value, defaultValue);
     }
 
-    public static string GetNamespace<T>() where T : struct, Enum
+    public static T ParseOrThrow<T>(string value) where T : struct, Enum
     {
-        CheckEnum<T>(out var ns);
-        return ns;
+        EnsureXmppEnumType<T>();
+        return XmppEnum<T>.ParseOrThrow(value);
     }
 }
 
 public class XmppEnum<T>
     where T : struct, Enum
 {
-    public static string Namespace { get; }
     public static IReadOnlyDictionary<string, T> Values { get; set; }
 
-    static readonly EqualityComparer<T> s_EqualityComparer = EqualityComparer<T>.Default;
+    static EqualityComparer<T> EnumComparer { get; }
+        = EqualityComparer<T>.Default;
 
     public static string? ToXml(T value)
     {
         foreach (var (name, self) in Values)
         {
-            if (s_EqualityComparer.Equals(self, value))
+            if (EnumComparer.Equals(self, value))
                 return name;
         }
 
         return default;
     }
 
-    public static T? FromXml(string value)
+    public static T? Parse(string value)
     {
         foreach (var (name, self) in Values)
         {
@@ -86,7 +80,7 @@ public class XmppEnum<T>
         return default;
     }
 
-    public static T FromXml(string value, T fallbackValue)
+    public static T ParseOrDefault(string value, T defaultValue)
     {
         foreach (var (name, self) in Values)
         {
@@ -94,14 +88,24 @@ public class XmppEnum<T>
                 return self;
         }
 
-        return fallbackValue;
+        return defaultValue;
+    }
+
+    public static T ParseOrThrow(string value)
+    {
+        foreach (var (name, self) in Values)
+        {
+            if (name == value)
+                return self;
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(value), $"This xmpp enum of type {typeof(T).FullName} does not contain a member that matches the value '{value}'");
     }
 
     static XmppEnum()
     {
         var baseType = typeof(T);
         var attr = baseType.GetCustomAttribute<XmppEnumAttribute>();
-        Namespace = attr.Namespace;
 
         var values = new Dictionary<string, T>();
 
@@ -109,7 +113,7 @@ public class XmppEnum<T>
         {
             var field = baseType.GetField(member);
 
-            var name = field.GetCustomAttribute<XmppEnumMemberAttribute>()?.Name;
+            var name = field.GetCustomAttribute<XmppMemberAttribute>()?.Name;
 
             if (name == null)
                 continue;

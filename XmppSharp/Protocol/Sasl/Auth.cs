@@ -1,12 +1,12 @@
 ﻿using XmppSharp.Attributes;
-using XmppSharp.Xmpp.Dom;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Sasl;
 
-[XmppTag("auth", Namespace.Sasl)]
+[XmppTag("auth", Namespaces.Sasl)]
 public sealed class Auth : Element
 {
-    public Auth() : base("auth", Namespace.Sasl)
+    public Auth() : base("auth", Namespaces.Sasl)
     {
 
     }
@@ -17,11 +17,16 @@ public sealed class Auth : Element
     public Auth(string name) : this()
         => MechanismName = name;
 
-    public MechanismType MechanismType
+    public MechanismType? MechanismType
     {
-        get => XmppEnum.FromXml(MechanismName, MechanismType.Unspecified);
-        set => MechanismName = value != MechanismType.Unspecified
-            ? XmppEnum.ToXml(value) : null;
+        get => XmppEnum.Parse<MechanismType>(MechanismName);
+        set
+        {
+            if (!value.TryGetValue(out var result))
+                MechanismName = null;
+            else
+                MechanismName = result.ToXmppName();
+        }
     }
 
     public string MechanismName

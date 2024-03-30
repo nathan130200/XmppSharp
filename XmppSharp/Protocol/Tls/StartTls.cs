@@ -1,27 +1,27 @@
 ﻿using XmppSharp.Attributes;
-using XmppSharp.Xmpp.Dom;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Tls;
 
-[XmppTag("starttls", Namespace.Tls)]
+[XmppTag("starttls", Namespaces.Tls)]
 public class StartTls : Element
 {
-    public StartTls() : base("starttls", Namespace.Tls)
+    public StartTls() : base("starttls", Namespaces.Tls)
     {
 
     }
 
-    public StartTls(TlsPolicy policy) : this()
+    public StartTls(StartTlsPolicy policy) : this()
         => Policy = policy;
 
-    public TlsPolicy? Policy
+    public StartTlsPolicy? Policy
     {
         get
         {
             if (HasTag("optional"))
-                return TlsPolicy.Optional;
+                return StartTlsPolicy.Optional;
             if (HasTag("required"))
-                return TlsPolicy.Required;
+                return StartTlsPolicy.Required;
 
             return null;
         }
@@ -30,7 +30,7 @@ public class StartTls : Element
             Children().Remove();
 
             if (value.TryGetValue(out var result))
-                SetTag(XmppEnum.ToXml(result));
+                SetTag(XmppEnum.ToXmppName(result));
         }
     }
 }

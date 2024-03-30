@@ -3,13 +3,13 @@ using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Protocol;
 
-[XmppTag("message", Namespace.Client)]
-[XmppTag("message", Namespace.Server)]
-[XmppTag("message", Namespace.Accept)]
-[XmppTag("message", Namespace.Connect)]
+[XmppTag("message", Namespaces.Client)]
+[XmppTag("message", Namespaces.Server)]
+[XmppTag("message", Namespaces.Accept)]
+[XmppTag("message", Namespaces.Connect)]
 public class Message : Stanza
 {
-    public Message() : base("message", Namespace.Client)
+    public Message() : base("message", Namespaces.Client)
     {
 
     }
@@ -24,14 +24,14 @@ public class Message : Stanza
             if (base.Type == null)
                 return MessageType.Normal;
 
-            return XmppEnum.FromXml(base.Type, MessageType.Normal);
+            return XmppEnum.ParseOrDefault(base.Type, MessageType.Normal);
         }
         set
         {
             if (value == MessageType.Normal)
                 base.Type = null;
             else
-                base.Type = XmppEnum.ToXml(value);
+                base.Type = XmppEnum.ToXmppName(value);
         }
     }
 
@@ -42,7 +42,7 @@ public class Message : Stanza
             if (!HasTag("body"))
                 return default;
 
-            var innerText = GetChild("body")
+            var innerText = Child("body")
                 .Descendants()
                 .Select(x => x.Value);
 

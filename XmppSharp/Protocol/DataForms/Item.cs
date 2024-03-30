@@ -1,12 +1,12 @@
 ﻿using XmppSharp.Attributes;
-using XmppSharp.Xmpp.Dom;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.DataForms;
 
-[XmppTag("item", Namespace.DataForms)]
+[XmppTag("item", Namespaces.DataForms)]
 public class Item : Element
 {
-    public Item() : base("item", Namespace.DataForms)
+    public Item() : base("item", Namespaces.DataForms)
     {
 
     }

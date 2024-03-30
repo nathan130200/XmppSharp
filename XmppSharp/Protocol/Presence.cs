@@ -3,13 +3,13 @@ using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Protocol;
 
-[XmppTag("presence", Namespace.Client)]
-[XmppTag("presence", Namespace.Server)]
-[XmppTag("presence", Namespace.Accept)]
-[XmppTag("presence", Namespace.Connect)]
+[XmppTag("presence", Namespaces.Client)]
+[XmppTag("presence", Namespaces.Server)]
+[XmppTag("presence", Namespaces.Accept)]
+[XmppTag("presence", Namespaces.Connect)]
 public class Presence : Stanza
 {
-    public Presence() : base("presence", Namespace.Client)
+    public Presence() : base("presence", Namespaces.Client)
     {
 
     }
@@ -19,13 +19,13 @@ public class Presence : Stanza
 
     public new PresenceType Type
     {
-        get => XmppEnum.FromXml(base.Type, PresenceType.Available);
+        get => XmppEnum.ParseOrDefault(base.Type, PresenceType.Available);
         set
         {
             if (value == PresenceType.Available)
                 base.Type = null;
             else
-                base.Type = XmppEnum.ToXml(value);
+                base.Type = XmppEnum.ToXmppName(value);
         }
     }
 
@@ -51,13 +51,13 @@ public class Presence : Stanza
 
     public PresenceShow? Show
     {
-        get => XmppEnum.FromXml<PresenceShow>(GetTag("show"));
+        get => XmppEnum.Parse<PresenceShow>(GetTag("show"));
         set
         {
             if (!value.TryGetValue(out var newValue))
                 RemoveTag("show");
             else
-                SetTag("show", XmppEnum.ToXml(newValue));
+                SetTag("show", XmppEnum.ToXmppName(newValue));
         }
     }
 

@@ -1,23 +1,23 @@
 ﻿using System.Text;
 using System.Xml;
-using XmppSharp.Abstractions;
-using XmppSharp.Xmpp;
-using XmppSharp.Xmpp.Dom;
+using System.Xml.Linq;
+using XmppSharp.Factory;
+using XmppSharp.Dom;
 
 namespace XmppSharp;
 
-public readonly record struct ParsedXmlQName(
+public readonly record struct XmlQualifiedName(
     bool HasPrefix,
     string LocalName,
     string? Prefix = default);
 
 public static class Xml
 {
-    public const string JabberEndTag = "</stream:stream>";
+    public const string StreamEnd = "</stream:stream>";
 
-    public static ParsedXmlQName ExtractQName(string input)
+    public static XmlQualifiedName ExtractQualifiedName(string input)
     {
-        ArgumentException.ThrowIfNullOrEmpty(input);
+        Require.NotNullOrEmpty(input);
 
         var ofs = input.IndexOf(':');
 
@@ -35,18 +35,9 @@ public static class Xml
         }
     }
 
-    static class SingletonElement<T>
-        where T : Element, new()
+    internal static (StringBuilder Output, XmlWriter Writer) CreateXmlWriter(bool indent, StringBuilder? output = default)
     {
-        public static T Instance => new();
-    }
-
-    public static TElement CreateElement<TElement>() where TElement : Element, new()
-        => SingletonElement<TElement>.Instance;
-
-    internal static (StringBuilder Output, XmlWriter Writer) CreateXmlWriter(bool indent)
-    {
-        var output = new StringBuilder();
+        output ??= new StringBuilder();
 
         var settings = new XmlWriterSettings
         {
@@ -64,16 +55,53 @@ public static class Xml
         return (output, XmlWriter.Create(new StringWriter(output), settings));
     }
 
-    public static Task<Element> ParseFromFileAsync(string fileName, Encoding? encoding = default, int bufferSize = -1)
+    public static Element ToXmppElement(this XElement e)
     {
-        using (var stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
-            return ParseFromStreamAsync(stream, encoding, bufferSize);
+        var name = e.Name;
+        var ns = name.NamespaceName;
+        var prefix = e.GetPrefixOfNamespace(name.Namespace);
+
+        if (string.IsNullOrEmpty(ns) && name.LocalName
+            is "iq" or "message" or "presence")
+        {
+            ns = Namespaces.Client;
+        }
+
+        var result = ElementFactory.Create(name.LocalName, prefix, ns);
+
+        if (string.IsNullOrEmpty(ns))
+            ns = null;
+
+        if (prefix != null)
+            result.SetNamespace(prefix, ns);
+        else
+            result.SetNamespace(ns);
+
+        foreach (var attr in e.Attributes())
+        {
+            var str = attr.ToString();
+            var ofs = str.IndexOf('=');
+            var attName = str[0..ofs];
+            var attVal = str[(ofs + 2)..^1];
+            result._attributes[attName] = attVal;
+        }
+
+        foreach (var children in e.Elements())
+            result.AddChild(children.ToXmppElement());
+
+        return result;
     }
 
-    public static Task<Element> ParseFromBufferAsync(byte[] buffer, Encoding? encoding = default, int bufferSize = -1)
+    public static async Task<Element> ParseFromFileAsync(string fileName, Encoding? encoding = default, int bufferSize = -1)
+    {
+        using (var stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+            return await ParseFromStreamAsync(stream, encoding, bufferSize);
+    }
+
+    public static async Task<Element> ParseFromBufferAsync(byte[] buffer, Encoding? encoding = default, int bufferSize = -1)
     {
         using (var ms = new MemoryStream(buffer))
-            return ParseFromStreamAsync(ms, encoding, bufferSize);
+            return await ParseFromStreamAsync(ms, encoding, bufferSize);
     }
 
     public static async Task<Element> ParseFromStreamAsync(Stream stream, Encoding? encoding = default, int bufferSize = -1)
@@ -104,40 +132,35 @@ public static class Xml
         }
     }
 
-    internal static void WriteXmlTree(Element element, XmlWriter writer)
+    internal static void ToStringXml(Element element, XmlWriter writer)
     {
-        if (element is IXmlSerializer self)
-            self.Serialize(writer);
-        else
+        writer.WriteStartElement(element.Prefix, element.LocalName, element.GetNamespace(element.Prefix));
+
+        foreach (var (name, value) in element.Attributes)
         {
-            writer.WriteStartElement(element.Prefix, element.LocalName, element.GetNamespace(element.Prefix));
+            var result = ExtractQualifiedName(name);
 
-            foreach (var (name, value) in element.Attributes)
+            if (!result.HasPrefix)
+                writer.WriteAttributeString(result.LocalName, value);
+            else
             {
-                var result = ExtractQName(name);
-
-                if (!result.HasPrefix)
-                    writer.WriteAttributeString(result.LocalName, value);
-                else
+                var ns = result.Prefix switch
                 {
-                    var ns = result.Prefix switch
-                    {
-                        "xml" => Namespace.Xml,
-                        "xmlns" => Namespace.Xmlns,
-                        _ => element.GetNamespace(result.Prefix)
-                    };
+                    "xml" => Namespaces.Xml,
+                    "xmlns" => Namespaces.Xmlns,
+                    _ => element.GetNamespace(result.Prefix)
+                };
 
-                    writer.WriteAttributeString(result.LocalName, ns, value);
-                }
+                writer.WriteAttributeString(result.LocalName, ns, value);
             }
-
-            if (element.Value != null)
-                writer.WriteString(element.Value);
-
-            foreach (var child in element.Children())
-                WriteXmlTree(child, writer);
-
-            writer.WriteEndElement();
         }
+
+        if (element.Value != null)
+            writer.WriteString(element.Value);
+
+        foreach (var child in element.Children())
+            ToStringXml(child, writer);
+
+        writer.WriteEndElement();
     }
 }

@@ -1,12 +1,12 @@
 ﻿using XmppSharp.Attributes;
-using XmppSharp.Xmpp.Dom;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.DataForms;
 
-[XmppTag("field", Namespace.DataForms)]
+[XmppTag("field", Namespaces.DataForms)]
 public class Field : Element
 {
-    public Field() : base("field", Namespace.DataForms)
+    public Field() : base("field", Namespaces.DataForms)
     {
 
     }
@@ -19,8 +19,8 @@ public class Field : Element
 
     public FieldType Type
     {
-        get => XmppEnum.FromXml(GetAttribute("type"), FieldType.TextSingle);
-        set => SetAttribute("type", XmppEnum.ToXml(value));
+        get => XmppEnum.ParseOrDefault(GetAttribute("type"), FieldType.TextSingle);
+        set => SetAttribute("type", XmppEnum.ToXmppName(value));
     }
 
     public string? Label

@@ -1,19 +1,23 @@
 ﻿using XmppSharp.Attributes;
-using XmppSharp.Xmpp.Dom;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Base;
 
-[XmppTag("error", Namespace.Stream)]
+[XmppTag("error", Namespaces.Stream)]
 public class StreamError : Element
 {
-    public StreamError() : base("stream:error", Namespace.Stream)
+    public StreamError() : base("stream:error", Namespaces.Stream)
     {
 
     }
 
-    public StreamError(StreamErrorCondition condition, string? text = default) : this()
+    public StreamError(StreamErrorCondition condition) : this()
     {
         Condition = condition;
+    }
+
+    public StreamError(StreamErrorCondition condition, string? text) : this(condition)
+    {
         Text = text;
     }
 
@@ -23,7 +27,7 @@ public class StreamError : Element
         {
             foreach (var (name, value) in XmppEnum.GetValues<StreamErrorCondition>())
             {
-                if (HasTag(name, Namespace.Streams))
+                if (HasTag(name, Namespaces.Streams))
                     return value;
             }
 
@@ -32,21 +36,21 @@ public class StreamError : Element
         set
         {
             foreach (var tag in XmppEnum.GetNames<StreamErrorCondition>())
-                RemoveTag(tag, Namespace.Streams);
+                RemoveTag(tag, Namespaces.Streams);
 
-            SetTag(XmppEnum.ToXml(value), xmlns: Namespace.Streams);
+            SetTag(XmppEnum.ToXmppName(value), xmlns: Namespaces.Streams);
         }
     }
 
-    public string Text
+    public string? Text
     {
-        get => GetTag("text", Namespace.Streams);
+        get => GetTag("text", Namespaces.Streams);
         set
         {
             if (value == null)
-                RemoveTag("text", Namespace.Streams);
+                RemoveTag("text", Namespaces.Streams);
             else
-                SetTag("text", Namespace.Streams, value);
+                SetTag("text", Namespaces.Streams, value);
         }
     }
 }
