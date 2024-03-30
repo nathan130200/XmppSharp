@@ -30,6 +30,7 @@ public class Item : Element
 
     /// <summary>
     /// Gets or sets the JID (Jabber ID) associated with the item.
+    /// <para>The JID can represent the service itself, a related entity, or might be empty if not applicable.</para>
     /// </summary>
     public Jid? Jid
     {
@@ -39,10 +40,21 @@ public class Item : Element
 
     /// <summary>
     /// Gets or sets the human-readable name of the item.
+    /// <para>This name provides a descriptive label for the service or feature, enhancing user and application understanding.</para>
     /// </summary>
     public string? Name
     {
         get => GetAttribute("name");
         set => SetAttribute("name", value);
+    }
+
+    /// <summary>
+    /// Gets or sets the unique identifier (node) within a specific namespace for information requests.
+    /// <para>This property is typically used in the context of disco info retrieval to identify the specific service or feature being described.</para>
+    /// </summary>
+    public string? Node
+    {
+        get => GetAttribute("node");
+        set => SetAttribute("node", value);
     }
 }
