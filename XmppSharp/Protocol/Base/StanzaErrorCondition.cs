@@ -12,131 +12,131 @@ public enum StanzaErrorCondition
     /// The request was invalid.
     /// </summary>
     [XmppMember("bad-request")]
-	BadRequest,
+    BadRequest,
 
     /// <summary>
     /// The operation failed due to a conflict (e.g., resource already exists).
     /// </summary>
     [XmppMember("conflict")]
-	Conflict,
+    Conflict,
 
     /// <summary>
     /// The requested feature is not implemented on the server.
     /// </summary>
     [XmppMember("feature-not-implemented")]
-	FeatureNotImplemented,
+    FeatureNotImplemented,
 
     /// <summary>
     /// The sender is not authorized to perform the requested operation.
     /// </summary>
     [XmppMember("forbidden")]
-	Forbidden,
+    Forbidden,
 
     /// <summary>
     /// The requested entity (e.g., user, room) no longer exists.
     /// </summary>
     [XmppMember("gone")]
-	Gone,
+    Gone,
 
     /// <summary>
     /// The server encountered an internal error and could not process the request.
     /// </summary>
     [XmppMember("internal-server-error")]
-	InternalServerError,
+    InternalServerError,
 
     /// <summary>
     /// The requested item (e.g., message, roster entry) was not found.
     /// </summary>
     [XmppMember("item-not-found")]
-	ItemNotFound,
+    ItemNotFound,
 
     /// <summary>
     /// The JID (Jabber ID) specified in the request was invalid or malformed.
     /// </summary>
     [XmppMember("jid-malformed")]
-	JidMalformed,
+    JidMalformed,
 
     /// <summary>
     /// The server cannot accept the request with the provided parameters.
     /// </summary>
     [XmppMember("not-acceptable")]
-	NotAcceptable,
+    NotAcceptable,
 
     /// <summary>
     /// The requested operation is not allowed for the current resource or context.
     /// </summary>
     [XmppMember("not-allowed")]
-	NotAllowed,
+    NotAllowed,
 
     /// <summary>
     /// The sender is not authorized to access the requested resource.
     /// </summary>
     [XmppMember("not-authorized")]
-	NotAuthorized,
+    NotAuthorized,
 
     /// <summary>
     /// The request violates server policy.
     /// </summary>
     [XmppMember("policy-violation")]
-	PolicyViolation,
+    PolicyViolation,
 
     /// <summary>
     /// The intended recipient is currently unavailable.
     /// </summary>
     [XmppMember("recipient-unavailable")]
-	RecipientUnavailable,
+    RecipientUnavailable,
 
     /// <summary>
     /// The server is redirecting the client to a different location.
     /// </summary>
     [XmppMember("redirect")]
-	Redirect,
+    Redirect,
 
     /// <summary>
     /// The client needs to register with the server before performing the request.
     /// </summary>
     [XmppMember("registration-required")]
-	RegistrationRequired,
+    RegistrationRequired,
 
     /// <summary>
     /// The server could not locate the remote server specified in the request.
     /// </summary>
     [XmppMember("remote-server-not-found")]
-	RemoteServerNotFound,
+    RemoteServerNotFound,
 
     /// <summary>
     /// The server timed out waiting for a response from the remote server.
     /// </summary>
     [XmppMember("remote-server-timeout")]
-	RemoteServerTimeout,
+    RemoteServerTimeout,
 
     /// <summary>
     /// The server lacks the resources to process the request.
     /// </summary>
     [XmppMember("resource-constraint")]
-	ResourceConstraint,
+    ResourceConstraint,
 
     /// <summary>
     /// The requested service is unavailable on the server.
     /// </summary>
     [XmppMember("service-unavailable")]
-	ServiceUnavailable,
+    ServiceUnavailable,
 
     /// <summary>
     /// The client needs to subscribe or be authorized before performing the request.
     /// </summary>
     [XmppMember("subscription-required")]
-	SubscriptionRequired,
+    SubscriptionRequired,
 
     /// <summary>
     /// The error condition is not explicitly defined in the XMPP standard.
     /// </summary>
     [XmppMember("undefined-condition")]
-	UndefinedCondition,
+    UndefinedCondition,
 
     /// <summary>
     /// The server received an unexpected request type.
     /// </summary>
     [XmppMember("unexpected-request")]
-	UnexpectedRequest
+    UnexpectedRequest
 }
