@@ -39,7 +39,7 @@ public class Mechanism : Element
     /// </summary>
     public MechanismType MechanismType
     {
-        get => XmppEnum.ParseOrDefault(Value, MechanismType.Unspecified);
+        get => XmppEnum.ParseOrDefault(Content, MechanismType.Unspecified);
         set
         {
             if (!Enum.IsDefined(value) || value == MechanismType.Unspecified)
@@ -54,7 +54,7 @@ public class Mechanism : Element
     /// </summary>
     public string? MechanismName
     {
-        get => Value;
-        set => Value = value;
+        get => Content;
+        set => Content = value;
     }
 }

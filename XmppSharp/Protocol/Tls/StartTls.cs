@@ -43,8 +43,8 @@ public sealed class StartTls : Element
         {
             Children().Remove();
 
-            if (value.TryGetValue(out var result))
-                SetTag(XmppEnum.ToXmppName(result));
+            if (value.TryUnwrap(out var result))
+                SetTag(result.ToXmppName());
         }
     }
 }

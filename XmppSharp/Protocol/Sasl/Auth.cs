@@ -40,7 +40,7 @@ public sealed class Auth : Element
         get => XmppEnum.Parse<MechanismType>(MechanismName);
         set
         {
-            if (!value.TryGetValue(out var result))
+            if (!value.TryUnwrap(out var result))
                 MechanismName = null;
             else
                 MechanismName = result.ToXmppName();

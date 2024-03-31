@@ -57,7 +57,7 @@ public class StreamError : Element
             foreach (var tag in XmppEnum.GetNames<StreamErrorCondition>())
                 RemoveTag(tag, Namespaces.Streams);
 
-            SetTag(XmppEnum.ToXmppName(value), xmlns: Namespaces.Streams);
+            SetTag(value.ToXmppName(), xmlns: Namespaces.Streams);
         }
     }
 

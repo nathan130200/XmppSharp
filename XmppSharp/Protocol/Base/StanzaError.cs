@@ -27,7 +27,7 @@ public class StanzaError : Element
         get => XmppEnum.Parse<StanzaErrorType>(GetAttribute("type"));
         set
         {
-            if (!value.TryGetValue(out var result))
+            if (!value.TryUnwrap(out var result))
                 RemoveAttribute("type");
             else
                 SetAttribute("type", result.ToXmppName());
@@ -54,8 +54,8 @@ public class StanzaError : Element
             foreach (var tag in XmppEnum.GetNames<StanzaErrorCondition>())
                 RemoveTag(tag, Namespaces.Stanzas);
 
-            if (value.TryGetValue(out var result))
-                SetTag(XmppEnum.ToXmppName(result), xmlns: Namespaces.Stanzas);
+            if (value.TryUnwrap(out var result))
+                SetTag(result.ToXmppName(), xmlns: Namespaces.Stanzas);
         }
     }
 

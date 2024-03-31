@@ -32,7 +32,7 @@ public class Option : Element
     /// Gets or sets the value associated with the option.
     /// This value is typically used for data submission or processing when the option is selected.
     /// </summary>
-    public new string Value
+    public string Value
     {
         get => GetTag("value");
         set => SetTag("value", value);

@@ -1,8 +1,8 @@
 ﻿using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using XmppSharp.Factory;
 using XmppSharp.Dom;
+using XmppSharp.Factory;
 
 namespace XmppSharp;
 
@@ -155,8 +155,8 @@ public static class Xml
             }
         }
 
-        if (element.Value != null)
-            writer.WriteString(element.Value);
+        if (element.Content != null)
+            writer.WriteString(element.Content);
 
         foreach (var child in element.Children())
             ToStringXml(child, writer);

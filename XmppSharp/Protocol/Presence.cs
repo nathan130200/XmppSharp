@@ -25,7 +25,7 @@ public class Presence : Stanza
             if (value == PresenceType.Available)
                 base.Type = null;
             else
-                base.Type = XmppEnum.ToXmppName(value);
+                base.Type = value.ToXmppName();
         }
     }
 
@@ -54,10 +54,10 @@ public class Presence : Stanza
         get => XmppEnum.Parse<PresenceShow>(GetTag("show"));
         set
         {
-            if (!value.TryGetValue(out var newValue))
+            if (!value.TryUnwrap(out var newValue))
                 RemoveTag("show");
             else
-                SetTag("show", XmppEnum.ToXmppName(newValue));
+                SetTag("show", newValue.ToXmppName());
         }
     }
 

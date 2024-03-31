@@ -33,7 +33,7 @@ public class Field : Element
     public FieldType Type
     {
         get => XmppEnum.ParseOrDefault(GetAttribute("type"), FieldType.TextSingle);
-        set => SetAttribute("type", XmppEnum.ToXmppName(value));
+        set => SetAttribute("type", value.ToXmppName());
     }
 
     /// <summary>
@@ -72,7 +72,7 @@ public class Field : Element
     /// <summary>
     /// Gets or sets the current value of the field, representing the data entered or selected by the user.
     /// </summary>
-    public new string Value
+    public string Value
     {
         get => GetTag("value");
         set => SetTag("value", value);

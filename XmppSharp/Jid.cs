@@ -10,12 +10,21 @@ public sealed record Jid : IEquatable<Jid>
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     internal string _local, _domain, _resource;
 
+    /// <summary>
+    /// Gets or sets the local part of the jid. <para>Generally contains the username.</para>
+    /// </summary>
     public string? Local
     {
         get => _local;
         set => _local = EnsureByteSize(value?.ToLowerInvariant());
     }
 
+    /// <summary>
+    /// Gets or sets the part of the kid's domain.
+    /// <para>
+    /// It usually contains the hostname, address, or qualified name of a server or domain.
+    /// </para>
+    /// </summary>
     public string Domain
     {
         get => _domain;
@@ -28,6 +37,13 @@ public sealed record Jid : IEquatable<Jid>
         }
     }
 
+    /// <summary>
+    /// Gets or sets the resource part of the jid.
+    /// <para>
+    /// Contains a string that serves as a unique identifier to identify connections or 
+    /// allow more than one access to the same user account and password.
+    /// </para>
+    /// </summary>
     public string? Resource
     {
         get => _resource;
@@ -52,17 +68,36 @@ public sealed record Jid : IEquatable<Jid>
 
     }
 
+    /// <summary>
+    /// Creates an empty jid.
+    /// </summary>
     public static Jid Empty => new();
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="Jid" />.
+    /// </summary>
+    /// <param name="jid">String that will attempt to be validated to be valid JID, or by default will assign to <see cref="Domain" />.</param>
     public Jid(string jid)
     {
         if (!TryParseComponents(jid, out _local, out _domain, out _resource))
             Domain = jid;
     }
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="Jid" />.
+    /// </summary>
+    /// <param name="local">Initial value for the local part.</param>
+    /// <param name="domain">Initial value for the domain part.</param>
+    /// <param name="resource">Initial value for the resource part.</param>
     public Jid(string? local, string domain, string? resource)
         => (Local, Domain, Resource) = (local, domain, resource);
 
+    /// <summary>
+    /// Try parsing or throw an exception if you encounter a problem.
+    /// </summary>
+    /// <param name="input">String that will attempt to be validated to be valid JID</param>
+    /// <returns>JID instance.</returns>
+    /// <exception cref="FormatException">When the supplied string is invalid.</exception>
     public static Jid Parse(string input)
     {
         Require.NotNullOrEmpty(input);
@@ -112,6 +147,12 @@ public sealed record Jid : IEquatable<Jid>
         }
     }
 
+    /// <summary>
+    /// It tries to parse the JID through the string, but it doesn't throw exceptions.
+    /// </summary>
+    /// <param name="input">String that will attempt to be validated to be valid JID</param>
+    /// <param name="result">JID that was successfully parsed or <see langword="null" /> if it is invalid.</param>
+    /// <returns><see langword="true" /> if the JID was successfully parsed, <see langword="false"/> otherwise.</returns>
     public static bool TryParse(string input, out Jid result)
     {
         result = default;
@@ -129,6 +170,9 @@ public sealed record Jid : IEquatable<Jid>
         return result != null;
     }
 
+    /// <summary>
+    /// Gets string representation of the JID in the XMPP form.
+    /// </summary>
     public override string ToString()
     {
         var sb = new StringBuilder();
@@ -145,9 +189,15 @@ public sealed record Jid : IEquatable<Jid>
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Determines whether the current JID is bare, that is, it has no resource.
+    /// </summary>
     public bool IsBare
         => _resource is null;
 
+    /// <summary>
+    /// Gets a copy of the current JID without the resource part.
+    /// </summary>
     public Jid Bare => new()
     {
         _local = _local,
@@ -160,24 +210,46 @@ public sealed record Jid : IEquatable<Jid>
         _domain?.GetHashCode() ?? 0,
         _resource?.GetHashCode() ?? 0);
 
+    /// <summary>
+    /// Determines whether both JIDs are the same "Bare" (i.e. they have no resource and the other components are the same)
+    /// </summary>
+    /// <param name="lhs">First JID to compare.</param>
+    /// <param name="rhs">Second JID to compare.</param>
+    /// <returns><see langword="true"/> if both JIDs are equals, otherwise <see langword="false" />.</returns>
     public static bool IsBareEquals(Jid lhs, Jid rhs)
     {
-        if (lhs is null)
-            return rhs is null;
-
         if (rhs is null)
+        {
+            if (lhs is null)
+                return true;
+
+            return false;
+        }
+
+        if (!lhs.IsBare || !rhs.IsBare)
             return false;
 
         return string.Equals(lhs._local, rhs._local, StringComparison.OrdinalIgnoreCase)
              && string.Equals(lhs._domain, rhs._domain, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Determines whether both JIDs are the same "Full" (i.e. both have resources and all components are the same)
+    /// </summary>
+    /// <param name="lhs">First JID to compare.</param>
+    /// <param name="rhs">Second JID to compare.</param>
+    /// <returns><see langword="true"/> if both JIDs are equals, otherwise <see langword="false" />.</returns>
     public static bool IsFullEqual(Jid lhs, Jid rhs)
     {
-        if (lhs is null)
-            return rhs is null;
-
         if (rhs is null)
+        {
+            if (lhs is null)
+                return true;
+
+            return false;
+        }
+
+        if (lhs.IsBare || rhs.IsBare)
             return false;
 
         return string.Equals(lhs._local, rhs._local, StringComparison.OrdinalIgnoreCase)
@@ -188,6 +260,9 @@ public sealed record Jid : IEquatable<Jid>
     public bool Equals(Jid other)
         => IsFullEqual(this, other);
 
+    /// <summary>
+    /// Implicit convert string to JID.
+    /// </summary>
     public static implicit operator Jid(string s)
     {
         if (string.IsNullOrWhiteSpace(s))
@@ -199,6 +274,9 @@ public sealed record Jid : IEquatable<Jid>
         return null;
     }
 
+    /// <summary>
+    /// Implicit convert JID to string.
+    /// </summary>
     public static implicit operator string(Jid j)
         => j.ToString();
 }

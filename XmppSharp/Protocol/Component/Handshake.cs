@@ -26,7 +26,7 @@ public class Handshake : Element
     /// <param name="password">The password associated with the component.</param>
     public Handshake(string streamId, string password) : this()
     {
-        Value = GetHash(streamId, password);
+        Content = GetHash(streamId, password);
     }
 
     /// <summary>
@@ -34,7 +34,7 @@ public class Handshake : Element
     /// </summary>
     /// <param name="hash">The authentication token for the component.</param>
     public Handshake(string hash) : this()
-        => Value = hash;
+        => Content = hash;
 
     /// <summary>
     /// Calculates the SHA-1 hash of the combined stream ID and password for authentication.
@@ -44,7 +44,7 @@ public class Handshake : Element
     /// <returns>The hexadecimal string representation of the SHA-1 hash.</returns>
     public static string GetHash(string sid, string pwd)
     {
-        return SHA1.HashData(string.Concat(sid, pwd).GetBytes()).GetHex();
+        return SHA1.HashData(string.Concat(sid, pwd).GetBytes()).ToHex();
     }
 
     /// <summary>
@@ -54,5 +54,5 @@ public class Handshake : Element
     /// <param name="password">The password used for comparison.</param>
     /// <returns>True if the handshake value matches the hash, false otherwise.</returns>
     public bool HasAuthentication(string streamId, string password)
-        => Value == GetHash(streamId, password);
+        => Content == GetHash(streamId, password);
 }

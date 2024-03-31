@@ -31,7 +31,7 @@ public class Message : Stanza
             if (value == MessageType.Normal)
                 base.Type = null;
             else
-                base.Type = XmppEnum.ToXmppName(value);
+                base.Type = value.ToXmppName();
         }
     }
 
@@ -42,9 +42,9 @@ public class Message : Stanza
             if (!HasTag("body"))
                 return default;
 
-            var innerText = Child("body")
+            var innerText = GetChild("body")
                 .Descendants()
-                .Select(x => x.Value);
+                .Select(x => x.Content);
 
             return string.Concat(innerText);
         }

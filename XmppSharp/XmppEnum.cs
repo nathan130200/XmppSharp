@@ -7,50 +7,85 @@ namespace XmppSharp;
 public static class XmppEnum
 {
     [StackTraceHidden]
-    static void EnsureXmppEnumType<T>()
+    static void ThrowIfNotXmppEnum<T>()
     {
-        _ = typeof(T).GetCustomAttribute<XmppEnumAttribute>()
-            ?? throw new InvalidOperationException($"Type '{typeof(T).FullName}' is not valid xmpp enum!");
+        if (!IsValidType<T>())
+            throw new XmppEnumException($"Type '{typeof(T).FullName}' is not valid xmpp enum!");
     }
 
+    /// <summary>
+    /// Determines whether the given type is a valid XMPP enum type.
+    /// </summary>
+    public static bool IsValidType<T>()
+        => typeof(T).GetCustomAttributes<XmppEnumAttribute>().Any();
+
+    /// <summary>
+    /// Gets all XMPP names mapped to the given type.
+    /// </summary>
+    /// <typeparam name="T">Enum type annotated with <see cref="XmppEnumAttribute"/></typeparam>
     public static IEnumerable<string> GetNames<T>() where T : struct, Enum
     {
-        EnsureXmppEnumType<T>();
+        ThrowIfNotXmppEnum<T>();
         return XmppEnum<T>.Values.Select(x => x.Key);
     }
 
+    /// <summary>
+    /// Gets the mapping of all names and values mapped to the given type.
+    /// </summary>
+    /// <typeparam name="T">Enum type annotated with <see cref="XmppEnumAttribute"/></typeparam>
     public static IReadOnlyDictionary<string, T> GetValues<T>() where T : struct, Enum
     {
-        EnsureXmppEnumType<T>();
+        ThrowIfNotXmppEnum<T>();
         return XmppEnum<T>.Values;
     }
 
+    /// <summary>
+    /// Converts the value of the given enum to the XMPP name.
+    /// </summary>
+    /// <typeparam name="T">Enum type annotated with <see cref="XmppEnumAttribute"/></typeparam>
+    /// <param name="value">Enum value that will be mapped.</param>
     public static string? ToXmppName<T>(this T value) where T : struct, Enum
     {
-        EnsureXmppEnumType<T>();
+        ThrowIfNotXmppEnum<T>();
         return XmppEnum<T>.ToXml(value);
     }
 
+    /// <summary>
+    /// Parses the given string into the target XMPP enum, or <see langword="null"/> if no match is found.
+    /// </summary>
+    /// <typeparam name="T">Enum type annotated with <see cref="XmppEnumAttribute"/></typeparam>
+    /// <param name="value">String that will be mapped.</param>
     public static T? Parse<T>(string value) where T : struct, Enum
     {
-        EnsureXmppEnumType<T>();
+        ThrowIfNotXmppEnum<T>();
         return XmppEnum<T>.Parse(value);
     }
 
+    /// <summary>
+    /// Parses the given string into the target XMPP enum, or returns the provided fallback value if none is match.
+    /// </summary>
+    /// <typeparam name="T">Enum type annotated with <see cref="XmppEnumAttribute"/></typeparam>
+    /// <param name="value">String that will be mapped.</param>
+    /// <param name="defaultValue">Fallback value in case no match is found.</param>
     public static T ParseOrDefault<T>(string value, T defaultValue) where T : struct, Enum
     {
-        EnsureXmppEnumType<T>();
+        ThrowIfNotXmppEnum<T>();
         return XmppEnum<T>.ParseOrDefault(value, defaultValue);
     }
 
+    /// <summary>
+    /// Parses the string provided in the destination XMPP enum, or throws an exception if none is match
+    /// </summary>
+    /// <typeparam name="T">Enum type annotated with <see cref="XmppEnumAttribute"/></typeparam>
+    /// <param name="value">String that will be mapped.</param>
     public static T ParseOrThrow<T>(string value) where T : struct, Enum
     {
-        EnsureXmppEnumType<T>();
+        ThrowIfNotXmppEnum<T>();
         return XmppEnum<T>.ParseOrThrow(value);
     }
 }
 
-public class XmppEnum<T>
+internal class XmppEnum<T>
     where T : struct, Enum
 {
     public static IReadOnlyDictionary<string, T> Values { get; set; }
@@ -99,7 +134,7 @@ public class XmppEnum<T>
                 return self;
         }
 
-        throw new ArgumentOutOfRangeException(nameof(value), $"This xmpp enum of type {typeof(T).FullName} does not contain a member that matches the value '{value}'");
+        throw new XmppEnumException($"This xmpp enum of type {typeof(T).FullName} does not contain a member that matches the value '{value}'");
     }
 
     static XmppEnum()

@@ -1,21 +1,16 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Web;
 using System.Xml;
 
-/* Unmerged change from project 'XmppSharp (net7.0)'
-Before:
-using XmppSharp.Factory;
-After:
-using XmppSharp.Factory;
-using XmppSharp.Xmpp;
-using XmppSharp.Xmpp;
-using XmppSharp.Xmpp.Dom;
-*/
 using XmppSharp.Factory;
 
 namespace XmppSharp.Dom;
 
+/// <summary>
+/// Represents the class that is used to manipulate XML elements.
+/// </summary>
 [DebuggerDisplay("{DebugString,nq}")]
 public class Element : ICloneable
 {
@@ -41,15 +36,35 @@ public class Element : ICloneable
         _attributes = new();
     }
 
+    /// <summary>
+    /// Makes a deep copy of the current element.
+    /// </summary>
+    /// <returns>The complete copy of the element and its respective attributes and child elements.</returns>
+    /// <remarks>
+    /// This copy is made directly with the element's typing, that is, <see cref="ElementFactory.Create" /> 
+    /// will be used to create a copy of the current element, making it possible to cast directly to the desired type.
+    /// </remarks>
     public Element Clone()
     {
-        var result = ElementFactory.Create(_localName, _prefix, GetNamespace(_prefix));
+        var ns = GetNamespace(_prefix);
 
-        foreach (var (key, value) in Attributes)
-            result.SetAttribute(key, value);
+        // sometimes stanza elements can omit xmlns="..."
+        if (string.IsNullOrEmpty(ns) && _localName is "iq" or "message" or "presence")
+            ns = Namespaces.Client;
 
-        foreach (var child in Children())
-            result.AddChild(child.Clone());
+        var result = ElementFactory.Create(_localName, _prefix, ns);
+
+        lock (_attributes)
+        {
+            foreach (var (key, value) in _attributes)
+                result.SetAttribute(key, value);
+        }
+
+        lock (_children)
+        {
+            foreach (var child in _children)
+                result.AddChild(child.Clone());
+        }
 
         return result;
     }
@@ -57,6 +72,9 @@ public class Element : ICloneable
     object ICloneable.Clone()
         => Clone();
 
+    /// <summary>
+    /// Gets the first child element of this element.
+    /// </summary>
     public Element? FirstChild
     {
         get
@@ -66,6 +84,9 @@ public class Element : ICloneable
         }
     }
 
+    /// <summary>
+    /// Gets the last child element of this element.
+    /// </summary>
     public Element? LastChild
     {
         get
@@ -96,6 +117,17 @@ public class Element : ICloneable
         _value = other._value;
     }
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="Element" />.
+    /// </summary>
+    /// <param name="name">Qualified name of the element (<c>localName</c> or <c>prefix:localName</c>)</param>
+    /// <param name="xmlns">
+    /// XML namespace of the element.
+    /// <para>Note that if the qualified name has a prefix, the namespace will be assigned to the prefix.</para>
+    /// </param>
+    /// <param name="text">
+    /// Content (text) of the element.
+    /// </param>
     public Element(string name, string? xmlns = default, string? text = default) : this()
     {
         var result = Xml.ExtractQualifiedName(name);
@@ -112,9 +144,13 @@ public class Element : ICloneable
         _prefix = result.Prefix;
 
         if (text != null)
-            Value = text;
+            Content = text;
     }
 
+
+    /// <summary>
+    /// Gets or sets the local part of the element name.
+    /// </summary>
     public string LocalName
     {
         get => _localName;
@@ -125,6 +161,9 @@ public class Element : ICloneable
         }
     }
 
+    /// <summary>
+    /// Gets or sets the prefix part of the element name.
+    /// </summary>
     public string? Prefix
     {
         get => _prefix;
@@ -135,12 +174,18 @@ public class Element : ICloneable
         }
     }
 
-    public string? Value
+    /// <summary>
+    /// Gets or sets the content of the element.
+    /// </summary>
+    public string? Content
     {
         get => _value;
         set => _value = value;
     }
 
+    /// <summary>
+    /// Gets or sets the parent element that owns the current element.
+    /// </summary>
     public Element Parent
     {
         get => _parent;
@@ -151,6 +196,57 @@ public class Element : ICloneable
         }
     }
 
+    /// <summary>
+    /// Gets the qualified name of the element.
+    /// </summary>
+    public string TagName
+    {
+        get
+        {
+            if (_prefix == null)
+                return _localName;
+
+            return string.Concat(_prefix, ':', _localName);
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the element's default namespace (attribute declared with <c>xmlns</c>)
+    /// </summary>
+    public string? Namespace
+    {
+        get => GetNamespace();
+        set => SetNamespace(value);
+    }
+
+    /// <summary>
+    /// Determines whether the current element is the root of the XML tree.
+    /// </summary>
+    public bool IsRootElement
+        => _parent == null;
+
+    /// <summary>
+    /// Determines whether the current element is an empty element, that is, it has no content and no child elements.
+    /// </summary>
+    public bool IsEmptyElement
+    {
+        get
+        {
+            lock (_children)
+            {
+                if (string.IsNullOrEmpty(_value) && _children.Count == 0)
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets the XML representation of the current element.
+    /// </summary>
+    /// <param name="indented">Controls whether it will be formatted (recommended for debug) or not (recommended for transport)</param>
+    /// <returns>String containing the XML.</returns>
     public string ToString(bool indented)
     {
         var (output, writer) = Xml.CreateXmlWriter(indented);
@@ -161,15 +257,29 @@ public class Element : ICloneable
         return output.ToString();
     }
 
+    /// <summary>
+    /// Removes this element from its parent element to which it belongs.
+    /// </summary>
     public void Remove()
     {
         _parent?.RemoveChild(this);
         _parent = null;
     }
 
+    /// <summary>
+    /// Adds a child element.
+    /// </summary>
+    /// <param name="e">Element that will be added.</param>
+    /// <remarks>
+    /// <para>If the child element already belongs to this parent element, it will not be added.</para>
+    /// <para>If the element to be added already has a parent, it will be removed from its parent before being added here.</para>
+    /// </remarks>
     public void AddChild(Element e)
     {
         Require.NotNull(e);
+
+        if (e._parent == this)
+            return;
 
         e.Remove();
 
@@ -179,6 +289,12 @@ public class Element : ICloneable
         e._parent = this;
     }
 
+    /// <summary>
+    /// Removes the child element.
+    /// </summary>
+    /// <param name="e">Element that will be removed.</param>
+    /// <remarks>
+    /// </remarks>
     public void RemoveChild(Element e)
     {
         Require.NotNull(e);
@@ -191,17 +307,21 @@ public class Element : ICloneable
 
         e._parent = null;
 
-        string ns = e._prefix != null ? GetNamespace(e._prefix) : GetNamespace();
+        var ns = e._prefix != null
+            ? GetNamespace(e._prefix)
+            : GetNamespace();
 
-        if (ns != null)
-        {
-            if (e._prefix != null)
-                e.SetNamespace(e._prefix, ns);
-            else
-                e.SetNamespace(ns);
-        }
+        if (e._prefix != null)
+            e.SetNamespace(e._prefix, ns);
+        else
+            e.SetNamespace(ns);
     }
 
+    /// <summary>
+    /// Gets an XML attribute.
+    /// </summary>
+    /// <param name="name">Qualified attribute name.</param>
+    /// <returns>Attribute value or <see langword="null" /> if the attribute does not exist.</returns>
     public string? GetAttribute(string name)
     {
         Require.NotNullOrEmpty(name);
@@ -214,6 +334,16 @@ public class Element : ICloneable
         return result;
     }
 
+    /// <summary>
+    /// Defines an XML attribute.
+    /// </summary>
+    /// <param name="name">Qualified attribute name.</param>
+    /// <param name="value">
+    /// Attribute value.
+    /// <para>
+    /// If specified as <see langword="null" /> the attribute will be removed from the element.
+    /// </para>
+    /// </param>
     public void SetAttribute(string name, string? value)
     {
         Require.NotNullOrEmpty(name);
@@ -227,6 +357,11 @@ public class Element : ICloneable
         }
     }
 
+    /// <summary>
+    /// Determines whether the specified XML attribute exists on the element.
+    /// </summary>
+    /// <param name="name">Qualified attribute name.</param>
+    /// <returns><see langword="true" /> if the attribute exists, otherwise <see langword="false" /></returns>
     public bool HasAttribute(string name)
     {
         Require.NotNullOrEmpty(name);
@@ -235,6 +370,11 @@ public class Element : ICloneable
             return _attributes.ContainsKey(name);
     }
 
+    /// <summary>
+    /// Removes the XML attribute from the element.
+    /// </summary>
+    /// <param name="name">Qualified attribute name.</param>
+    /// <returns><see langword="true" /> if the attribute existed and was removed, otherwise <see langword="false" /></returns>
     public bool RemoveAttribute(string name)
     {
         Require.NotNullOrEmpty(name);
@@ -243,15 +383,32 @@ public class Element : ICloneable
             return _attributes.Remove(name);
     }
 
+    /// <summary>
+    /// Declares the element's default namespace. (<c>xmlns</c>)
+    /// </summary>
+    /// <param name="uri">URI namespace value.</param>
     public void SetNamespace(string uri)
         => SetAttribute("xmlns", uri);
 
+    /// <summary>
+    /// Declares namespace with prefix in the current element.
+    /// </summary>
+    /// <param name="prefix">Namespace prefix.</param>
+    /// <param name="uri">URI namespace value.</param>
     public void SetNamespace(string prefix, string uri)
     {
         Require.NotNullOrEmpty(prefix);
         SetAttribute($"xmlns:{prefix}", uri);
     }
 
+    /// <summary>
+    /// Determines whether or not the current element or parent element has a declared namespace, optionally with a prefix.
+    /// </summary>
+    /// <param name="prefix">Optional namespace prefix.</param>
+    /// <returns><see langword="true" /> if the namespace attribute exists, otherwise <see langword="false" /></returns>
+    /// <remarks>
+    /// Basically it would be the same as calling the function <see cref="HasAttribute(string)" />.
+    /// </remarks>
     public bool HasNamespace(string prefix = default)
     {
         if (prefix != null)
@@ -260,6 +417,9 @@ public class Element : ICloneable
         return HasAttribute("xmlns");
     }
 
+    /// <summary>
+    /// Gets the XML attributes declared in the current element.
+    /// </summary>
     public IReadOnlyDictionary<string, string> Attributes
     {
         get
@@ -271,41 +431,76 @@ public class Element : ICloneable
 
     // --------------------------------------------------------------------------------------- //
 
+    /// <summary>
+    /// Gets all the child elements.
+    /// </summary>
     public IEnumerable<Element> Children()
     {
         lock (_children)
             return _children.ToArray();
     }
 
+    /// <summary>
+    /// Gets all the child elements typed in <typeparamref name="T" />.
+    /// </summary>
+    /// <typeparam name="T">Type that inherits the class <see cref="Element" />.</typeparam>
     public IEnumerable<T> Children<T>() where T : Element
         => Children().OfType<T>();
 
+    /// <summary>
+    /// Gets all the child elements based on a search filter.
+    /// </summary>
+    /// <param name="predicate">Predicate that will be used to filter the elements.</param>
     public IEnumerable<Element> Children(Func<Element, bool> predicate)
         => Children().Where(predicate);
 
     // --------------------------------------------------------------------------------------- //
 
+    /// <summary>
+    /// Gets the first occurrence of the <typeparamref name="T" /> child element.
+    /// </summary>
+    /// <typeparam name="T">Type that inherits the class <see cref="Element" />.</typeparam>
     public T? Child<T>() where T : Element
         => Children().OfType<T>().FirstOrDefault();
 
-    public Element Child(Func<Element, bool> predicate)
+    /// <summary>
+    /// Gets the first occurrence of child element based on a search filter.
+    /// </summary>
+    /// <param name="predicate">Predicate that will be used to filter the elements.</param>
+    public Element GetChild(Func<Element, bool> predicate)
         => Children().FirstOrDefault(predicate);
 
+    /// <summary>
+    /// Replaces the first occurrence of the specified element.
+    /// </summary>
+    /// <typeparam name="T">Type that inherits the class <see cref="Element" />.</typeparam>
+    /// <param name="element">The new instance of the element that will be added after replacing</param>
     public void ReplaceChild<T>(T element) where T : Element
     {
         foreach (var entry in ElementFactory.GetTags<T>())
-            Child(entry.HasName)?.Remove();
+            GetChild(entry.HasName)?.Remove();
 
         if (element != null)
             AddChild(element);
     }
+
+    /// <summary>
+    /// Replaces the first occurrence of the specified element.
+    /// </summary>
+    /// <param name="element">The new instance of the element that will be added after replacing</param>
     public void ReplaceChild(Element element)
     {
         Require.NotNull(element);
-        Child(element.TagName, element.GetNamespace(element.Prefix))?.Remove();
-        AddChild(element);
+
+        GetChild(element.TagName, element.GetNamespace(element.Prefix))?.Remove();
+
+        if (element != null)
+            AddChild(element);
     }
 
+    /// <summary>
+    /// Gets the descendent elements as a linear list.
+    /// </summary>
     public IReadOnlyList<Element> Descendants()
     {
         var result = new List<Element>();
@@ -313,6 +508,9 @@ public class Element : ICloneable
         return result;
     }
 
+    /// <summary>
+    /// Gets the descendent elements as a linear list (including this element).
+    /// </summary>
     public IReadOnlyList<Element> DescendantsAndSelf()
     {
         var result = new List<Element> { this };
@@ -329,40 +527,10 @@ public class Element : ICloneable
         }
     }
 
-    public string TagName
-    {
-        get
-        {
-            if (_prefix == null)
-                return _localName;
-
-            return string.Concat(_prefix, ':', _localName);
-        }
-    }
-
-    public string? Namespace
-    {
-        get => GetNamespace();
-        set => SetNamespace(value);
-    }
-
-    public bool IsRootElement
-        => _parent == null;
-
-    public bool IsEmptyElement
-    {
-        get
-        {
-            lock (_children)
-            {
-                if (string.IsNullOrEmpty(_value) && _children.Count == 0)
-                    return true;
-            }
-
-            return false;
-        }
-    }
-
+    /// <summary>
+    /// Gets the namespace declared in the element, optionally with prefix.
+    /// </summary>
+    /// <param name="prefix">Namespace prefix.</param>
     public string GetNamespace(string? prefix = default)
     {
         var attrName = string.IsNullOrWhiteSpace(prefix)
@@ -384,68 +552,130 @@ public class Element : ICloneable
             && (xmlns == null || e.GetNamespace(e.Prefix) == xmlns);
     }
 
-    public Element Child(string name, string xmlns = default)
-        => Child(x => SelectElementImpl(x, name, xmlns));
+    /// <summary>
+    /// Gets the first occurrence of the specified child element.
+    /// </summary>
+    /// <param name="name">Element qualified name.</param>
+    /// <param name="xmlns">Optional element namespace.</param>
+    public Element? GetChild(string name, string xmlns = default)
+        => GetChild(x => SelectElementImpl(x, name, xmlns));
 
-    public bool TryGetChild<T>(out T result) where T : Element, new()
+    /// <summary>
+    /// Try to get the first occurrence of the child element <typeparamref name="T" />.
+    /// </summary>
+    /// <typeparam name="T">Type of element that inherits the class <see cref="Element" />.</typeparam>
+    /// <param name="result">Output variable that will receive the element.</param>
+    /// <returns><see langword="true" /> if the element exists and was valid.</returns>
+    public bool TryGetChild<T>([NotNullWhen(true)] out T result) where T : Element, new()
     {
         result = Child<T>();
         return result != null;
     }
 
+    /// <summary>
+    /// Try to gets the first occurrence of the specified child element.
+    /// </summary>
+    /// <param name="name">Element qualified name.</param>
+    /// <param name="xmlns">Optional element namespace.</param>
+    /// <param name="result">Output variable that will receive the element.</param>
+    /// <returns><see langword="true" /> if the element exists and was valid.</returns>
     public bool TryGetChild(string name, string xmlns, out Element result)
     {
-        result = Child(name, xmlns);
+        result = GetChild(name, xmlns);
         return result != null;
     }
 
+    /// <summary>
+    /// Try to gets the first occurrence of the specified child element.
+    /// </summary>
+    /// <param name="name">Element qualified name.</param>
+    /// <param name="result">Output variable that will receive the element.</param>
+    /// <returns><see langword="true" /> if the element exists and was valid.</returns>
     public bool TryGetChild(string name, out Element result)
     {
-        result = Child(name);
+        result = GetChild(name);
         return result != null;
     }
 
-    public bool TryGetChild(Func<Element, bool> filter, out Element result)
+    /// <summary>
+    /// Gets the first occurrence of child element based on a search filter.
+    /// </summary>
+    /// <param name="predicate">Predicate that will be used to filter the elements.</param>
+    /// <param name="result">Output variable that will receive the element.</param>
+    /// <returns><see langword="true" /> if the element exists and was valid.</returns>
+    public bool TryGetChild(Func<Element, bool> predicate, out Element result)
     {
-        result = Child(filter);
+        result = GetChild(predicate);
         return result != null;
     }
 
     // ------------------------------------------------------------------------------------
 
-    public string GetValue() => Value;
-    public void SetValue(string s) => Value = s;
-
-    // ------------------------------------------------------------------------------------
-
+    /// <summary>
+    /// Determines whether the specified element is contained in children.
+    /// </summary>
+    /// <param name="name">Qualified element name.</param>
+    /// <param name="xmlns">Optional namespace.</param>
     public bool HasTag(string name, string? xmlns = default)
-        => Child(x => SelectElementImpl(x, name, xmlns)) != null;
+        => GetChild(x => SelectElementImpl(x, name, xmlns)) != null;
 
+    /// <summary>
+    /// Directly gets the content of XML tag.
+    /// </summary>
+    /// <param name="name">Qualified element name.</param>
+    /// <param name="xmlns">Optional namespace.</param>
+    /// <returns>Element content, or <see langword="null" /> if the element does not exist or if the element has no content.</returns>
     public string GetTag(string name, string? xmlns = default)
-        => Child(x => SelectElementImpl(x, name, xmlns))?.Value;
+        => GetChild(x => SelectElementImpl(x, name, xmlns))?.Content;
 
+    /// <summary>
+    /// Directly sets an XML tag with no content, an empty tag.
+    /// </summary>
+    /// <param name="name">Qualified element name.</param>
     public void SetTag(string name)
         => SetTag(name, null, null);
 
+    /// <summary>
+    /// Removes an XML tag from its children.
+    /// </summary>
+    /// <param name="name">Qualified element name.</param>
+    /// <param name="xmlns">Element namespace.</param>
     public void RemoveTag(string name, string xmlns = default)
-        => Child(x => SelectElementImpl(x, name, xmlns))?.Remove();
+        => GetChild(x => SelectElementImpl(x, name, xmlns))?.Remove();
 
+    /// <summary>
+    /// Directly sets an XML tag with an content.
+    /// </summary>
+    /// <param name="name">Qualified element name.</param>
+    /// <param name="value">Element content.</param>
     public void SetTag(string name, string? value = default)
         => SetTag(name, null, value);
 
+    /// <summary>
+    /// Directly sets an XML tag with an content and namespace.
+    /// </summary>
+    /// <param name="name">Qualified element name.</param>
+    /// <param name="xmlns">Element namespace.</param>
+    /// <param name="value">Element content.</param>
     public void SetTag(string name, string? xmlns = default, string? value = default)
     {
-        var element = Child(x => SelectElementImpl(x, name, xmlns));
+        var element = GetChild(x => SelectElementImpl(x, name, xmlns));
 
         if (element != null)
-            element.Value = value;
+            element.Content = value;
         else
             AddChild(new Element(name, xmlns, value));
     }
 
+    /// <summary>
+    /// Gets a string representation of the XML tree without formatting.
+    /// </summary>
     public override string ToString()
         => ToString(false);
 
+    /// <summary>
+    /// Gets a string representation of the element's opening tag.
+    /// </summary>
     public string StartTag()
     {
         var sb = new StringBuilder($"<{XmlConvert.EncodeName(TagName)}");
@@ -456,6 +686,9 @@ public class Element : ICloneable
         return sb.Append('>').ToString();
     }
 
+    /// <summary>
+    /// Gets a string representation of the internal XML content.
+    /// </summary>
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public string InnerXml
     {
@@ -473,10 +706,16 @@ public class Element : ICloneable
         }
     }
 
+    /// <summary>
+    /// Gets a string representation of the external XML content. Same thing as <see cref="ToString()" />.
+    /// </summary>
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public string OuterXml
         => ToString(false);
 
+    /// <summary>
+    /// Gets the content of the element transformed from base64 into bytes.
+    /// </summary>
     public byte[] GetContentFromBase64()
     {
         if (_value == null)
@@ -485,6 +724,10 @@ public class Element : ICloneable
             return Convert.FromBase64String(_value);
     }
 
+    /// <summary>
+    /// Sets the content of the element transformed to base64 from bytes.
+    /// </summary>
+    /// <param name="buffer">Bytes that will be transformed into base64.</param>
     public void SetContentAsBase64(byte[]? buffer)
     {
         if (buffer == null)
@@ -493,9 +736,16 @@ public class Element : ICloneable
             _value = Convert.ToBase64String(buffer);
     }
 
+    /// <summary>
+    /// Gets the content of the element transformed from base64 into raw string.
+    /// </summary>
     public string GetContentFromBase64String(Encoding? encoding = default)
         => (encoding ?? Encoding.UTF8).GetString(GetContentFromBase64());
 
+    /// <summary>
+    /// Sets the content of the element transformed to base64 from raw string.
+    /// </summary>
+    /// <param name="value">Raw string that will be transformed into base64.</param>
     public void SetContentAsBase64String(string value, Encoding? encoding = default)
         => SetContentAsBase64((encoding ?? Encoding.UTF8).GetBytes(value));
 }

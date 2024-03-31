@@ -24,7 +24,7 @@ public class Form : Element
     public FormType Type
     {
         get => XmppEnum.ParseOrDefault(GetAttribute("type"), FormType.Form);
-        set => SetAttribute("type", XmppEnum.ToXmppName(value));
+        set => SetAttribute("type", value.ToXmppName());
     }
 
     /// <summary>

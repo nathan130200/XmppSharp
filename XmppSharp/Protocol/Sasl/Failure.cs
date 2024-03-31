@@ -53,11 +53,11 @@ public class Failure : Element
         }
         set
         {
-            if (Condition.TryGetValue(out var oldValue))
-                RemoveTag(XmppEnum.ToXmppName(oldValue));
+            if (Condition.TryUnwrap(out var oldValue))
+                RemoveTag(oldValue.ToXmppName());
 
-            if (value.TryGetValue(out var result))
-                SetTag(XmppEnum.ToXmppName(result));
+            if (value.TryUnwrap(out var result))
+                SetTag(result.ToXmppName());
         }
     }
 
