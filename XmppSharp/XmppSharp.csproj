@@ -28,10 +28,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Folder Include="Protocol\Core\" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<None Include="..\CHANGELOG.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>

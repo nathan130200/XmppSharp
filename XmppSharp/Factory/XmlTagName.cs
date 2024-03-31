@@ -3,9 +3,19 @@ using XmppSharp.Dom;
 
 namespace XmppSharp.Factory;
 
+/// <summary>
+/// Represents an XML element's name, consisting of a local name and an optional namespace.
+/// </summary>
 public readonly struct XmlTagName
 {
+    /// <summary>
+    /// The local name of the XML tag.
+    /// </summary>
     public string LocalName { get; }
+
+    /// <summary>
+    /// The namespace of the XML tag, or null if no namespace is specified.
+    /// </summary>
     public string? Namespace { get; }
 
     internal XmlTagName(string localName, string? @namespace)
@@ -45,6 +55,9 @@ public readonly struct XmlTagName
     public static bool operator !=(XmlTagName lhs, XmlTagName rhs)
         => !(lhs == rhs);
 
+    /// <summary>
+    /// Provides equality comparison functionality for <see cref="XmlTagName"/> instances.
+    /// </summary>
     public static IEqualityComparer<XmlTagName> Comparer { get; }
         = new XmlNameEqualityComparer();
 

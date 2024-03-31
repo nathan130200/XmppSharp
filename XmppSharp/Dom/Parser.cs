@@ -46,6 +46,8 @@ public class Parser : IDisposable
 
     class ThrowingXmlResolver : XmlResolver
     {
+        public static ThrowingXmlResolver Shared { get; } = new();
+
         public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
         {
             throw new InvalidOperationException($"Unable to resolve XML entity: {absoluteUri} ({role})");
@@ -66,7 +68,7 @@ public class Parser : IDisposable
 #if NET7_0_OR_GREATER
         XmlResolver = XmlResolver.ThrowingResolver,
 #else
-        XmlResolver = new ThrowingXmlResolver(),
+        XmlResolver = ThrowingXmlResolver.Shared,
 #endif
         ValidationFlags = System.Xml.Schema.XmlSchemaValidationFlags.AllowXmlAttributes,
         NameTable = nameTable
