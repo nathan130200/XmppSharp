@@ -208,7 +208,7 @@ public static class Utilities
         else if (value is IConvertible conv)
             e.SetAttribute(name, conv.ToString(ifp));
         else
-            e.SetAttribute(name, value.ToString());
+            e.SetAttribute(name, value?.ToString() ?? string.Empty);
 
         return e;
     }

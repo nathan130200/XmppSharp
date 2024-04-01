@@ -6,15 +6,31 @@ using XmppSharp.Factory;
 
 namespace XmppSharp;
 
+/// <summary>
+/// Represents the definition of the XML qualified name.
+/// </summary>
+/// <param name="HasPrefix">Determines whether the name has a prefix.</param>
+/// <param name="LocalName">Gets or sets the local name.</param>
+/// <param name="Prefix">Gets or sets the prefix.</param>
 public readonly record struct XmlQualifiedName(
     bool HasPrefix,
     string LocalName,
     string? Prefix = default);
 
+/// <summary>
+/// Class contains a series of specific uses for manipulating XML.
+/// </summary>
 public static class Xml
 {
+    /// <summary>
+    /// Global constant string representing the XMPP closing tag.
+    /// </summary>
     public const string StreamEnd = "</stream:stream>";
 
+    /// <summary>
+    /// Helper function that extracts the local name with XML prefix from the qualified name.
+    /// </summary>
+    /// <param name="input">String containing XML qualified name.</param>
     public static XmlQualifiedName ExtractQualifiedName(string input)
     {
         Require.NotNullOrEmpty(input);
@@ -34,6 +50,9 @@ public static class Xml
             return new(true, localName, prefix);
         }
     }
+
+    public static Element Element(string name, string? xmlns = default, string? text = default)
+        => new Element(name, xmlns, text);
 
     internal static (StringBuilder Output, XmlWriter Writer) CreateXmlWriter(bool indent, StringBuilder? output = default)
     {
@@ -55,6 +74,10 @@ public static class Xml
         return (output, XmlWriter.Create(new StringWriter(output), settings));
     }
 
+    /// <summary>
+    /// Helper function that converts <see cref="XElement" /> to <see cref="Element" />.
+    /// </summary>
+    /// <param name="e">Element that will be converted.</param>
     public static Element ToXmppElement(this XElement e)
     {
         var name = e.Name;
@@ -92,17 +115,36 @@ public static class Xml
         return result;
     }
 
+    /// <summary>
+    /// Helper function that parses XML from a file.
+    /// </summary>
+    /// <param name="fileName">XML file name.</param>
+    /// <param name="encoding">Optionally a file encoding (default: <see cref="Encoding.UTF8" />)</param>
+    /// <param name="bufferSize">XML parser internal character buffer size (default: <see cref="Parser.DefaultBufferSize" />)</param>
     public static async Task<Element> ParseFromFileAsync(string fileName, Encoding? encoding = default, int bufferSize = -1)
     {
         using (var stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
             return await ParseFromStreamAsync(stream, encoding, bufferSize);
     }
 
+    /// <summary>
+    /// Helper function that parses XML from a byte buffer.
+    /// </summary>
+    /// <param name="buffer"></param>
+    /// <param name="encoding">Optionally a file encoding (default: <see cref="Encoding.UTF8" />)</param>
+    /// <param name="bufferSize">XML parser internal character buffer size (default: <see cref="Parser.DefaultBufferSize" />)</param>
     public static async Task<Element> ParseFromBufferAsync(byte[] buffer, Encoding? encoding = default, int bufferSize = -1)
     {
         using (var ms = new MemoryStream(buffer))
             return await ParseFromStreamAsync(ms, encoding, bufferSize);
     }
+
+    /// <summary>
+    /// Helper function that parses XML from a stream.
+    /// </summary>
+    /// <param name="stream"></param>
+    /// <param name="encoding">Optionally a file encoding (default: <see cref="Encoding.UTF8" />)</param>
+    /// <param name="bufferSize">XML parser internal character buffer size (default: <see cref="Parser.DefaultBufferSize" />)</param>
 
     public static async Task<Element> ParseFromStreamAsync(Stream stream, Encoding? encoding = default, int bufferSize = -1)
     {

@@ -40,7 +40,7 @@ public enum IdentityCategory
     [XmppMember("client")]
     Client,
 
-    // <summary>
+    /// <summary>
     /// Denotes a collaboration entity, likely involved in features like group chat, shared workspaces, or other collaborative activities.
     /// </summary>
     [XmppMember("collaboration")]

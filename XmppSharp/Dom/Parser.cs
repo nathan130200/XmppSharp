@@ -20,6 +20,9 @@ public sealed class Parser : IDisposable
     private readonly Encoding _encoding;
     private readonly int _bufferSize;
 
+    /// <summary>
+    /// Global constant indicating the size of the initial XML buffer.
+    /// </summary>
     public const int DefaultBufferSize = 64;
 
     /// <summary>
@@ -67,6 +70,7 @@ public sealed class Parser : IDisposable
     /// </summary>
     public event AsyncAction OnStreamEnd;
 
+    /// <inheritdoc/>
     public void Dispose()
     {
         if (_disposed)
@@ -111,13 +115,22 @@ public sealed class Parser : IDisposable
         NameTable = nameTable
     };
 
+    /// <summary>
+    /// Restarts the internal state of the XML parser.
+    /// </summary>
+    /// <param name="stream">Stream that will be used to read the characters.</param>
+    /// <exception cref="ObjectDisposedException">If this instance of <see cref="Parser" /> has already been disposed.</exception>
     public void Reset(Stream stream)
     {
         _charStream?.Dispose();
         _reader?.Dispose();
 
+#if NET7_0_OR_GREATER
+        ObjectDisposedException.ThrowIf(_disposed, this);
+#else
         if (_disposed)
             throw new ObjectDisposedException(GetType().FullName);
+#endif
 
         _charStream = new StreamReader(stream, _encoding, false, _bufferSize, true);
         _reader = XmlReader.Create(_charStream, CreateReaderSettings(_nameTable));

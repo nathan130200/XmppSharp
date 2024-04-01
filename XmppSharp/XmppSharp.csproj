@@ -17,7 +17,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.4.0</Version>
+		<Version>1.4.1</Version>
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>embedded</DebugType>
 		<Copyright>nathan130200</Copyright>
@@ -25,6 +25,7 @@
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>

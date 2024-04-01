@@ -10,7 +10,7 @@ namespace XmppSharp.Protocol.Base;
 [XmppTag("error", Namespaces.Stream)]
 public class StreamError : Element
 {
-    // <summary>
+    /// <summary>
     /// Initializes a new instance of the <see cref="StreamError"/> class.
     /// </summary>
     public StreamError() : base("stream:error", Namespaces.Stream)
