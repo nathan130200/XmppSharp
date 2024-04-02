@@ -214,6 +214,19 @@ public static class Utilities
     }
 
     /// <summary>
+    /// Adds a child element to the current parent and returns the parent.
+    /// </summary>
+    /// <typeparam name="E">Element type.</typeparam>
+    /// <param name="e">Parent element.</param>
+    /// <param name="child">Child element.</param>
+    /// <returns>Instance of the parent element for nesting other functions.</returns>
+    public static E C<E>(this E e, Element child) where E : Element
+    {
+        e.AddChild(child);
+        return e;
+    }
+
+    /// <summary>
     /// Helper function to get the parent element.
     /// </summary>
     /// <param name="e">Child element that will be used as a starting point.</param>|
