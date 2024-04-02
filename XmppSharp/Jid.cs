@@ -4,9 +4,29 @@ using System.Text;
 
 namespace XmppSharp;
 
+/// <summary>
+/// Represents an jabber identifier.
+/// </summary>
 [DebuggerDisplay("{ToString(),nq}")]
 public sealed record Jid : IEquatable<Jid>
+#if NET7_0_OR_GREATER
+    , IParsable<Jid>
+#endif
+
 {
+
+#if NET7_0_OR_GREATER
+
+    /// <inheritdoc />
+    public static bool TryParse(string? s, IFormatProvider? provider, out Jid result)
+        => TryParse(s, out result);
+
+    /// <inheritdoc />
+    public static Jid Parse(string s, IFormatProvider? provider)
+        => Parse(s);
+
+#endif
+
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     internal string _local, _domain, _resource;
 
@@ -63,7 +83,10 @@ public sealed record Jid : IEquatable<Jid>
         return s;
     }
 
-    internal Jid()
+    /// <summary>
+    /// Initialize a new instance of <see cref="Jid"/>.
+    /// </summary>
+    public Jid()
     {
 
     }

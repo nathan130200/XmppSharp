@@ -17,7 +17,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.4.1</Version>
+		<Version>1.4.2</Version>
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>embedded</DebugType>
 		<Copyright>nathan130200</Copyright>

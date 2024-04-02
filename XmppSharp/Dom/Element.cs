@@ -566,7 +566,7 @@ public class Element : ICloneable
     /// <typeparam name="T">Type of element that inherits the class <see cref="Element" />.</typeparam>
     /// <param name="result">Output variable that will receive the element.</param>
     /// <returns><see langword="true" /> if the element exists and was valid.</returns>
-    public bool TryGetChild<T>([NotNullWhen(true)] out T result) where T : Element, new()
+    public bool TryGetChild<T>([NotNullWhen(true)] out T result) where T : Element
     {
         result = Child<T>();
         return result != null;

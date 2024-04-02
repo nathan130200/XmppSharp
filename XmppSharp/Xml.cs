@@ -51,8 +51,9 @@ public static class Xml
         }
     }
 
+    /// <inheritdoc cref="Element.Element(string, string?, string?)" />
     public static Element Element(string name, string? xmlns = default, string? text = default)
-        => new Element(name, xmlns, text);
+        => new(name, xmlns, text);
 
     internal static (StringBuilder Output, XmlWriter Writer) CreateXmlWriter(bool indent, StringBuilder? output = default)
     {

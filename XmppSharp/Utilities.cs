@@ -4,19 +4,6 @@ using XmppSharp.Dom;
 
 namespace XmppSharp;
 
-#if !NET7_0_OR_GREATER
-
-/// <summary>
-/// Represents the delegate type of a function that converts string to <typeparamref name="T"/>.
-/// </summary>
-/// <typeparam name="T">Type of value that will be parsed.</typeparam>
-/// <param name="s">Read only span containing the string for parsing.</param>
-/// <param name="result">Output variable for the parsed value.</param>
-/// <returns><see langword="true" /> if the parser was done successfully, <see langword="false" /> otherwise.</returns>
-public delegate bool TryParseDelegate<T>(ReadOnlySpan<char> s, out T result);
-
-#endif
-
 /// <summary>
 /// Class that contains a series of helper functions in the library.
 /// </summary>
@@ -114,24 +101,6 @@ public static class Utilities
     }
 
 #if NET7_0_OR_GREATER
-
-    /// <summary>
-    /// Inplace gets and returns the value of an attribute parsed as <typeparamref name="T"/>.
-    /// </summary>
-    /// <typeparam name="T">Type attribute value.</typeparam>
-    /// <param name="e">Instance of the current element.</param>
-    /// <param name="name">Attribute name.</param>
-    /// <param name="result">Output variable to obtain the value of the parsed attribute.</param>
-    /// <param name="provider">Optionally the format provider that will be used for parsing.</param>
-    /// <param name="defaultValue">A fallback value if the attribute does not exist or cannot be parsed.</param>
-    /// <returns>Instance of the element itself for nesting other functions.</returns>
-    public static Element GetAttributeValue<T>(this Element e, string name, out T result, IFormatProvider provider = default, T defaultValue = default)
-        where T : IParsable<T>
-    {
-        result = e.GetAttributeValue(name, defaultValue, provider);
-        return e;
-    }
-
     /// <summary>
     /// Gets the value of the parsed attribute as <typeparamref name="T" />.
     /// </summary>
@@ -148,7 +117,7 @@ public static class Utilities
 
         return defaultValue;
     }
-#else
+#endif
 
     /// <summary>
     /// Gets the value of the parsed attribute as <typeparamref name="T" />.
@@ -157,7 +126,7 @@ public static class Utilities
     /// <param name="e">Instance of the current element.</param>
     /// <param name="name">Attribute name.</param>
     /// <param name="converter">Function that will convert the string into <typeparamref name="T" />.</param>
-    /// <param name="provider">Optionally the format provider that will be used for parsing.</param>
+    /// <param name="defaultValue">A fallback value if the attribute does not exist or cannot be parsed.</param>
     /// <returns>Attribute value parsed as <typeparamref name="T" />.</returns>
     public static T GetAttributeValue<T>(this Element e, string name, TryParseDelegate<T> converter, T defaultValue = default)
     {
@@ -173,33 +142,35 @@ public static class Utilities
     }
 
     /// <summary>
-    /// Inplace gets and returns the value of an attribute parsed as <typeparamref name="T"/>.
+    /// Sets the attribute value.
     /// </summary>
-    /// <typeparam name="T">Type attribute value.</typeparam>
+    /// <typeparam name="E">Element type.</typeparam>
+    /// <typeparam name="V">Value type.</typeparam>
     /// <param name="e">Instance of the current element.</param>
     /// <param name="name">Attribute name.</param>
-    /// <param name="result">Output variable to obtain the value of the parsed attribute.</param>
-    /// <param name="converter">Function that will convert the string into <typeparamref name="T" />.</param>
-    /// <param name="defaultValue">A fallback value if the attribute does not exist or cannot be parsed.</param>
+    /// <param name="value">Nullable value of the attribute that will be converted into a string.</param>
+    /// <param name="format">Optional format used for conversion to string.</param>
+    /// <param name="ifp">Optionally the format provider that will be used in conversion.</param>
     /// <returns>Instance of the element itself for nesting other functions.</returns>
-    public static Element GetAttributeValue<T>(this Element e, string name, out T result, TryParseDelegate<T> converter, T defaultValue = default)
+    public static E SetAttributeValue<E, V>(this E e, string name, V? value, string? format = default, IFormatProvider? ifp = default)
+        where E : Element
+        where V : struct
     {
-        result = e.GetAttributeValue(name, converter, defaultValue);
-        return e;
+        return e.SetAttributeValue(name, value.GetValueOrDefault(), format, ifp);
     }
-
-#endif
 
     /// <summary>
     /// Sets the attribute value.
     /// </summary>
+    /// <typeparam name="E">Element type.</typeparam>
     /// <param name="e">Instance of the current element.</param>
     /// <param name="name">Attribute name.</param>
     /// <param name="value">Raw value of the attribute that will be converted into a string.</param>
     /// <param name="format">Optional format used for conversion to string.</param>
     /// <param name="ifp">Optionally the format provider that will be used in conversion.</param>
     /// <returns>Instance of the element itself for nesting other functions.</returns>
-    public static Element SetAttributeValue(this Element e, string name, object value, string? format = default, IFormatProvider? ifp = default)
+    public static E SetAttributeValue<E>(this E e, string name, object value, string? format = default, IFormatProvider? ifp = default)
+        where E : Element
     {
         ifp ??= CultureInfo.InvariantCulture;
 
