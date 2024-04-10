@@ -1,6 +1,6 @@
 ﻿namespace XmppSharp.Attributes;
 
-using XmppSharp.Dom;
+using System.Xml.Linq;
 using XmppSharp.Factory;
 
 /// <summary>
@@ -10,26 +10,15 @@ using XmppSharp.Factory;
 public sealed class XmppTagAttribute : Attribute
 {
     /// <summary>
-    /// Local name of the element (no prefix).
+    /// Name of the XML element.
     /// </summary>
-    public string LocalName { get; }
-
-    /// <summary>
-    /// XML namespace of the element.
-    /// </summary>
-    public string Namespace { get; }
+    public XName Name { get; }
 
     /// <summary>
     /// Initialize a new instance of <see cref="XmppTagAttribute"/>.
     /// </summary>
-    /// <param name="localName">Local name of the element (no prefix).</param>
+    /// <param name="localName">Name of the element (without prefix).</param>
     /// <param name="namespace">XML namespace of the element.</param>
-    /// <remarks>
-    /// You <b>MUST</b> call the <see cref="Element" /> base class constructor to ensure that the element will be populated correctly when parsed by the <see cref="Parser" />.
-    /// </remarks>
     public XmppTagAttribute(string localName, string @namespace = default)
-    {
-        LocalName = localName;
-        Namespace = @namespace;
-    }
+        => Name = XName.Get(localName, @namespace);
 }

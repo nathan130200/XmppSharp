@@ -93,7 +93,7 @@ public static class TryParseHelpers
         else if (s.Length == 1)
             result = s[0] == '1';
         else
-            result = s == "true";
+            result = s.Equals("true", StringComparison.InvariantCultureIgnoreCase);
 
         return true;
     }

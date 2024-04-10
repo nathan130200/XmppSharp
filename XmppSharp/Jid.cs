@@ -198,7 +198,7 @@ public sealed record Jid : IEquatable<Jid>
     /// </summary>
     public override string ToString()
     {
-        var sb = new StringBuilder();
+        var sb = StringBuilderPool.Rent();
 
         if (_local != null)
             sb.Append(_local).Append('@');
@@ -209,7 +209,7 @@ public sealed record Jid : IEquatable<Jid>
         if (_resource != null)
             sb.Append('/').Append(_resource);
 
-        return sb.ToString();
+        return StringBuilderPool.Return(sb);
     }
 
     /// <summary>

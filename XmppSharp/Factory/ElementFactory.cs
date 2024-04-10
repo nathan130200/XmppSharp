@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Xml.Linq;
 using XmppSharp.Attributes;
-using XmppSharp.Dom;
 
 namespace XmppSharp.Factory;
 
@@ -16,16 +16,30 @@ public static class ElementFactory
     internal static void Initialize()
         => RegisterElements(typeof(ElementFactory).Assembly);
 
-    static readonly ConcurrentDictionary<XmlTagName, Type> ElementTypes
-        = new(XmlTagName.Comparer);
+    static readonly ConcurrentDictionary<XName, Type> ElementTypes
+        = new(XNameComparer.Shared);
+
+    class XNameComparer : IEqualityComparer<XName>
+    {
+        public static readonly XNameComparer Shared = new();
+
+        public bool Equals(XName? x, XName? y)
+        {
+            return x.LocalName.Equals(y.LocalName, StringComparison.Ordinal)
+                && x.NamespaceName.Equals(y.NamespaceName, StringComparison.Ordinal);
+        }
+
+        public int GetHashCode(XName obj)
+            => obj.GetHashCode();
+    }
 
     /// <summary>
     /// Retrieves a collection of registered tag names for a specific element type.
     /// <para>This method can be useful for introspection purposes to discover the registered tag names associated with a particular element class.</para>
     /// </summary>
     /// <typeparam name="T">The type of element for which to retrieve registered tag names.</typeparam>
-    /// <returns>An enumerable collection of <see cref="XmlTagName"/> instances representing the registered tag names for the specified element type.</returns>
-    public static IEnumerable<XmlTagName> GetTags<T>()
+    /// <returns>An enumerable collection of <see cref="XName"/> instances representing the registered tag names for the specified element type.</returns>
+    public static IEnumerable<XName> GetTags<T>()
         => ElementTypes.Where(x => x.Value == typeof(T)).Select(x => x.Key);
 
     /// <summary>
@@ -39,7 +53,7 @@ public static class ElementFactory
     /// <summary>
     /// Registers element types found within a specified assembly.
     /// <para>
-    /// This method scans the provided assembly for classes inheriting from <see cref="XmppSharp.Dom.Element"/> and decorated with the
+    /// This method scans the provided assembly for classes inheriting from <see cref="XElement"/> and decorated with the
     /// <see cref="XmppTagAttribute"/> attribute.
     /// </para>
     /// <para>
@@ -51,17 +65,13 @@ public static class ElementFactory
     public static void RegisterElements(Assembly assembly)
     {
         var types = from type in assembly.GetTypes()
-                    where !type.IsAbstract && type.IsSubclassOf(typeof(Element))
+                    where !type.IsAbstract && type.IsSubclassOf(typeof(XElement))
                         && type.GetCustomAttributes<XmppTagAttribute>().Any()
                     select type;
 
         foreach (var type in types)
             RegisterElement(type);
     }
-
-    // FIXME: i don't have a better idea to cache this, instead just allocate new and try lookup.
-    static XmlTagName Get(string localName, string ns)
-        => new(localName, ns);
 
     /// <summary>
     /// Registers an element type for future creation based on its XML tag name.
@@ -71,7 +81,7 @@ public static class ElementFactory
     public static void RegisterElement(Type type)
     {
         foreach (var tag in type.GetCustomAttributes<XmppTagAttribute>())
-            ElementTypes[Get(tag.LocalName, tag.Namespace)] = type;
+            ElementTypes[tag.Name] = type;
     }
 
     /// <summary>
@@ -82,7 +92,7 @@ public static class ElementFactory
     /// <param name="ns">The namespace URI of the XML tag.</param>
     /// <param name="type">The element type to register.</param>
     public static void RegisterElement(string localName, string ns, Type type)
-        => ElementTypes[Get(localName, ns)] = type;
+        => ElementTypes[XName.Get(localName, ns)] = type;
 
     static bool GetElementType(string localName, string ns, out Type type)
     {
@@ -90,8 +100,7 @@ public static class ElementFactory
 
         foreach (var (tag, value) in ElementTypes)
         {
-            if (tag.LocalName == localName
-                && tag.Namespace == ns)
+            if (tag.LocalName == localName && tag.Namespace == ns)
             {
                 type = value;
                 break;
@@ -105,30 +114,27 @@ public static class ElementFactory
     /// Creates a new XML element instance based on the provided local name, prefix, and namespace.
     /// <para>This method first attempts to locate a registered element type matching the specified tag name (local name and namespace).</para>
     /// <para>If a registered type is found, it creates an instance of that type using reflection.</para>
-    /// <para>Otherwise, it creates a generic <see cref="Element"/> instance with the provided local name and sets the appropriate namespace using the prefix or directly.</para>
+    /// <para>Otherwise, it creates a generic <see cref="XElement"/> instance with the provided local name and sets the appropriate namespace using the prefix or directly.</para>
     /// </summary>
     /// <param name="localName">The local name of the element.</param>
     /// <param name="prefix">The namespace prefix for the element (optional).</param>
     /// <param name="ns">The namespace URI of the element.</param>
-    /// <returns>A new XML element instance of the registered type or a generic <see cref="Element"/> instance if no matching type is found.</returns>
-    public static Element Create(string localName, string prefix, string ns)
+    /// <returns>A new XML element instance of the registered type or a generic <see cref="XElement"/> instance if no matching type is found.</returns>
+    public static XElement Create(string localName, string prefix, string ns)
     {
-        Element result;
+        XElement result;
 
         if (GetElementType(localName, ns, out var type))
-            result = Activator.CreateInstance(type) as Element;
+            result = Activator.CreateInstance(type) as XElement;
         else
         {
-            result = new Element(localName)
-            {
-                Prefix = prefix
-            };
-        }
+            XName name = ns != null ? XName.Get(localName, ns) : localName;
 
-        if (!string.IsNullOrEmpty(prefix))
-            result.SetNamespace(prefix, ns);
-        else
-            result.SetNamespace(ns);
+            result = new XElement(name);
+
+            if (!string.IsNullOrEmpty(prefix))
+                result.Add(new XAttribute(XNamespace.Xmlns + prefix, ns));
+        }
 
         return result;
     }

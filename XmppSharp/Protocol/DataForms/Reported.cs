@@ -1,35 +1,25 @@
-﻿using XmppSharp.Attributes;
-using XmppSharp.Dom;
+﻿using System.Xml.Linq;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.DataForms;
 
-/// <summary>
-/// Represents a "reported" element used within Data Forms in XMPP.
-/// <para>This element encapsulates a collection of fields that provide additional information of a data form fields.</para>
-/// </summary>
-[XmppTag("reported", Namespaces.DataForms)]
-public class Reported : Element
+[XmppTag("reported", "jabber:x:data")]
+public class Reported : XElement
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Reported"/> class.
-    /// </summary>
-    public Reported() : base("reported", Namespaces.DataForms)
+    public Reported() : base(Namespace.DataForms + "reported")
     {
 
     }
 
-    /// <summary>
-    /// Gets or sets the collection of fields.
-    /// </summary>
     public IEnumerable<Field> Fields
     {
-        get => Children<Field>();
+        get => this.Elements<Field>();
         set
         {
-            Children<Field>().Remove();
+            Fields.Remove();
 
-            foreach (var element in value)
-                AddChild(element);
+            foreach (var item in value)
+                Add(item);
         }
     }
 }

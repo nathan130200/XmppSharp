@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Xml;
+using System.Xml.Linq;
 using System.Xml.Schema;
 using XmppSharp.Exceptions;
 using XmppSharp.Factory;
@@ -13,7 +14,6 @@ namespace XmppSharp.Dom;
 public sealed class Parser : IDisposable
 {
     private XmlReader _reader;
-    private StreamReader _charStream;
     private NameTable _nameTable = new();
     private volatile bool _disposed;
 
@@ -23,24 +23,7 @@ public sealed class Parser : IDisposable
     /// <summary>
     /// Global constant indicating the size of the initial XML buffer.
     /// </summary>
-    public const int DefaultBufferSize = 64;
-
-    /// <summary>
-    /// Gets or sets whether the parser will throw an exception when reading node types not supported by XMPP. (Default: True)
-    /// <para>
-    /// Only the following node types are supported by XMPP are:
-    /// <list type="bullet">
-    /// <item><see cref="XmlNodeType.Element"/></item>
-    /// <item><see cref="XmlNodeType.EndElement"/></item>
-    /// <item><see cref="XmlNodeType.Attribute"/></item>
-    /// <item><see cref="XmlNodeType.XmlDeclaration"/></item>
-    /// <item><see cref="XmlNodeType.Text"/></item>
-    /// <item><see cref="XmlNodeType.SignificantWhitespace"/></item>
-    /// <item><see cref="XmlNodeType.Whitespace"/></item>
-    /// </list>
-    /// </para>
-    /// </summary>
-    public bool ThrownOnUnsupportedXmlFeatures { get; set; } = true;
+    public const int DefaultBufferSize = 256;
 
     /// <summary>
     /// Initializes a new <see cref="Parser"/> instance.
@@ -49,7 +32,7 @@ public sealed class Parser : IDisposable
     /// <param name="bufferSize">Sets the expected size of the character buffer that will be used when reading. (Default: 64 characters)</param>
     public Parser(Encoding? encoding = default, int bufferSize = DefaultBufferSize)
     {
-        _encoding = encoding;
+        _encoding = encoding ?? Encoding.UTF8;
         _bufferSize = bufferSize <= 0 ? DefaultBufferSize : bufferSize;
     }
 
@@ -61,9 +44,9 @@ public sealed class Parser : IDisposable
     /// <summary>
     /// The event is triggered when any well-formed element is found.
     /// <para>However, if the XML tag is registered using <see cref="ElementFactory" /> the parser will automatically construct the element in the registered type.</para>
-    /// <para>Elements that cannot be constructed using <see cref="ElementFactory" /> only return the type <see cref="Element" />.</para>
+    /// <para>Elements that cannot be constructed using <see cref="ElementFactory" /> only return the type <see cref="XElement" />.</para>
     /// </summary>
-    public event AsyncAction<Element> OnStreamElement;
+    public event AsyncAction<XElement> OnStreamElement;
 
     /// <summary>
     /// The event is triggered when the XMPP close tag is found <c>&lt;/stream:stream&gt;</c>
@@ -78,16 +61,15 @@ public sealed class Parser : IDisposable
 
         _disposed = true;
 
-        _charStream?.Dispose();
         _reader?.Dispose();
         _nameTable = null;
     }
 
 #if !NET7_0_OR_GREATER
 
-    class ThrowingXmlResolver : XmlResolver
+    internal class ThrowingResolver : XmlResolver
     {
-        public static ThrowingXmlResolver Shared { get; } = new();
+        public static ThrowingResolver Shared { get; } = new();
 
         public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
         {
@@ -97,24 +79,6 @@ public sealed class Parser : IDisposable
 
 #endif
 
-    static XmlReaderSettings CreateReaderSettings(NameTable nameTable) => new()
-    {
-        CloseInput = true,
-        Async = true,
-        IgnoreComments = true,
-        IgnoreProcessingInstructions = true,
-        IgnoreWhitespace = true,
-        ConformanceLevel = ConformanceLevel.Fragment,
-        DtdProcessing = DtdProcessing.Prohibit,
-#if NET7_0_OR_GREATER
-        XmlResolver = XmlResolver.ThrowingResolver,
-#else
-        XmlResolver = ThrowingXmlResolver.Shared,
-#endif
-        ValidationFlags = XmlSchemaValidationFlags.AllowXmlAttributes,
-        NameTable = nameTable
-    };
-
     /// <summary>
     /// Restarts the internal state of the XML parser.
     /// </summary>
@@ -122,7 +86,6 @@ public sealed class Parser : IDisposable
     /// <exception cref="ObjectDisposedException">If this instance of <see cref="Parser" /> has already been disposed.</exception>
     public void Reset(Stream stream)
     {
-        _charStream?.Dispose();
         _reader?.Dispose();
 
 #if NET7_0_OR_GREATER
@@ -132,17 +95,46 @@ public sealed class Parser : IDisposable
             throw new ObjectDisposedException(GetType().FullName);
 #endif
 
-        _charStream = new StreamReader(stream, _encoding, false, _bufferSize, true);
-        _reader = XmlReader.Create(_charStream, CreateReaderSettings(_nameTable));
+        _reader = XmlReader.Create(new StreamReader(stream, _encoding, false, _bufferSize, true), new()
+        {
+            CloseInput = true,
+            Async = true,
+            IgnoreComments = true,
+            IgnoreProcessingInstructions = true,
+            IgnoreWhitespace = true,
+            ConformanceLevel = ConformanceLevel.Fragment,
+            DtdProcessing = DtdProcessing.Prohibit,
+#if NET7_0_OR_GREATER
+            XmlResolver = XmlResolver.ThrowingResolver,
+#else
+            XmlResolver = ThrowingResolver.Shared,
+#endif
+            ValidationFlags = XmlSchemaValidationFlags.AllowXmlAttributes,
+            NameTable = _nameTable
+        });
     }
 
-    private Element _currentElement;
+    private XElement _context;
 
     /// <summary>
-    /// Gets the element that is in the current scope being parsed.
+    /// Gets the XML element in current scope.
     /// </summary>
-    public Element? CurrentElement
-        => _currentElement;
+    public XElement? CurrentElement
+        => _context;
+
+    /// <summary>
+    /// Gets the XML depth in the parser tree.
+    /// </summary>
+    public int Depth
+    {
+        get
+        {
+            if (_disposed)
+                return 0;
+
+            return _reader?.Depth ?? 0;
+        }
+    }
 
     /// <summary>
     /// Advances the XMPP parser.
@@ -158,7 +150,7 @@ public sealed class Parser : IDisposable
     /// </para>
     /// </returns>
     /// <exception cref="JabberStreamException">If any non-well-formed XML is detected or if the provided XML violates XMPP rules.</exception>
-    public async Task<bool> ReadAsync()
+    public async Task<bool> Advance()
     {
         if (_disposed)
             return false;
@@ -167,6 +159,7 @@ public sealed class Parser : IDisposable
             return false;
 
         bool result;
+
         try
         {
             result = await _reader.ReadAsync();
@@ -182,36 +175,63 @@ public sealed class Parser : IDisposable
             {
                 case XmlNodeType.Element:
                     {
-                        Element element;
+                        XElement self;
 
                         if (_reader.Name != "stream:stream")
-                            element = ElementFactory.Create(_reader.LocalName, _reader.Prefix, _reader.NamespaceURI);
+                        {
+                            var ns = _reader.NamespaceURI;
+
+                            // WORKAROUND: Just small hack to ensure IQ, Message & Presence 
+                            // will be always deserialized even if XML stream don't provide 
+                            // XMLNS declaration in scope.
+
+                            if (string.IsNullOrEmpty(ns) && _reader.LocalName is "iq" or "message" or "presence")
+                                ns = "jabber:client";
+
+                            self = ElementFactory.Create(_reader.LocalName, _reader.Prefix, ns);
+                        }
                         else
-                            element = new StreamStream();
+                            self = new StreamStream();
 
                         if (_reader.HasAttributes)
                         {
                             while (_reader.MoveToNextAttribute())
-                                element.SetAttribute(_reader.Name, _reader.Value);
+                            {
+                                var target = Xml.ExtractQualifiedName(_reader.Name);
+
+                                if (!target.HasPrefix)
+                                    self.SetAttribute(target.LocalName, _reader.Value);
+                                else
+                                {
+                                    XNamespace ns = target.Prefix switch
+                                    {
+                                        "xml" => XNamespace.Xml,
+                                        "xmlns" => XNamespace.Xmlns,
+                                        _ => _reader.LookupNamespace(target.Prefix)
+                                    };
+
+                                    self.SetAttribute(ns + target.LocalName, _reader.Value);
+                                }
+                            }
 
                             _reader.MoveToElement();
                         }
 
                         if (_reader.Name == "stream:stream")
-                            await OnStreamStart.InvokeAsync((StreamStream)element);
+                            await OnStreamStart.InvokeAsync((StreamStream)self);
                         else
                         {
                             if (_reader.IsEmptyElement)
                             {
-                                if (_currentElement != null)
-                                    _currentElement.AddChild(element);
+                                if (_context != null)
+                                    _context.Add(self);
                                 else
-                                    await OnStreamElement.InvokeAsync(element);
+                                    await OnStreamElement.InvokeAsync(self);
                             }
                             else
                             {
-                                _currentElement?.AddChild(element);
-                                _currentElement = element;
+                                _context?.Add(self);
+                                _context = self;
                             }
                         }
                     }
@@ -223,12 +243,12 @@ public sealed class Parser : IDisposable
                             await OnStreamEnd.InvokeAsync();
                         else
                         {
-                            var parent = _currentElement.Parent;
+                            var parent = _context.Parent;
 
                             if (parent == null)
-                                await OnStreamElement.InvokeAsync(_currentElement);
+                                await OnStreamElement.InvokeAsync(_context);
 
-                            _currentElement = parent;
+                            _context = parent;
                         }
                     }
                     break;
@@ -236,21 +256,25 @@ public sealed class Parser : IDisposable
                 case XmlNodeType.SignificantWhitespace:
                 case XmlNodeType.Text:
                     {
-                        if (_currentElement != null)
-                            _currentElement.Content += _reader.Value;
+                        if (_context != null)
+                        {
+                            if (_context.LastNode is XText text)
+                                text.Value += _reader.Value;
+                            else
+                                _context.Add(new XText(_reader.Value));
+                        }
                     }
                     break;
 
-                case XmlNodeType.Whitespace:
-                    // ignore
+                case XmlNodeType.Comment:
+                    _context?.Add(new XComment(_reader.Value));
+                    break;
+
+                case XmlNodeType.CDATA:
+                    _context?.Add(new XCData(_reader.Value));
                     break;
 
                 default:
-                    if (_reader.NodeType != XmlNodeType.XmlDeclaration)
-                    {
-                        if (ThrownOnUnsupportedXmlFeatures)
-                            throw new JabberStreamException(StreamErrorCondition.RestrictedXml);
-                    }
                     break;
             }
 

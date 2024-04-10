@@ -95,7 +95,8 @@ public static class AsyncUtilities
     /// <summary>
     /// Helper function that safely invokes the event.
     /// </summary>
-    /// <typeparam name="TParam"> Parameter type for the event.</typeparam>
+    /// <typeparam name="TParam">Parameter type for the event.</typeparam>
+    /// <typeparam name="TResult">Type of result that will be returned.</typeparam>
     /// <param name="func">Delegate of the event that will be invoked.</param>
     /// <param name="param">Parameter value.</param>
     /// <returns>When awaited, returns the event value or the default value of <typeparamref name="TResult" /> if an error occurs.

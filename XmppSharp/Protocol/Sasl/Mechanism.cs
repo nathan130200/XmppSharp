@@ -1,45 +1,28 @@
-﻿using XmppSharp.Attributes;
-using XmppSharp.Dom;
+﻿using System.Xml.Linq;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Sasl;
 
-/// <summary>
-/// Represents a "mechanism" element used in Simple Authentication and Security Layer (SASL) negotiation within XMPP.
-/// </summary>
-[XmppTag("mechanism", Namespaces.Sasl)]
-public class Mechanism : Element
+[XmppTag("mechanism", "urn:ietf:params:xml:ns:xmpp-sasl")]
+public class Mechanism : XElement
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Mechanism"/> class with a default mechanism type of <see cref="MechanismType.Plain"/>.
-    /// </summary>
-    public Mechanism() : base("mechanism", Namespaces.Sasl)
+    public Mechanism() : base(Namespace.Sasl + "mechanism")
     {
         MechanismType = MechanismType.Plain;
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Mechanism"/> class with the specified mechanism type.
-    /// </summary>
-    /// <param name="type">The type of mechanism to represent.</param>
     public Mechanism(MechanismType type) : this()
         => MechanismType = type;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Mechanism"/> class with the specified mechanism name.
-    /// </summary>
-    /// <param name="name">The name of the mechanism to represent.</param>
-    public Mechanism(string name) : this()
+    public Mechanism(string mechanismName) : this()
     {
-        Require.NotNullOrWhiteSpace(name);
-        MechanismName = name;
+        Require.NotNullOrWhiteSpace(mechanismName);
+        MechanismName = mechanismName;
     }
 
-    /// <summary>
-    /// Gets or sets the mechanism type for this element.
-    /// </summary>
     public MechanismType MechanismType
     {
-        get => XmppEnum.ParseOrDefault(Content, MechanismType.Unspecified);
+        get => XmppEnum.ParseOrDefault(Value, MechanismType.Unspecified);
         set
         {
             if (!Enum.IsDefined(value) || value == MechanismType.Unspecified)
@@ -49,12 +32,9 @@ public class Mechanism : Element
         }
     }
 
-    /// <summary>
-    /// Gets or sets the mechanism name.
-    /// </summary>
     public string? MechanismName
     {
-        get => Content;
-        set => Content = value;
+        get => Value;
+        set => Value = value ?? string.Empty;
     }
 }

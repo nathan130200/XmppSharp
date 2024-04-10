@@ -1,49 +1,38 @@
-﻿using XmppSharp.Attributes;
-using XmppSharp.Dom;
+﻿using System.Xml.Linq;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Base;
 
-/// <summary>
-/// Represents an error in an XMPP stanza, indicating the type of error, condition, and optional text explanation.
-/// </summary>
-[XmppTag("error", Namespaces.Client)]
-[XmppTag("error", Namespaces.Accept)]
-[XmppTag("error", Namespaces.Server)]
-public class StanzaError : Element
+[XmppTag("error", "jabber:client")]
+[XmppTag("error", "jabber:server")]
+[XmppTag("error", "jabber:component:accept")]
+[XmppTag("error", "jabber:component:connect")]
+public class StanzaError : XElement
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="StanzaError"/> class with the default "error" element name.
-    /// </summary>
-    public StanzaError() : base("error", Namespaces.Client)
+    public StanzaError() : base(Namespace.Client + "error")
     {
 
     }
 
-    /// <summary>
-    /// Gets or sets the type of error.
-    /// </summary>
     public StanzaErrorType? Type
     {
-        get => XmppEnum.Parse<StanzaErrorType>(GetAttribute("type"));
+        get => XmppEnum.Parse<StanzaErrorType>(this.GetAttribute("type"));
         set
         {
-            if (!value.TryUnwrap(out var result))
-                RemoveAttribute("type");
+            if (!value.TryGetValue(out var result))
+                this.RemoveAttribute("type");
             else
-                SetAttribute("type", result.ToXmppName());
+                this.SetAttribute("type", result.ToXmppName());
         }
     }
 
-    /// <summary>
-    /// Gets or sets the specific condition that caused the error.
-    /// </summary>
     public StanzaErrorCondition? Condition
     {
         get
         {
-            foreach (var (name, value) in XmppEnum.GetValues<StanzaErrorCondition>())
+            foreach (var (tag, value) in XmppEnum.GetValues<StanzaErrorCondition>())
             {
-                if (HasTag(name))
+                if (this.HasTag(Namespace.Stanzas + tag))
                     return value;
             }
 
@@ -51,26 +40,23 @@ public class StanzaError : Element
         }
         set
         {
-            foreach (var tag in XmppEnum.GetNames<StanzaErrorCondition>())
-                RemoveTag(tag, Namespaces.Stanzas);
+            XmppEnum.GetNames<StanzaErrorCondition>()
+                .ForEach(tag => this.RemoveTag(Namespace.Stanzas + tag));
 
-            if (value.TryUnwrap(out var result))
-                SetTag(result.ToXmppName(), xmlns: Namespaces.Stanzas);
+            if (value.TryGetValue(out var result))
+                this.SetTag(Namespace.Stanzas + result.ToXmppName());
         }
     }
 
-    /// <summary>
-    /// Gets or sets the optional human-readable text providing further explanation of the error.
-    /// </summary>
     public string Text
     {
-        get => GetTag("text", Namespaces.Stanzas);
+        get => this.GetTag(Namespace.Stanzas + "text");
         set
         {
             if (value == null)
-                RemoveTag("text", Namespaces.Stanzas);
+                this.RemoveTag(Namespace.Stanzas + "text");
             else
-                SetTag("text", Namespaces.Stanzas, value);
+                this.SetTag(Namespace.Stanzas + "text", value);
         }
     }
 }

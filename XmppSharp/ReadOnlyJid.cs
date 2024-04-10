@@ -2,7 +2,6 @@
 
 namespace XmppSharp;
 
-
 /// <summary>
 /// Immutable version of <see cref="Jid"/>, has no setters instead init-only properties.
 /// </summary>

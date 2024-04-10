@@ -3,13 +3,13 @@ using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Protocol;
 
-[XmppTag("presence", Namespaces.Client)]
-[XmppTag("presence", Namespaces.Server)]
-[XmppTag("presence", Namespaces.Accept)]
-[XmppTag("presence", Namespaces.Connect)]
+[XmppTag("presence", "jabber:client")]
+[XmppTag("presence", "jabber:server")]
+[XmppTag("presence", "jabber:component:accept")]
+[XmppTag("presence", "jabber:component:connect")]
 public class Presence : Stanza
 {
-    public Presence() : base("presence", Namespaces.Client)
+    public Presence() : base(Namespace.Client + "presence")
     {
 
     }
@@ -29,47 +29,47 @@ public class Presence : Stanza
         }
     }
 
-    public byte Priority
+    public sbyte Priority
     {
         get
         {
-            var priority = GetTag("priority");
+            var priority = this.GetTag("priority");
 
             if (priority == null)
                 return 0;
 
-            return byte.Parse(priority);
+            return sbyte.Parse(priority);
         }
         set
         {
             if (value == 0)
-                RemoveTag("priority");
+                this.RemoveTag("priority");
             else
-                SetTag("priority", value.ToString());
+                this.SetTag("priority", value);
         }
     }
 
-    public PresenceShow? Show
+    public PresenceShow Show
     {
-        get => XmppEnum.Parse<PresenceShow>(GetTag("show"));
+        get => XmppEnum.ParseOrDefault(this.GetTag("show"), PresenceShow.Online);
         set
         {
-            if (!value.TryUnwrap(out var newValue))
-                RemoveTag("show");
+            if (value == PresenceShow.Online)
+                this.RemoveTag("show");
             else
-                SetTag("show", newValue.ToXmppName());
+                this.SetTag("show", value.ToXmppName());
         }
     }
 
     public string? Status
     {
-        get => GetTag("status");
+        get => this.GetTag("status");
         set
         {
-            if (string.IsNullOrWhiteSpace(value))
-                RemoveTag("status");
+            if (value == null)
+                this.RemoveTag("status");
             else
-                SetTag("status", value);
+                this.SetTag("status", value);
         }
     }
 }

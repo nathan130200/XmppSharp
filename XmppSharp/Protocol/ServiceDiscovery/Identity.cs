@@ -1,40 +1,22 @@
-﻿using XmppSharp.Attributes;
-using XmppSharp.Dom;
+﻿using System.Xml.Linq;
+using XmppSharp.Attributes;
 using XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 
 namespace XmppSharp.Protocol.ServiceDiscovery;
 
-/// <summary>
-/// Represents an identity element in XMPP service discovery.
-/// </summary>
-[XmppTag("identity", Namespaces.DiscoInfo)]
-public class Identity : Element
+[XmppTag("identity", "http://jabber.org/protocol/disco#info")]
+public class Identity : XElement
 {
-    /// <summary>
-    /// Creates an empty identity with default values.
-    /// </summary>
-    public Identity() : base("identity", Namespaces.DiscoInfo)
+    public Identity() : base(Namespace.DiscoInfo + "identity")
     {
 
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Identity"/> class with the specified category, type, and optional name.
-    /// </summary>
-    /// <param name="category">The XMPP entity category (e.g., "client", "component", "account").</param>
-    /// <param name="type">The specific entity type within the category (e.g., "pc" for a client type, "pubsub" for a pubsub component type).</param>
-    /// <param name="name">The optional human-readable name of the entity.</param>
     public Identity(string category, string type, string? name = default) : this(XmppEnum.ParseOrThrow<IdentityCategory>(category), type, name)
     {
 
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Identity"/> class with the specified XMPP enum category, type, and optional name.
-    /// </summary>
-    /// <param name="category">The XMPP entity category as an <see cref="IdentityCategory"/> enum value.</param>
-    /// <param name="type">The specific entity type within the category (e.g., "pc" for a client type, "pubsub" for a pubsub component type).</param>
-    /// <param name="name">The optional human-readable name of the entity.</param>
     public Identity(IdentityCategory category, string type, string? name = default) : this()
     {
         Category = category.ToXmppName();
@@ -42,120 +24,22 @@ public class Identity : Element
         Name = name;
     }
 
-    /// <summary>
-    /// Gets or sets the XMPP entity category (e.g., "client", "component", "account").
-    /// </summary>
     public string Category
     {
-        get => GetAttribute("category");
-        set => SetAttribute("category", value);
+        get => this.GetAttribute("category");
+        set => this.SetAttribute("category", value);
     }
 
-    /// <summary>
-    /// Gets the category as a strongly typed <see cref="IdentityCategory"/> enum value.
-    /// </summary>
-    /// <returns>The category as an <see cref="IdentityCategory"/> enum value.</returns>
-    public IdentityCategory GetCategory()
-        => XmppEnum.ParseOrThrow<IdentityCategory>(Category);
-
-    /// <summary>
-    /// Sets the category using a strongly typed <see cref="IdentityCategory"/> enum value.
-    /// </summary>
-    /// <param name="category">The category as an <see cref="IdentityCategory"/> enum value.</param>
-    public void SetCategory(IdentityCategory category)
-        => Category = category.ToXmppName();
-
-    /// <summary>
-    /// Gets the optional human-readable name of the entity.
-    /// </summary>
-    public string? Name
+    public new string? Name
     {
-        get => GetAttribute("name");
-        set => SetAttribute("name", value);
+        get => this.GetAttribute("name");
+        set => this.SetAttribute("name", value);
     }
 
-    /// <summary>
-    /// Gets or sets the specific entity type within the category (e.g., "pc" for a client type, "pubsub" for a pubsub component type).
-    /// </summary>
     public string Type
     {
-        get => GetAttribute("type");
-        set => SetAttribute("type", value);
-    }
-
-    public void GetIdentityType<T>(T value) where T : struct, Enum
-        => Type = value.ToXmppName();
-
-    /// <summary>
-    /// Retrieves the identity type as a strongly typed value based on the 'Category'.
-    /// Utilizes XMPP enum parsing for various value types associated with different categories.
-    /// </summary>
-    /// <typeparam name="T">The type of the expected identity value (e.g., <see cref="AccountValues"/>, <see cref="ClientValues"/>, ...)</typeparam>
-    /// <returns>The identity type as a strongly typed value, or null if not found.</returns>
-    public T? GetIdentityType<T>()
-    {
-        object result = null;
-
-        var str = GetAttribute("type");
-
-        if (string.IsNullOrWhiteSpace(str))
-            return default;
-
-        var category = GetCategory();
-
-        if (category == IdentityCategory.Account)
-            result = XmppEnum.ParseOrThrow<AccountValues>(str);
-
-        else if (category == IdentityCategory.Auth)
-            result = XmppEnum.ParseOrThrow<AuthValues>(str);
-
-        else if (category == IdentityCategory.Authz)
-            result = XmppEnum.ParseOrThrow<AuthzValues>(str);
-
-        else if (category == IdentityCategory.Automation)
-            result = XmppEnum.ParseOrThrow<AutomationValues>(str);
-
-        else if (category == IdentityCategory.Client)
-            result = XmppEnum.ParseOrThrow<ClientValues>(str);
-
-        else if (category == IdentityCategory.Collaboration)
-            result = XmppEnum.ParseOrThrow<CollaborationValues>(str);
-
-        else if (category == IdentityCategory.Component)
-            result = XmppEnum.ParseOrThrow<ComponentValues>(str);
-
-        else if (category == IdentityCategory.Conference)
-            result = XmppEnum.ParseOrThrow<ConferenceValues>(str);
-
-        else if (category == IdentityCategory.Directory)
-            result = XmppEnum.ParseOrThrow<DirectoryValues>(str);
-
-        else if (category == IdentityCategory.Gateway)
-            result = XmppEnum.ParseOrThrow<GatewayValues>(str);
-
-        else if (category == IdentityCategory.Headline)
-            result = XmppEnum.ParseOrThrow<HeadlineValues>(str);
-
-        else if (category == IdentityCategory.Hierarchy)
-            result = XmppEnum.ParseOrThrow<HierarchyValues>(str);
-
-        else if (category == IdentityCategory.Proxy)
-            result = XmppEnum.ParseOrThrow<ProxyValues>(str);
-
-        else if (category == IdentityCategory.PubSub)
-            result = XmppEnum.ParseOrThrow<PubSubValues>(str);
-
-        else if (category == IdentityCategory.Server)
-            result = XmppEnum.ParseOrThrow<ServerValues>(str);
-
-        else if (category == IdentityCategory.Store)
-            result = XmppEnum.ParseOrThrow<StoreValues>(str);
-
-        if (result is not null
-            && result is T value)
-            return value;
-
-        return default;
+        get => this.GetAttribute("type");
+        set => this.SetAttribute("type", value);
     }
 
     /// <summary>

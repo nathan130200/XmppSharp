@@ -1,51 +1,31 @@
-﻿using XmppSharp.Attributes;
-using XmppSharp.Dom;
+﻿using System.Xml.Linq;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Sasl;
 
-/// <summary>
-/// Represents a "failure" element used in Simple Authentication and Security Layer (SASL) negotiation within XMPP.
-/// </summary>
-[XmppTag("failure", Namespaces.Sasl)]
-public class Failure : Element
+[XmppTag("failure", "urn:ietf:params:xml:ns:xmpp-sasl")]
+public class Failure : XElement
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Failure"/> class with default properties.
-    /// </summary>
-    public Failure() : base("failure", Namespaces.Sasl)
+    public Failure() : base(Namespace.Sasl + "failure")
     {
 
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Failure"/> class with the specified failure condition.
-    /// </summary>
-    /// <param name="condition">The condition that caused the authentication failure.</param>
-    public Failure(FailureCondition condition) : this()
+    public Failure(FailureCondition condition, string text = default) : this()
     {
         Condition = condition;
+
+        if (text != null)
+            Text = text;
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Failure"/> class with the specified failure condition and explanatory text.
-    /// </summary>
-    /// <param name="condition">The condition that caused the authentication failure.</param>
-    /// <param name="text">Additional text providing more information about the failure.</param>
-    public Failure(FailureCondition condition, string text) : this(condition)
-    {
-        Text = text;
-    }
-
-    /// <summary>
-    /// Gets or sets the failure condition that caused the authentication failure.
-    /// </summary>
     public FailureCondition? Condition
     {
         get
         {
             foreach (var (key, value) in XmppEnum.GetValues<FailureCondition>())
             {
-                if (HasTag(key))
+                if (this.HasTag(key))
                     return value;
             }
 
@@ -53,26 +33,23 @@ public class Failure : Element
         }
         set
         {
-            if (Condition.TryUnwrap(out var oldValue))
-                RemoveTag(oldValue.ToXmppName());
+            if (Condition.TryGetValue(out var oldValue))
+                this.RemoveTag(oldValue.ToXmppName());
 
-            if (value.TryUnwrap(out var result))
-                SetTag(result.ToXmppName());
+            if (value.TryGetValue(out var result))
+                this.SetTag(result.ToXmppName());
         }
     }
 
-    /// <summary>
-    /// Gets or sets additional text providing more information about the authentication failure.
-    /// </summary>
     public string? Text
     {
-        get => GetTag("text", Namespaces.Sasl);
+        get => this.GetTag("text");
         set
         {
             if (value == null)
-                RemoveTag("text", Namespaces.Sasl);
+                this.RemoveTag("text");
             else
-                SetTag("text", Namespaces.Sasl, value);
+                this.SetTag("text", value);
         }
     }
 }

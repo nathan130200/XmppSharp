@@ -1,5 +1,4 @@
-﻿using System.Runtime.Serialization;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Tls;
 
@@ -12,14 +11,12 @@ public enum StartTlsPolicy
     /// <summary>
     /// Indicates that TLS is optional for the connection.
     /// </summary>
-    [DataMember(Name = nameof(Optional))]
     [XmppMember("optional")]
     Optional,
 
     /// <summary>
     /// Indicates that TLS is required for the connection.
     /// </summary>
-    [DataMember(Name = nameof(Required))]
     [XmppMember("required")]
     Required
 }

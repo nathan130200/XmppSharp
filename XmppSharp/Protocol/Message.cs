@@ -3,13 +3,13 @@ using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Protocol;
 
-[XmppTag("message", Namespaces.Client)]
-[XmppTag("message", Namespaces.Server)]
-[XmppTag("message", Namespaces.Accept)]
-[XmppTag("message", Namespaces.Connect)]
+[XmppTag("message", "jabber:client")]
+[XmppTag("message", "jabber:server")]
+[XmppTag("message", "jabber:component:accept")]
+[XmppTag("message", "jabber:component:connect")]
 public class Message : Stanza
 {
-    public Message() : base("message", Namespaces.Client)
+    public Message() : base("message", Namespace.Client)
     {
 
     }
@@ -19,13 +19,7 @@ public class Message : Stanza
 
     public new MessageType Type
     {
-        get
-        {
-            if (base.Type == null)
-                return MessageType.Normal;
-
-            return XmppEnum.ParseOrDefault(base.Type, MessageType.Normal);
-        }
+        get => XmppEnum.ParseOrDefault(base.Type, MessageType.Normal);
         set
         {
             if (value == MessageType.Normal)
@@ -37,50 +31,40 @@ public class Message : Stanza
 
     public string Body
     {
-        get
-        {
-            if (!HasTag("body"))
-                return default;
-
-            var innerText = GetChild("body")
-                .Descendants()
-                .Select(x => x.Content);
-
-            return string.Concat(innerText);
-        }
+        get => this.GetTag("body");
         set
         {
             if (string.IsNullOrEmpty(value))
-                RemoveTag("body");
+                this.RemoveTag("body");
             else
-                SetTag("body", value);
+                this.SetTag("body", value);
         }
     }
 
-    public bool IsHtml
-        => HasTag("body", "http://www.w3.org/1999/xhtml");
+    public bool IsXHtml
+        => this.HasTag(Namespace.XHtml + "body");
 
     public string Subject
     {
-        get => GetTag("subject");
+        get => this.GetTag("subject");
         set
         {
             if (string.IsNullOrEmpty(value))
-                RemoveTag("subject");
+                this.RemoveTag("subject");
             else
-                SetTag("subject", value);
+                this.SetTag("subject", value);
         }
     }
 
     public string Thread
     {
-        get => GetTag("thread");
+        get => this.GetTag("thread");
         set
         {
             if (string.IsNullOrEmpty(value))
-                RemoveTag("thread");
+                this.RemoveTag("thread");
             else
-                SetTag("thread", value);
+                this.SetTag("thread", value);
         }
     }
 }

@@ -19,6 +19,19 @@ public static class XmppEnum
     public static bool IsValidType<T>()
         => typeof(T).GetCustomAttributes<XmppEnumAttribute>().Any();
 
+    public static bool IsDefined<T>(T value) where T : struct, Enum
+    {
+        IsValidType<T>();
+
+        foreach (var (_, other) in XmppEnum<T>.Values)
+        {
+            if (XmppEnum<T>.Comparer.Equals(other, value))
+                return true;
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Gets all XMPP names mapped to the given type.
     /// </summary>
@@ -47,6 +60,10 @@ public static class XmppEnum
     public static string? ToXmppName<T>(this T value) where T : struct, Enum
     {
         ThrowIfNotXmppEnum<T>();
+
+        if (!IsDefined(value))
+            return null;
+
         return XmppEnum<T>.ToXml(value);
     }
 
@@ -89,15 +106,13 @@ internal class XmppEnum<T>
     where T : struct, Enum
 {
     public static IReadOnlyDictionary<string, T> Values { get; set; }
-
-    static EqualityComparer<T> EnumComparer { get; }
-        = EqualityComparer<T>.Default;
+    public static EqualityComparer<T> Comparer { get; } = EqualityComparer<T>.Default;
 
     public static string? ToXml(T value)
     {
         foreach (var (name, self) in Values)
         {
-            if (EnumComparer.Equals(self, value))
+            if (Comparer.Equals(self, value))
                 return name;
         }
 

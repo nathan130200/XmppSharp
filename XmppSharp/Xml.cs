@@ -1,67 +1,44 @@
 ﻿using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using XmppSharp.Dom;
-using XmppSharp.Factory;
 
 namespace XmppSharp;
 
-/// <summary>
-/// Represents the definition of the XML qualified name.
-/// </summary>
-/// <param name="HasPrefix">Determines whether the name has a prefix.</param>
-/// <param name="LocalName">Gets or sets the local name.</param>
-/// <param name="Prefix">Gets or sets the prefix.</param>
-public readonly record struct XmlQualifiedName(
-    bool HasPrefix,
-    string LocalName,
-    string? Prefix = default);
+public readonly record struct XmlNameInfo(bool HasPrefix, string LocalName, string Prefix);
 
-/// <summary>
-/// Class contains a series of specific uses for manipulating XML.
-/// </summary>
 public static class Xml
 {
-    /// <summary>
-    /// Global constant string representing the XMPP closing tag.
-    /// </summary>
     public const string StreamEnd = "</stream:stream>";
 
-    /// <summary>
-    /// Helper function that extracts the local name with XML prefix from the qualified name.
-    /// </summary>
-    /// <param name="input">String containing XML qualified name.</param>
-    public static XmlQualifiedName ExtractQualifiedName(string input)
+    public static XmlNameInfo ExtractQualifiedName(string s)
     {
-        Require.NotNullOrEmpty(input);
+        var ofs = s.IndexOf(':');
+        string prefix = default, localName;
 
-        var ofs = input.IndexOf(':');
+        if (ofs != -1)
+            prefix = s[0..ofs];
 
-        if (ofs == -1)
-            return new(false, input, null);
-        else
-        {
-            var prefix = input[0..ofs];
-            var localName = input[(ofs + 1)..];
+        localName = s[(ofs + 1)..];
 
-            if (string.IsNullOrWhiteSpace(localName))
-                return new(false, input, null);
-
-            return new(true, localName, prefix);
-        }
+        return new XmlNameInfo(!string.IsNullOrWhiteSpace(prefix),
+            localName, prefix);
     }
 
-    /// <inheritdoc cref="Element.Element(string, string?, string?)" />
-    public static Element Element(string name, string? xmlns = default, string? text = default)
-        => new(name, xmlns, text);
-
-    internal static (StringBuilder Output, XmlWriter Writer) CreateXmlWriter(bool indent, StringBuilder? output = default)
+    public static string ToString(this XElement e, bool indented)
     {
-        output ??= new StringBuilder();
+        var sb = StringBuilderPool.Rent();
 
+        using (var writer = CreateWriter(indented, sb))
+            e.WriteTo(writer);
+
+        return StringBuilderPool.Return(sb);
+    }
+
+    internal static XmlWriter CreateWriter(bool indented, StringBuilder output)
+    {
         var settings = new XmlWriterSettings
         {
-            Indent = indent,
+            Indent = indented,
             IndentChars = "  ",
             CheckCharacters = true,
             CloseOutput = true,
@@ -72,138 +49,131 @@ public static class Xml
             NewLineChars = "\n"
         };
 
-        return (output, XmlWriter.Create(new StringWriter(output), settings));
+        return XmlWriter.Create(new StringWriter(output), settings);
     }
 
-    /// <summary>
-    /// Helper function that converts <see cref="XElement" /> to <see cref="Element" />.
-    /// </summary>
-    /// <param name="e">Element that will be converted.</param>
-    public static Element ToXmppElement(this XElement e)
+    #region Get/Set/Remvove Tag (String)
+
+    public static bool HasTag(this XElement e, string localName)
+        => e.HasTag(e.GetNamespace() + localName);
+
+    public static string GetTag(this XElement e, string localName)
+        => e.GetTag(e.GetNamespace() + localName);
+
+    public static void RemoveTag(this XElement e, string localName)
+        => e.RemoveTag(e.GetNamespace() + localName);
+
+    public static void SetTag(this XElement e, string localName, object value = default)
+        => e.SetTag(e.GetNamespace() + localName, value);
+
+    #endregion
+
+    #region Get/Set/Remvove Tag (XName)
+
+    public static bool HasTag(this XElement e, XName name)
+        => e.Element(name) != null;
+
+    public static string GetTag(this XElement e, XName name)
+        => e.Element(name)?.Value;
+
+    public static void RemoveTag(this XElement e, XName name)
+        => e.Element(name)?.Remove();
+
+    public static void SetTag(this XElement e, XName name, object value = default)
     {
-        var name = e.Name;
-        var ns = name.NamespaceName;
-        var prefix = e.GetPrefixOfNamespace(name.Namespace);
+        var result = new XElement(name);
 
-        if (string.IsNullOrEmpty(ns) && name.LocalName
-            is "iq" or "message" or "presence")
-        {
-            ns = Namespaces.Client;
-        }
+        e.Add(result);
 
-        var result = ElementFactory.Create(name.LocalName, prefix, ns);
+        if (value != null)
+            result.SetValue(value);
+    }
 
-        if (string.IsNullOrEmpty(ns))
-            ns = null;
+    #endregion
 
-        if (prefix != null)
-            result.SetNamespace(prefix, ns);
+
+    #region Get/Set/Remove Attribute Helper
+
+    public static string GetAttribute(this XElement e, XName name)
+        => e.Attribute(name)?.Value;
+
+    public static bool HasAttribute(this XElement e, XName name)
+        => e.Attribute(name) != null;
+
+    public static void RemoveAttribute(this XElement e, XName name)
+        => e.Attribute(name)?.Remove();
+
+    public static void SetAttribute(this XElement e, XName name, object value)
+    {
+        var attr = e.Attribute(name);
+
+        if (value is null)
+            attr?.Remove();
         else
-            result.SetNamespace(ns);
-
-        foreach (var attr in e.Attributes())
         {
-            var str = attr.ToString();
-            var ofs = str.IndexOf('=');
-            var attName = str[0..ofs];
-            var attVal = str[(ofs + 2)..^1];
-            result._attributes[attName] = attVal;
-        }
-
-        foreach (var children in e.Elements())
-            result.AddChild(children.ToXmppElement());
-
-        return result;
-    }
-
-    /// <summary>
-    /// Helper function that parses XML from a file.
-    /// </summary>
-    /// <param name="fileName">XML file name.</param>
-    /// <param name="encoding">Optionally a file encoding (default: <see cref="Encoding.UTF8" />)</param>
-    /// <param name="bufferSize">XML parser internal character buffer size (default: <see cref="Parser.DefaultBufferSize" />)</param>
-    public static async Task<Element> ParseFromFileAsync(string fileName, Encoding? encoding = default, int bufferSize = -1)
-    {
-        using (var stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
-            return await ParseFromStreamAsync(stream, encoding, bufferSize);
-    }
-
-    /// <summary>
-    /// Helper function that parses XML from a byte buffer.
-    /// </summary>
-    /// <param name="buffer"></param>
-    /// <param name="encoding">Optionally a file encoding (default: <see cref="Encoding.UTF8" />)</param>
-    /// <param name="bufferSize">XML parser internal character buffer size (default: <see cref="Parser.DefaultBufferSize" />)</param>
-    public static async Task<Element> ParseFromBufferAsync(byte[] buffer, Encoding? encoding = default, int bufferSize = -1)
-    {
-        using (var ms = new MemoryStream(buffer))
-            return await ParseFromStreamAsync(ms, encoding, bufferSize);
-    }
-
-    /// <summary>
-    /// Helper function that parses XML from a stream.
-    /// </summary>
-    /// <param name="stream"></param>
-    /// <param name="encoding">Optionally a file encoding (default: <see cref="Encoding.UTF8" />)</param>
-    /// <param name="bufferSize">XML parser internal character buffer size (default: <see cref="Parser.DefaultBufferSize" />)</param>
-
-    public static async Task<Element> ParseFromStreamAsync(Stream stream, Encoding? encoding = default, int bufferSize = -1)
-    {
-        using (var parser = new Parser(encoding, bufferSize))
-        {
-            parser.Reset(stream);
-
-            var tcs = new TaskCompletionSource<Element>();
-
-            {
-                AsyncAction<Element> handler = default;
-
-                handler = e =>
-                {
-                    parser.OnStreamElement -= handler;
-                    tcs.TrySetResult(e);
-                    return Task.CompletedTask;
-                };
-
-                parser.OnStreamElement += handler;
-
-                while (await parser.ReadAsync())
-                    await Task.Delay(0);
-            }
-
-            return await tcs.Task;
-        }
-    }
-
-    internal static void ToStringXml(Element element, XmlWriter writer)
-    {
-        writer.WriteStartElement(element.Prefix, element.LocalName, element.GetNamespace(element.Prefix));
-
-        foreach (var (name, value) in element.Attributes)
-        {
-            var result = ExtractQualifiedName(name);
-
-            if (!result.HasPrefix)
-                writer.WriteAttributeString(result.LocalName, value);
+            if (attr == null)
+                e.Add(new XAttribute(name, value));
             else
-            {
-                var ns = result.Prefix switch
-                {
-                    "xml" => Namespaces.Xml,
-                    "xmlns" => Namespaces.Xmlns,
-                    _ => element.GetNamespace(result.Prefix)
-                };
-
-                writer.WriteAttributeString(result.LocalName, ns, value);
-            }
+                attr.SetValue(value);
         }
-
-        if (element.Content != null)
-            writer.WriteString(element.Content);
-
-        foreach (var child in element.Children())
-            ToStringXml(child, writer);
-
-        writer.WriteEndElement();
     }
+
+    #endregion
+
+    #region Get/Set Namespace Helper
+
+    public static XNamespace GetNamespace(this XElement e)
+        => e.Name.Namespace;
+
+    public static XNamespace GetNamespace(this XElement e, string prefix)
+        => e.GetNamespaceOfPrefix(prefix);
+
+    public static void SetNamespace(this XElement e, string xmlns)
+    {
+        var oldNamespace = e.Name.Namespace;
+
+        e.Descendants().ForEach(n =>
+        {
+            if (n.Name.Namespace == oldNamespace)
+                n.Name = XName.Get(n.Name.LocalName, xmlns);
+        });
+    }
+
+    #endregion
+
+    #region Get Element (String)
+
+    public static XElement Child(this XElement e, string localName)
+        => e.Element(e.GetNamespace() + localName);
+
+    public static IEnumerable<XElement> Children(this XElement e, string localName)
+        => e.Elements(e.GetNamespace() + localName);
+
+    #endregion
+
+    #region Get Element (Generic)    
+
+    public static T Element<T>(this XElement e) where T : XElement
+        => e.Elements<T>().FirstOrDefault();
+
+    public static IEnumerable<T> Elements<T>(this XElement e) where T : XElement
+        => e.Elements().OfType<T>();
+
+    #endregion
+
+    #region Try Get Element (String & XName)
+
+    public static bool TryGetChild(this XElement e, string localName, out XElement result)
+    {
+        result = e.Element(e.GetNamespace() + localName);
+        return result != null;
+    }
+
+    public static bool TryGetChild(this XElement e, XName name, out XElement result)
+    {
+        result = e.Element(name);
+        return result != null;
+    }
+
+    #endregion
 }

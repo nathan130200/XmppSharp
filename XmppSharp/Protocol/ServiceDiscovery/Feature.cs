@@ -1,37 +1,24 @@
-﻿using XmppSharp.Attributes;
-using XmppSharp.Dom;
+﻿using System.Xml.Linq;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.ServiceDiscovery;
 
-/// <summary>
-/// Represents a feature in a service discovery information (disco#info) response.
-/// </summary>
-[XmppTag("feature", Namespaces.DiscoInfo)]
-public class Feature : Element
+[XmppTag("feature", "http://jabber.org/protocol/disco#info")]
+public class Feature : XElement
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Feature"/> class with no feature name.
-    /// </summary>
-    public Feature() : base("feature", Namespaces.DiscoInfo)
+    public Feature() : base(Namespace.DiscoInfo + "feature")
     {
 
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Feature"/> class with the specified feature name.
-    /// </summary>
-    /// <param name="featureName">The name of the feature.</param>
     public Feature(string featureName) : this()
     {
         Name = featureName;
     }
 
-    /// <summary>
-    /// Gets or sets the name of the feature.
-    /// </summary>
-    public string Name
+    public new string Name
     {
-        get => GetAttribute("var");
-        set => SetAttribute("var", value);
+        get => this.GetAttribute("var");
+        set => this.SetAttribute("var", value);
     }
 }

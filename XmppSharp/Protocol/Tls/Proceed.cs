@@ -1,20 +1,12 @@
-﻿using XmppSharp.Attributes;
-using XmppSharp.Dom;
+﻿using System.Xml.Linq;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Tls;
 
-/// <summary>
-/// Represents a "proceed" element used in the TLS (Transport Layer Security) negotiation within XMPP. 
-/// <para>Receiving a "proceed" element indicates that the server is ready to begin the TLS handshake.</para>
-/// <para>In this case, both the sides should initiate the handshake process on their respective sockets.</para>
-/// </summary>
-[XmppTag("proceed", Namespaces.Tls)]
-public sealed class Proceed : Element
+[XmppTag("proceed", "urn:ietf:params:xml:ns:xmpp-tls")]
+public sealed class Proceed : XElement
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Proceed"/> class.
-    /// </summary>
-    public Proceed() : base("proceed", Namespaces.Tls)
+    public Proceed() : base(Namespace.Tls + "proceed")
     {
 
     }

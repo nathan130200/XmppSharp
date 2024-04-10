@@ -4,7 +4,7 @@
 		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>annotations</Nullable>
-		<NoWarn>CA2255,CS1998</NoWarn>
+		<NoWarn>CA2255;CS1998;CS1591</NoWarn>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -17,7 +17,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.4.2</Version>
+		<Version>2.0.0</Version>
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>embedded</DebugType>
 		<Copyright>nathan130200</Copyright>

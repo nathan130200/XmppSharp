@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 using System.Text;
-using XmppSharp.Dom;
+using System.Xml.Linq;
 
 namespace XmppSharp;
 
@@ -24,7 +24,7 @@ public static class Utilities
     /// <param name="self">Nullable instance value.</param>
     /// <param name="result">Output variable to receive the value if it is not null (i.e.: <see cref="Nullable{T}.HasValue" /> is <see langword="true" />)</param>
     /// <returns>Returns the same value as <see cref="Nullable{T}.HasValue" />.</returns>
-    public static bool TryUnwrap<T>(this T? self, out T result) where T : struct
+    public static bool TryGetValue<T>(this T? self, out T result) where T : struct
     {
         result = self ?? default;
         return self.HasValue;
@@ -33,8 +33,8 @@ public static class Utilities
     /// <summary>
     /// Removes all elements from the collection from their respective parents.
     /// </summary>
-    /// <param name="elements">Elements that will be removed.</param>
-    public static void Remove(this IEnumerable<Element> elements)
+    /// <param name="elements">XElements that will be removed.</param>
+    public static void Remove(this IEnumerable<XElement> elements)
         => elements.ForEach(n => n.Remove());
 
     /// <summary>
@@ -110,7 +110,7 @@ public static class Utilities
     /// <param name="defaultValue">A fallback value if the attribute does not exist or cannot be parsed.</param>
     /// <param name="provider">Optionally the format provider that will be used for parsing.</param>
     /// <returns>Attribute value parsed as <typeparamref name="T" />.</returns>
-    public static T GetAttributeValue<T>(this Element e, string name, T defaultValue = default, IFormatProvider provider = default) where T : IParsable<T>
+    public static T GetAttributeValue<T>(this XElement e, string name, T defaultValue = default, IFormatProvider provider = default) where T : IParsable<T>
     {
         if (e.HasAttribute(name) && T.TryParse(e.GetAttribute(name), provider ?? CultureInfo.InvariantCulture, out var result))
             return result;
@@ -128,7 +128,7 @@ public static class Utilities
     /// <param name="converter">Function that will convert the string into <typeparamref name="T" />.</param>
     /// <param name="defaultValue">A fallback value if the attribute does not exist or cannot be parsed.</param>
     /// <returns>Attribute value parsed as <typeparamref name="T" />.</returns>
-    public static T GetAttributeValue<T>(this Element e, string name, TryParseDelegate<T> converter, T defaultValue = default)
+    public static T GetAttributeValue<T>(this XElement e, string name, TryParseDelegate<T> converter, T defaultValue = default)
     {
         if (e.HasAttribute(name))
         {
@@ -144,7 +144,7 @@ public static class Utilities
     /// <summary>
     /// Sets the attribute value.
     /// </summary>
-    /// <typeparam name="E">Element type.</typeparam>
+    /// <typeparam name="E">XElement type.</typeparam>
     /// <typeparam name="V">Value type.</typeparam>
     /// <param name="e">Instance of the current element.</param>
     /// <param name="name">Attribute name.</param>
@@ -153,7 +153,7 @@ public static class Utilities
     /// <param name="ifp">Optionally the format provider that will be used in conversion.</param>
     /// <returns>Instance of the element itself for nesting other functions.</returns>
     public static E SetAttributeValue<E, V>(this E e, string name, V? value, string? format = default, IFormatProvider? ifp = default)
-        where E : Element
+        where E : XElement
         where V : struct
     {
         return e.SetAttributeValue(name, value.GetValueOrDefault(), format, ifp);
@@ -162,7 +162,7 @@ public static class Utilities
     /// <summary>
     /// Sets the attribute value.
     /// </summary>
-    /// <typeparam name="E">Element type.</typeparam>
+    /// <typeparam name="E">XElement type.</typeparam>
     /// <param name="e">Instance of the current element.</param>
     /// <param name="name">Attribute name.</param>
     /// <param name="value">Raw value of the attribute that will be converted into a string.</param>
@@ -170,7 +170,7 @@ public static class Utilities
     /// <param name="ifp">Optionally the format provider that will be used in conversion.</param>
     /// <returns>Instance of the element itself for nesting other functions.</returns>
     public static E SetAttributeValue<E>(this E e, string name, object value, string? format = default, IFormatProvider? ifp = default)
-        where E : Element
+        where E : XElement
     {
         ifp ??= CultureInfo.InvariantCulture;
 
@@ -197,48 +197,55 @@ public static class Utilities
     /// </param>
     /// <param name="value">Content (text) of the child element.</param>
     /// <returns>Instance of the child element for nesting other functions.</returns>
-    public static Element C(this Element e, string name, string xmlns = default, string value = default)
+    public static XElement C(this XElement e, string name, string xmlns = default, object value = default)
     {
+        var ns = XNamespace.None;
+
         if (xmlns == null)
         {
             var qualifiedName = Xml.ExtractQualifiedName(name);
 
-            xmlns = qualifiedName.HasPrefix
+            ns = qualifiedName.HasPrefix
                 ? e.GetNamespace(qualifiedName.Prefix)
-                : e.Namespace;
+                : e.GetNamespace();
         }
 
-        var child = new Element(name, xmlns, value);
-        e.AddChild(child);
+        var child = new XElement(ns + name);
+
+        e.Add(child);
+
+        if (value != null)
+            e.SetValue(value);
+
         return child;
     }
 
     /// <summary>
     /// Adds a child element to the current parent and returns the parent.
     /// </summary>
-    /// <typeparam name="E">Element type.</typeparam>
+    /// <typeparam name="E">XElement type.</typeparam>
     /// <param name="e">Parent element.</param>
     /// <param name="child">Child element.</param>
     /// <returns>Instance of the parent element for nesting other functions.</returns>
-    public static E C<E>(this E e, Element child) where E : Element
+    public static E C<E>(this E e, XElement child) where E : XElement
     {
-        e.AddChild(child);
+        e.Add(child);
         return e;
     }
 
     /// <summary>
     /// Adds a child element to the current parent and returns the parent.
     /// </summary>
-    /// <typeparam name="TParent">Element type.</typeparam>
-    /// <typeparam name="TChild">Element type.</typeparam>
+    /// <typeparam name="TParent">XElement type.</typeparam>
+    /// <typeparam name="TChild">XElement type.</typeparam>
     /// <param name="e">Parent element.</param>
     /// <param name="child">Child element.</param>
     /// <returns>Instance of the parent element for nesting other functions.</returns>
     public static TParent C<TParent, TChild>(this TParent e, TChild child)
-        where TParent : Element
-        where TChild : Element
+        where TParent : XElement
+        where TChild : XElement
     {
-        e.AddChild(child);
+        e.Add(child);
         return e;
     }
 
@@ -247,7 +254,7 @@ public static class Utilities
     /// </summary>
     /// <param name="e">Child element that will be used as a starting point.</param>|
     /// <returns>The parent element or <see langword="null"/> if the given element is the root element of the XML tree.</returns>
-    public static Element Up(this Element e)
+    public static XElement Up(this XElement e)
         => e.Parent;
 
     /// <summary>
@@ -255,9 +262,9 @@ public static class Utilities
     /// </summary>
     /// <param name="e">Child element that will be used as a starting point.</param>|
     /// <returns>Root element or the element itself if it is the root of the XML tree.</returns>
-    public static Element Root(this Element e)
+    public static XElement Root(this XElement e)
     {
-        while (!e.IsRootElement)
+        while (e.Parent != null)
             e = e.Parent;
 
         return e;

@@ -1,50 +1,38 @@
-﻿using XmppSharp.Attributes;
-using XmppSharp.Dom;
+﻿using System.Xml.Linq;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Tls;
 
-/// <summary>
-/// Represents a "starttls" element used to initiate TLS (Transport Layer Security) negotiation within XMPP.
-/// This element indicates the intent for both the client and server to transition the existing connection to a secure TLS session.
-/// </summary>
-[XmppTag("starttls", Namespaces.Tls)]
-public sealed class StartTls : Element
+[XmppTag("starttls", "urn:ietf:params:xml:ns:xmpp-tls")]
+public sealed class StartTls : XElement
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="StartTls"/> class with a default policy of null.
-    /// </summary>
-    public StartTls() : base("starttls", Namespaces.Tls)
+    public StartTls() : base(Namespace.Tls + "starttls")
     {
 
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="StartTls"/> class with the specified policy.
-    /// </summary>
-    /// <param name="policy">The policy to include in the "starttls" element, indicating whether TLS is optional or required.</param>
     public StartTls(StartTlsPolicy policy) : this()
         => Policy = policy;
 
-    /// <summary>
-    /// Gets or sets the TLS policy indicating whether TLS is optional or required.
-    /// </summary>
     public StartTlsPolicy? Policy
     {
         get
         {
-            if (HasTag("optional"))
+            if (this.HasTag("optional"))
                 return StartTlsPolicy.Optional;
-            if (HasTag("required"))
+
+            if (this.HasTag("required"))
                 return StartTlsPolicy.Required;
 
             return null;
         }
         set
         {
-            Children().Remove();
+            this.RemoveTag("optional");
+            this.RemoveTag("required");
 
-            if (value.TryUnwrap(out var result))
-                SetTag(result.ToXmppName());
+            if (value.TryGetValue(out var result))
+                this.SetTag(result.ToXmppName());
         }
     }
 }

@@ -1,52 +1,32 @@
-﻿using XmppSharp.Attributes;
-using XmppSharp.Dom;
+﻿using System.Xml.Linq;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Base;
 
-/// <summary>
-/// Represents an error element used within XMPP streams to signal errors during communication establishment.
-/// <para>This class provides properties to specify the error condition and an optional text description for more detailed explanations.</para>
-/// </summary>
-[XmppTag("error", Namespaces.Stream)]
-public class StreamError : Element
+[XmppTag("error", "http://etherx.jabber.org/streams")]
+public class StreamError : XElement
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="StreamError"/> class.
-    /// </summary>
-    public StreamError() : base("stream:error", Namespaces.Stream)
+    public StreamError() : base(Namespace.Stream + "error",
+        new XAttribute(XNamespace.Xmlns + "stream", Namespace.Stream))
     {
 
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="StreamError"/> class with the specified error condition.
-    /// </summary>
-    /// <param name="condition">The XMPP stream error condition.</param>
-    public StreamError(StreamErrorCondition condition) : this()
+    public StreamError(StreamErrorCondition condition, string text = default) : this()
     {
         Condition = condition;
+
+        if (text != null)
+            Text = text;
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="StreamError"/> class with the specified error condition and text description.
-    /// </summary>
-    /// <param name="condition">The XMPP stream error condition.</param>
-    /// <param name="text">An optional text description of the error.</param>
-    public StreamError(StreamErrorCondition condition, string? text) : this(condition)
-    {
-        Text = text;
-    }
-
-    /// <summary>
-    /// Gets or sets the error condition associated with the stream error, indicating the specific issue encountered.
-    /// </summary>
     public StreamErrorCondition Condition
     {
         get
         {
             foreach (var (name, value) in XmppEnum.GetValues<StreamErrorCondition>())
             {
-                if (HasTag(name, Namespaces.Streams))
+                if (this.HasTag(Namespace.Streams + name))
                     return value;
             }
 
@@ -54,25 +34,22 @@ public class StreamError : Element
         }
         set
         {
-            foreach (var tag in XmppEnum.GetNames<StreamErrorCondition>())
-                RemoveTag(tag, Namespaces.Streams);
+            this.RemoveTag(Namespace.Streams + Condition.ToXmppName());
 
-            SetTag(value.ToXmppName(), xmlns: Namespaces.Streams);
+            if (XmppEnum.IsDefined(value))
+                this.SetTag(Namespace.Streams + value.ToXmppName());
         }
     }
 
-    /// <summary>
-    /// Gets or sets the optional text description of the stream error, providing additional details about the issue.
-    /// </summary>
     public string? Text
     {
-        get => GetTag("text", Namespaces.Streams);
+        get => this.GetTag(Namespace.Streams + "text");
         set
         {
             if (value == null)
-                RemoveTag("text", Namespaces.Streams);
+                this.RemoveTag(Namespace.Streams + "text");
             else
-                SetTag("text", Namespaces.Streams, value);
+                this.SetTag(Namespace.Streams + "text", value);
         }
     }
 }

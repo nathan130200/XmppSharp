@@ -27,7 +27,7 @@ public enum IqType
     Get,
 
     /// <summary>
-    /// The stanza is a response to a successful get or set request.
+    /// The stanza is a response to a successful <see cref="Get" /> or <see cref="Set" /> request.
     /// </summary>
     [XmppMember("result")]
     Result

@@ -1,31 +1,23 @@
-﻿using XmppSharp.Attributes;
-using XmppSharp.Dom;
+﻿using System.Xml.Linq;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.DataForms;
 
-/// <summary>
-/// Represents an "item" element used within Data Forms in XMPP.
-/// <para>This element serves as a container for a single field within a data form.</para>
-/// <para>It can hold various field types, such as text, lists, or boolean values.</para>
-/// </summary>
-[XmppTag("item", Namespaces.DataForms)]
-public class Item : Element
+[XmppTag("item", "jabber:x:data")]
+public class Item : XElement
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Item"/> class.
-    /// </summary>
-    public Item() : base("item", Namespaces.DataForms)
+    public Item() : base("item", Namespace.DataForms)
     {
 
     }
 
-    /// <summary>
-    /// Gets or sets the field contained within the item.
-    /// The field object defines the specific data type and value associated with this item.
-    /// </summary>
     public Field? Field
     {
-        get => Child<Field>();
-        set => ReplaceChild(value);
+        get => this.Element<Field>();
+        set
+        {
+            Field?.Remove();
+            Add(value);
+        }
     }
 }

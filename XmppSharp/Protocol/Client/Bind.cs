@@ -1,60 +1,39 @@
-﻿using XmppSharp.Attributes;
-using XmppSharp.Dom;
+﻿using System.Xml.Linq;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Client;
 
-/// <summary>
-/// Represents a "bind" element used within XMPP for resource binding.
-/// <para>This class facilitates the binding of a resource to a JID (Jabber ID), allowing multiple resources to connect to the same account.</para>
-/// </summary>
-[XmppTag("bind", Namespaces.Bind)]
-public class Bind : Element
+[XmppTag("bind", "urn:ietf:params:xml:ns:xmpp-bind")]
+public class Bind : XElement
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Bind"/> class.
-    /// </summary>
-    public Bind() : base("bind", Namespaces.Bind)
+    public Bind() : base(Namespace.Bind + "bind")
     {
 
     }
 
-    /// <summary>
-    /// Creates a "bind" element with a specified resource for binding.
-    /// </summary>
-    /// <param name="resource">The resource to bind.</param>
     public Bind(string resource) : this()
         => Resource = resource;
 
-    /// <summary>
-    /// Creates a "bind" element with a specified JID for binding.
-    /// </summary>
-    /// <param name="jid">The JID to bind.</param>
     public Bind(Jid jid) : this()
         => Jid = jid;
 
-    /// <summary>
-    /// Gets or sets the resource to be bound.
-    /// </summary>
     public string Resource
     {
-        get => GetTag("resource");
+        get => this.GetTag("resource");
         set
         {
             if (value == null)
-                RemoveTag("resource");
+                this.RemoveTag("resource");
             else
-                SetTag("resource", value);
+                this.SetTag("resource", value);
         }
     }
 
-    /// <summary>
-    /// Gets or sets the JID to be bound.
-    /// </summary>
     public Jid Jid
     {
         get
         {
-            var jid = GetTag("jid");
+            var jid = this.GetTag("jid");
 
             if (Jid.TryParse(jid, out var result))
                 return result;
@@ -64,9 +43,9 @@ public class Bind : Element
         set
         {
             if (value == null)
-                RemoveTag("jid");
+                this.RemoveTag("jid");
             else
-                SetTag("jid", value.ToString());
+                this.SetTag("jid", value.ToString());
         }
     }
 }

@@ -1,19 +1,12 @@
-﻿using XmppSharp.Attributes;
-using XmppSharp.Dom;
+﻿using System.Xml.Linq;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Sasl;
 
-/// <summary>
-/// Represents a "success" element used in the Simple Authentication and Security Layer (SASL) negotiation within XMPP. 
-/// <para>Receipt of this element indicates successful authentication.</para>
-/// </summary>
-[XmppTag("success", Namespaces.Sasl)]
-public sealed class Success : Element
+[XmppTag("success", "urn:ietf:params:xml:ns:xmpp-sasl")]
+public class Success : XElement
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Success"/> class.
-    /// </summary>
-    public Success() : base("success", Namespaces.Sasl)
+    public Success() : base(Namespace.Sasl + "success")
     {
 
     }
