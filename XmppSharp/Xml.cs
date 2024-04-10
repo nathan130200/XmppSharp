@@ -32,43 +32,30 @@ public static class Xml
 
     #region Serialization / Deserialization
 
-    public static string ToString(this XElement element, bool indented)
+    public static string ToString(this XElement element, bool indented, char indentChar = ' ', int indentSize = 2)
     {
         Require.NotNull(element);
 
-        string result;
-
-        StringBuilder sb = default;
-
-        try
+        using (StringBuilderPool.Rent(out var sb))
         {
-            sb = StringBuilderPool.Rent();
-
-            using (var writer = CreateWriter(indented, sb))
+            using (var writer = CreateWriter(indented, sb, new(indentChar, indentSize)))
                 element.WriteTo(writer);
-        }
-        catch
-        {
-            throw;
-        }
-        finally
-        {
-            StringBuilderPool.Return(sb, out result);
-        }
 
-        return result;
+            return sb.ToString();
+        }
     }
 
-    internal static readonly string IndentChars = "  ";
-
-    internal static XmlWriter CreateWriter(bool indented, StringBuilder output)
+    internal static XmlWriter CreateWriter(bool indented, StringBuilder output, string indentChars)
     {
         Require.NotNull(output);
+
+        if (indented)
+            Require.NotNullOrWhiteSpace(indentChars);
 
         var settings = new XmlWriterSettings
         {
             Indent = indented,
-            IndentChars = IndentChars,
+            IndentChars = indentChars,
             CheckCharacters = true,
             CloseOutput = true,
             ConformanceLevel = ConformanceLevel.Fragment,
