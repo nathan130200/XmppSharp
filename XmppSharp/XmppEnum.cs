@@ -155,7 +155,6 @@ internal class XmppEnum<T>
     static XmppEnum()
     {
         var baseType = typeof(T);
-        var attr = baseType.GetCustomAttribute<XmppEnumAttribute>();
 
         var values = new Dictionary<string, T>();
 

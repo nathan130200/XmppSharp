@@ -4,7 +4,7 @@ namespace System.Text;
 
 public static class StringBuilderPool
 {
-    private static ConcurrentBag<StringBuilder> s_Pool = new();
+    static readonly ConcurrentBag<StringBuilder> s_Pool = new();
 
     public static StringBuilder Rent()
     {

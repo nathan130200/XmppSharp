@@ -1,45 +1,74 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 
 namespace XmppSharp;
 
-public readonly record struct XmlNameInfo(bool HasPrefix, string LocalName, string Prefix);
+public readonly record struct XmlNameInfo(
+    bool HasPrefix,
+    string LocalName,
+    string? Prefix);
 
 public static class Xml
 {
     public const string StreamEnd = "</stream:stream>";
 
-    public static XmlNameInfo ExtractQualifiedName(string s)
+    public static XmlNameInfo ExtractQualifiedName(string source)
     {
-        var ofs = s.IndexOf(':');
+        Require.NotNullOrWhiteSpace(source);
+
+        var ofs = source.IndexOf(':');
         string prefix = default, localName;
 
         if (ofs != -1)
-            prefix = s[0..ofs];
+            prefix = source[0..ofs];
 
-        localName = s[(ofs + 1)..];
+        localName = source[(ofs + 1)..];
 
-        return new XmlNameInfo(!string.IsNullOrWhiteSpace(prefix),
-            localName, prefix);
+        return new XmlNameInfo(!string.IsNullOrWhiteSpace(prefix), localName, prefix);
     }
 
-    public static string ToString(this XElement e, bool indented)
+    #region Serialization / Deserialization
+
+    public static string ToString(this XElement element, bool indented)
     {
-        var sb = StringBuilderPool.Rent();
+        Require.NotNull(element);
 
-        using (var writer = CreateWriter(indented, sb))
-            e.WriteTo(writer);
+        string result;
 
-        return StringBuilderPool.Return(sb);
+        StringBuilder sb = default;
+
+        try
+        {
+            sb = StringBuilderPool.Rent();
+
+            using (var writer = CreateWriter(indented, sb))
+                element.WriteTo(writer);
+        }
+        catch
+        {
+            throw;
+        }
+        finally
+        {
+            StringBuilderPool.Return(sb, out result);
+        }
+
+        return result;
     }
+
+    internal static readonly string IndentChars = "  ";
 
     internal static XmlWriter CreateWriter(bool indented, StringBuilder output)
     {
+        Require.NotNull(output);
+
         var settings = new XmlWriterSettings
         {
             Indent = indented,
-            IndentChars = "  ",
+            IndentChars = IndentChars,
             CheckCharacters = true,
             CloseOutput = true,
             ConformanceLevel = ConformanceLevel.Fragment,
@@ -52,38 +81,217 @@ public static class Xml
         return XmlWriter.Create(new StringWriter(output), settings);
     }
 
+    #endregion
+
+    #region Dynamic Get/Set Attributes
+
+    public static IReadOnlyDictionary<string, string> GetAttributes(this XElement element)
+    {
+        Require.NotNull(element);
+
+        var result = new Dictionary<string, string>();
+
+        foreach (var attr in element.Attributes())
+        {
+            string attrName;
+
+            var baseName = attr.Name;
+
+            if (baseName.Namespace == XNamespace.None)
+                attrName = baseName.LocalName;
+            else
+                attrName = string.Concat(element.GetPrefixOfNamespace(baseName.Namespace), ':', baseName.LocalName);
+
+            result[attrName] = attr.Value;
+        }
+
+        return result;
+    }
+
+    public static T SetAttributes<T>(this T element, Dictionary<XName, object> attributes) where T : XElement
+    {
+        Require.NotNull(element);
+        Require.NotNull(attributes);
+
+        if (attributes != null)
+        {
+            foreach (var (name, rawValue) in attributes)
+            {
+                if (rawValue is null)
+                {
+                    element.SetAttribute(name, string.Empty);
+                    continue;
+                }
+
+                if (rawValue is ITuple tuple)
+                {
+                    if (tuple[0] is IFormattable fmt)
+                    {
+                        string format = tuple.Length >= 2 ? tuple[1] as string : default;
+                        IFormatProvider provider = tuple.Length >= 3 ? tuple[2] as IFormatProvider : default;
+                        element.SetAttribute(name, fmt.ToString(format, provider));
+                        continue;
+                    }
+                    else if (tuple[0] is IConvertible conv)
+                    {
+                        element.SetAttribute(name, conv.ToString(CultureInfo.InvariantCulture));
+                        continue;
+                    }
+
+                    element.SetAttribute(name, rawValue);
+                }
+            }
+        }
+
+        return element;
+    }
+
+    #endregion
+
+    #region Fluent API
+
+    public static XElement Element(XName name, object? value = default, Dictionary<XName, object>? attributes = default)
+    {
+        Require.NotNull(name);
+
+        var result = new XElement(name);
+
+        if (value != null)
+            result.SetValue(value);
+
+        if (attributes != null)
+            result.SetAttributes(attributes);
+
+        return result;
+    }
+
+    public static T C<T>(this XElement parent, Action<T>? callback) where T : XElement, new()
+    {
+        Require.NotNull(parent);
+
+        var child = new T();
+        parent.Add(child);
+        callback?.Invoke(child);
+
+        return child;
+    }
+
+    public static T C<T>(this XElement parent, T child) where T : XElement, new()
+    {
+        Require.NotNull(parent);
+        Require.NotNull(child);
+
+        parent.Add(child);
+
+        return child;
+    }
+
+    public static XElement C(this XElement parent, XName name, object? value = default, Dictionary<XName, object>? attributes = default)
+    {
+        Require.NotNull(parent);
+        Require.NotNull(name);
+
+        var result = Element(name, value, attributes);
+        parent.Add(result);
+        return result;
+    }
+
+    public static XElement C(this XElement parent, string localName, object? value = default, Dictionary<XName, object>? attributes = default)
+    {
+        Require.NotNull(parent);
+        Require.NotNullOrWhiteSpace(localName);
+
+        var result = Element(parent.GetNamespace() + localName, value, attributes);
+        parent.Add(result);
+        return result;
+    }
+
+    public static XElement Up(this XElement child)
+    {
+        Require.NotNull(child);
+        return child.Parent;
+    }
+
+    public static XElement Root(this XElement child)
+    {
+        Require.NotNull(child);
+
+        while (child.Parent != null)
+            child = child.Parent;
+
+        return child;
+    }
+
+    #endregion
+
     #region Get/Set/Remvove Tag (String)
 
-    public static bool HasTag(this XElement e, string localName)
-        => e.HasTag(e.GetNamespace() + localName);
+    public static bool HasTag(this XElement element, string localName)
+    {
+        Require.NotNull(element);
+        Require.NotNullOrWhiteSpace(localName);
+        return element.HasTag(element.GetNamespace() + localName);
+    }
 
-    public static string GetTag(this XElement e, string localName)
-        => e.GetTag(e.GetNamespace() + localName);
+    public static string GetTag(this XElement element, string localName)
+    {
+        Require.NotNull(element);
+        Require.NotNullOrWhiteSpace(localName);
+        return element.GetTag(element.GetNamespace() + localName);
+    }
 
-    public static void RemoveTag(this XElement e, string localName)
-        => e.RemoveTag(e.GetNamespace() + localName);
+    public static void RemoveTag(this XElement element, string localName)
+    {
+        Require.NotNull(element);
+        Require.NotNullOrWhiteSpace(localName);
 
-    public static void SetTag(this XElement e, string localName, object value = default)
-        => e.SetTag(e.GetNamespace() + localName, value);
+        element.RemoveTag(element.GetNamespace() + localName);
+    }
+
+    public static void SetTag(this XElement element, string localName, object value = default)
+    {
+        Require.NotNull(element);
+        Require.NotNullOrWhiteSpace(localName);
+
+        element.SetTag(element.GetNamespace() + localName, value);
+    }
 
     #endregion
 
     #region Get/Set/Remvove Tag (XName)
 
-    public static bool HasTag(this XElement e, XName name)
-        => e.Element(name) != null;
-
-    public static string GetTag(this XElement e, XName name)
-        => e.Element(name)?.Value;
-
-    public static void RemoveTag(this XElement e, XName name)
-        => e.Element(name)?.Remove();
-
-    public static void SetTag(this XElement e, XName name, object value = default)
+    public static bool HasTag(this XElement element, XName name)
     {
+        Require.NotNull(element);
+        Require.NotNull(name);
+
+        return element.Element(name) != null;
+    }
+
+    public static string GetTag(this XElement element, XName name)
+    {
+        Require.NotNull(element);
+        Require.NotNull(name);
+
+        return element.Element(name)?.Value;
+    }
+
+    public static void RemoveTag(this XElement element, XName name)
+    {
+        Require.NotNull(element);
+        Require.NotNull(name);
+
+        element.Element(name)?.Remove();
+    }
+
+    public static void SetTag(this XElement element, XName name, object value = default)
+    {
+        Require.NotNull(element);
+        Require.NotNull(name);
+
         var result = new XElement(name);
 
-        e.Add(result);
+        element.Add(result);
 
         if (value != null)
             result.SetValue(value);
@@ -91,28 +299,45 @@ public static class Xml
 
     #endregion
 
-
     #region Get/Set/Remove Attribute Helper
 
-    public static string GetAttribute(this XElement e, XName name)
-        => e.Attribute(name)?.Value;
-
-    public static bool HasAttribute(this XElement e, XName name)
-        => e.Attribute(name) != null;
-
-    public static void RemoveAttribute(this XElement e, XName name)
-        => e.Attribute(name)?.Remove();
-
-    public static void SetAttribute(this XElement e, XName name, object value)
+    public static string GetAttribute(this XElement element, XName name)
     {
-        var attr = e.Attribute(name);
+        Require.NotNull(element);
+        Require.NotNull(name);
+
+        return element.Attribute(name)?.Value;
+    }
+
+    public static bool HasAttribute(this XElement element, XName name)
+    {
+        Require.NotNull(element);
+        Require.NotNull(name);
+
+        return element.Attribute(name) != null;
+    }
+
+    public static void RemoveAttribute(this XElement element, XName name)
+    {
+        Require.NotNull(element);
+        Require.NotNull(name);
+
+        element.Attribute(name)?.Remove();
+    }
+
+    public static void SetAttribute(this XElement element, XName name, object? value)
+    {
+        Require.NotNull(element);
+        Require.NotNull(name);
+
+        var attr = element.Attribute(name);
 
         if (value is null)
             attr?.Remove();
         else
         {
             if (attr == null)
-                e.Add(new XAttribute(name, value));
+                element.Add(new XAttribute(name, value));
             else
                 attr.SetValue(value);
         }
@@ -122,17 +347,29 @@ public static class Xml
 
     #region Get/Set Namespace Helper
 
-    public static XNamespace GetNamespace(this XElement e)
-        => e.Name.Namespace;
-
-    public static XNamespace GetNamespace(this XElement e, string prefix)
-        => e.GetNamespaceOfPrefix(prefix);
-
-    public static void SetNamespace(this XElement e, string xmlns)
+    public static XNamespace GetNamespace(this XElement element)
     {
-        var oldNamespace = e.Name.Namespace;
+        Require.NotNull(element);
 
-        e.Descendants().ForEach(n =>
+        return element.Name.Namespace;
+    }
+
+    public static XNamespace GetNamespace(this XElement element, string prefix)
+    {
+        Require.NotNull(element);
+        Require.NotNullOrWhiteSpace(prefix);
+
+        return element.GetNamespaceOfPrefix(prefix);
+    }
+
+    public static void SetNamespace(this XElement element, string xmlns)
+    {
+        Require.NotNull(element);
+        Require.NotNullOrWhiteSpace(xmlns);
+
+        var oldNamespace = element.Name.Namespace;
+
+        element.Descendants().ForEach(n =>
         {
             if (n.Name.Namespace == oldNamespace)
                 n.Name = XName.Get(n.Name.LocalName, xmlns);
@@ -143,35 +380,59 @@ public static class Xml
 
     #region Get Element (String)
 
-    public static XElement Child(this XElement e, string localName)
-        => e.Element(e.GetNamespace() + localName);
+    public static XElement Child(this XElement element, string localName)
+    {
+        Require.NotNull(element);
+        Require.NotNullOrWhiteSpace(localName);
 
-    public static IEnumerable<XElement> Children(this XElement e, string localName)
-        => e.Elements(e.GetNamespace() + localName);
+        return element.Element(element.GetNamespace() + localName);
+    }
+
+    public static IEnumerable<XElement> Children(this XElement element, string localName)
+    {
+        Require.NotNull(element);
+        Require.NotNullOrWhiteSpace(localName);
+
+        return element.Elements(element.GetNamespace() + localName);
+    }
 
     #endregion
 
     #region Get Element (Generic)    
 
-    public static T Element<T>(this XElement e) where T : XElement
-        => e.Elements<T>().FirstOrDefault();
+    public static T Element<T>(this XElement element) where T : XElement
+    {
+        Require.NotNull(element);
 
-    public static IEnumerable<T> Elements<T>(this XElement e) where T : XElement
-        => e.Elements().OfType<T>();
+        return element.Elements<T>().FirstOrDefault();
+    }
+
+    public static IEnumerable<T> Elements<T>(this XElement element) where T : XElement
+    {
+        Require.NotNull(element);
+
+        return element.Elements().OfType<T>();
+    }
 
     #endregion
 
     #region Try Get Element (String & XName)
 
-    public static bool TryGetChild(this XElement e, string localName, out XElement result)
+    public static bool TryGetChild(this XElement element, string localName, out XElement result)
     {
-        result = e.Element(e.GetNamespace() + localName);
+        Require.NotNull(element);
+        Require.NotNullOrWhiteSpace(localName);
+
+        result = element.Element(element.GetNamespace() + localName);
         return result != null;
     }
 
-    public static bool TryGetChild(this XElement e, XName name, out XElement result)
+    public static bool TryGetChild(this XElement element, XName name, out XElement result)
     {
-        result = e.Element(name);
+        Require.NotNull(element);
+        Require.NotNull(name);
+
+        result = element.Element(name);
         return result != null;
     }
 

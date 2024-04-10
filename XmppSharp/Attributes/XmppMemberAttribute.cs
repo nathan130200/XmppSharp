@@ -1,4 +1,5 @@
 ﻿namespace XmppSharp.Attributes;
+
 /// <summary>
 /// Annotating a field or property with this attribute helps when retrieving metadata associated with it.
 /// </summary>
