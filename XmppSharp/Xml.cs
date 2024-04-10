@@ -38,24 +38,21 @@ public static class Xml
 
         using (StringBuilderPool.Rent(out var sb))
         {
-            using (var writer = CreateWriter(indented, sb, new(indentChar, indentSize)))
+            using (var writer = CreateWriter(indented, sb, indentChar, indentSize))
                 element.WriteTo(writer);
 
             return sb.ToString();
         }
     }
 
-    internal static XmlWriter CreateWriter(bool indented, StringBuilder output, string indentChars)
+    internal static XmlWriter CreateWriter(bool indented, StringBuilder output, char indentChar, int indentSize)
     {
         Require.NotNull(output);
-
-        if (indented)
-            Require.NotNullOrWhiteSpace(indentChars);
 
         var settings = new XmlWriterSettings
         {
             Indent = indented,
-            IndentChars = indentChars,
+            IndentChars = new(indentChar, indentSize),
             CheckCharacters = true,
             CloseOutput = true,
             ConformanceLevel = ConformanceLevel.Fragment,
