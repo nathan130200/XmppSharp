@@ -54,7 +54,7 @@ public static class Xml
             return await ParseFromStream(fs, encoding, bufferSize);
     }
 
-    public static Task<XElement> ParseFromStream(Stream stream, Encoding encoding = default, int bufferSize = -1)
+    public static async Task<XElement> ParseFromStream(Stream stream, Encoding encoding = default, int bufferSize = -1)
     {
         using var parser = new Parser(encoding, bufferSize);
 
@@ -79,7 +79,7 @@ public static class Xml
                 await Task.Delay(1);
         });
 
-        return tcs.Task;
+        return await tcs.Task;
     }
 
     public static string ToString(this XElement element, bool indented, char indentChar = ' ', int indentSize = 2)
