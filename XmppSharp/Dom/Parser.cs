@@ -141,7 +141,7 @@ public sealed class Parser : IDisposable
     /// </summary>
     /// <returns>
     /// <see langword="true" /> if the parser advanced successfully.
-    /// <para><see langword="false" /> indicates that either.
+    /// <para><see langword="false" /> if the parser encountered a problem.
     /// <list type="bullet">
     /// <item>the parser was disposed</item>
     /// <item>an internal error occurred</item>

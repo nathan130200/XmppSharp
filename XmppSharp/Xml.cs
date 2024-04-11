@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using XmppSharp.Dom;
 
 namespace XmppSharp;
 
@@ -31,6 +32,55 @@ public static class Xml
     }
 
     #region Serialization / Deserialization
+
+    public static byte[] GetBytes(this XElement element)
+    {
+        Require.NotNull(element);
+        return element.ToString(false).GetBytes();
+    }
+
+    public static Task<XElement> ParseFromString(string xml, Encoding encoding = default, int bufferSize = -1)
+        => ParseFromBuffer(xml.GetBytes(), encoding, bufferSize);
+
+    public static async Task<XElement> ParseFromBuffer(byte[] buffer, Encoding encoding = default, int bufferSize = -1)
+    {
+        using (var ms = new MemoryStream(buffer))
+            return await ParseFromStream(ms, encoding, bufferSize);
+    }
+
+    public static async Task<XElement> ParseFromFile(string path, Encoding encoding = default, int bufferSize = -1)
+    {
+        using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            return await ParseFromStream(fs, encoding, bufferSize);
+    }
+
+    public static Task<XElement> ParseFromStream(Stream stream, Encoding encoding = default, int bufferSize = -1)
+    {
+        using var parser = new Parser(encoding, bufferSize);
+
+        var tcs = new TaskCompletionSource<XElement>();
+
+        AsyncAction<XElement> handler = default;
+
+        handler = async e =>
+        {
+            await Task.Yield();
+            tcs.TrySetResult(e);
+            parser.OnStreamElement -= handler;
+            parser.Dispose();
+        };
+
+        parser.OnStreamElement += handler;
+        parser.Reset(stream);
+
+        _ = Task.Run(async () =>
+        {
+            while (await parser.Advance())
+                await Task.Delay(1);
+        });
+
+        return tcs.Task;
+    }
 
     public static string ToString(this XElement element, bool indented, char indentChar = ' ', int indentSize = 2)
     {
