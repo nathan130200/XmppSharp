@@ -32,10 +32,7 @@ public class DiscoItems : XElement
             if (value != null)
             {
                 foreach (var item in value)
-                {
-                    if (item != null)
-                        Add(item);
-                }
+                    Add(item);
             }
         }
     }

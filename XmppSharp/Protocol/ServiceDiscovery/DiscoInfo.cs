@@ -37,10 +37,7 @@ public class DiscoInfo : XElement
             if (value != null)
             {
                 foreach (var item in value)
-                {
-                    if (item != null)
-                        Add(item);
-                }
+                    Add(item);
             }
         }
     }
@@ -55,10 +52,7 @@ public class DiscoInfo : XElement
             if (value != null)
             {
                 foreach (var feature in value)
-                {
-                    if (feature != null)
-                        Add(feature);
-                }
+                    Add(feature);
             }
         }
     }

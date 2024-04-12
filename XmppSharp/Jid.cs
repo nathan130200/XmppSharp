@@ -241,13 +241,8 @@ public sealed record Jid : IEquatable<Jid>
     /// <returns><see langword="true"/> if both JIDs are equals, otherwise <see langword="false" />.</returns>
     public static bool IsBareEquals(Jid lhs, Jid rhs)
     {
-        if (rhs is null)
-        {
-            if (lhs is null)
-                return true;
-
-            return false;
-        }
+        if (lhs is null)
+            return rhs is null;
 
         if (!lhs.IsBare || !rhs.IsBare)
             return false;
@@ -264,13 +259,8 @@ public sealed record Jid : IEquatable<Jid>
     /// <returns><see langword="true"/> if both JIDs are equals, otherwise <see langword="false" />.</returns>
     public static bool IsFullEqual(Jid lhs, Jid rhs)
     {
-        if (rhs is null)
-        {
-            if (lhs is null)
-                return true;
-
-            return false;
-        }
+        if (lhs is null)
+            return rhs is null;
 
         if (lhs.IsBare || rhs.IsBare)
             return false;

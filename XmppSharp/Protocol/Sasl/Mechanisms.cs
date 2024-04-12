@@ -19,10 +19,7 @@ public class Mechanisms : XElement
             Elements().ForEach(n => n.Remove());
 
             foreach (var item in value)
-            {
-                if (item != null)
-                    Add(item);
-            }
+                Add(item);
         }
     }
     public void AddMechanism(MechanismType type)

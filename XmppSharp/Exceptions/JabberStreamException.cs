@@ -26,4 +26,7 @@ public sealed class JabberStreamException : JabberException
     /// <param name="innerException">Inner exception that may have caused the problem.</param>
     public JabberStreamException(StreamErrorCondition condition, Exception innerException) : base($"XMPP stream error of type '{condition}' was thrown.", innerException)
         => Condition = condition;
+
+    public JabberStreamException(StreamErrorCondition condition, string message) : base(message)
+        => Condition = condition;
 }

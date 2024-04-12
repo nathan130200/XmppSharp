@@ -243,6 +243,9 @@ public sealed class Parser : IDisposable
                             await OnStreamEnd.InvokeAsync();
                         else
                         {
+                            if (_context == null)
+                                throw new JabberStreamException(StreamErrorCondition.InvalidXml, "The element in the current scope was not expected to be null.");
+
                             var parent = _context.Parent;
 
                             if (parent == null)
