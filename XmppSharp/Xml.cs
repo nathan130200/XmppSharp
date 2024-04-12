@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
@@ -117,7 +116,7 @@ public static class Xml
 
     #endregion
 
-    #region Dynamic Get/Set Attributes
+    #region Dynamic Get Attributes
 
     public static IReadOnlyDictionary<string, string> GetAttributes(this XElement element)
     {
@@ -127,133 +126,45 @@ public static class Xml
 
         foreach (var attr in element.Attributes())
         {
-            string attrName;
+            string key;
 
-            var baseName = attr.Name;
+            var name = attr.Name;
 
-            if (baseName.Namespace == XNamespace.None)
-                attrName = baseName.LocalName;
+            if (name.Namespace == XNamespace.None)
+                key = name.LocalName;
             else
-                attrName = string.Concat(element.GetPrefixOfNamespace(baseName.Namespace), ':', baseName.LocalName);
+                key = string.Concat(element.GetPrefixOfNamespace(name.Namespace), ':', name.LocalName);
 
-            result[attrName] = attr.Value;
+            result[key] = attr.Value;
         }
 
         return result;
     }
 
-    public static T SetAttributes<T>(this T element, Dictionary<XName, object> attributes) where T : XElement
+    /// <summary>
+    /// Clear all attributes and descendant nodes from the given element.
+    /// </summary>
+    public static T Clear<T>(this T element) where T : XElement
     {
-        Require.NotNull(element);
-        Require.NotNull(attributes);
-
-        if (attributes != null)
-        {
-            foreach (var (name, rawValue) in attributes)
-            {
-                if (rawValue is null)
-                {
-                    element.SetAttribute(name, string.Empty);
-                    continue;
-                }
-
-                if (rawValue is ITuple tuple)
-                {
-                    if (tuple[0] is IFormattable fmt)
-                    {
-                        string format = tuple.Length >= 2 ? tuple[1] as string : default;
-                        IFormatProvider provider = tuple.Length >= 3 ? tuple[2] as IFormatProvider : default;
-                        element.SetAttribute(name, fmt.ToString(format, provider));
-                        continue;
-                    }
-                    else if (tuple[0] is IConvertible conv)
-                    {
-                        element.SetAttribute(name, conv.ToString(CultureInfo.InvariantCulture));
-                        continue;
-                    }
-
-                    element.SetAttribute(name, rawValue);
-                }
-            }
-        }
-
+        element.Attributes().Where(x => !x.IsNamespaceDeclaration).Remove();
+        element.DescendantNodes().Remove();
         return element;
     }
 
-    #endregion
-
-    #region Fluent API
-
-    public static XElement Element(XName name, object? value = default, Dictionary<XName, object>? attributes = default)
+    /// <summary>
+    /// Set key/value pair of <paramref name="attributes"/> in the current <paramref name="element"/>
+    /// </summary>
+    public static T SetAttributes<T>(this T element, in Dictionary<XName, object>? attributes) where T : XElement
     {
-        Require.NotNull(name);
-
-        var result = new XElement(name);
-
-        if (value != null)
-            result.SetValue(value);
+        Require.NotNull(element);
 
         if (attributes != null)
-            result.SetAttributes(attributes);
+        {
+            foreach (var (name, value) in attributes)
+                element.SetAttribute(name, value ?? string.Empty);
+        }
 
-        return result;
-    }
-
-    public static T C<T>(this XElement parent, Action<T>? callback) where T : XElement, new()
-    {
-        Require.NotNull(parent);
-
-        var child = new T();
-        parent.Add(child);
-        callback?.Invoke(child);
-
-        return child;
-    }
-
-    public static T C<T>(this XElement parent, T child) where T : XElement, new()
-    {
-        Require.NotNull(parent);
-        Require.NotNull(child);
-
-        parent.Add(child);
-
-        return child;
-    }
-
-    public static XElement C(this XElement parent, XName name, object? value = default, Dictionary<XName, object>? attributes = default)
-    {
-        Require.NotNull(parent);
-        Require.NotNull(name);
-
-        var result = Element(name, value, attributes);
-        parent.Add(result);
-        return result;
-    }
-
-    public static XElement C(this XElement parent, string localName, object? value = default, Dictionary<XName, object>? attributes = default)
-    {
-        Require.NotNull(parent);
-        Require.NotNullOrWhiteSpace(localName);
-
-        var result = Element(parent.GetNamespace() + localName, value, attributes);
-        parent.Add(result);
-        return result;
-    }
-
-    public static XElement Up(this XElement child)
-    {
-        Require.NotNull(child);
-        return child.Parent;
-    }
-
-    public static XElement Root(this XElement child)
-    {
-        Require.NotNull(child);
-
-        while (child.Parent != null)
-            child = child.Parent;
-
-        return child;
+        return element;
     }
 
     #endregion
@@ -292,7 +203,7 @@ public static class Xml
 
     #endregion
 
-    #region Get/Set/Remvove Tag (XName)
+    #region Get/Set/Remove Tag (XName)
 
     public static bool HasTag(this XElement element, XName name)
     {
@@ -333,9 +244,9 @@ public static class Xml
 
     #endregion
 
-    #region Get/Set/Remove Attribute Helper
+    #region Get/Set/Remove Attribute Helpers
 
-    public static string GetAttribute(this XElement element, XName name)
+    public static string? GetAttribute(this XElement element, XName name)
     {
         Require.NotNull(element);
         Require.NotNull(name);
@@ -351,15 +262,17 @@ public static class Xml
         return element.Attribute(name) != null;
     }
 
-    public static void RemoveAttribute(this XElement element, XName name)
+    public static T RemoveAttribute<T>(this T element, XName name) where T : XElement
     {
         Require.NotNull(element);
         Require.NotNull(name);
 
         element.Attribute(name)?.Remove();
+
+        return element;
     }
 
-    public static void SetAttribute(this XElement element, XName name, object? value)
+    public static T SetAttribute<T>(this T element, XName name, object? value) where T : XElement
     {
         Require.NotNull(element);
         Require.NotNull(name);
@@ -375,6 +288,8 @@ public static class Xml
             else
                 attr.SetValue(value);
         }
+
+        return element;
     }
 
     #endregion
@@ -385,30 +300,36 @@ public static class Xml
     {
         Require.NotNull(element);
 
-        return element.Name.Namespace;
+        var ns = element.GetDefaultNamespace();
+
+        if (ns == XNamespace.None)
+            return element.GetAttribute("xmlns") ?? XNamespace.None;
+
+        return ns;
     }
 
-    public static XNamespace GetNamespace(this XElement element, string prefix)
+    public static void SetNamespace(this XElement element, string @namespace)
     {
         Require.NotNull(element);
-        Require.NotNullOrWhiteSpace(prefix);
+        Require.NotNullOrWhiteSpace(@namespace);
 
-        return element.GetNamespaceOfPrefix(prefix);
-    }
+        var ns = XNamespace.Get(@namespace);
 
-    public static void SetNamespace(this XElement element, string xmlns)
-    {
-        Require.NotNull(element);
-        Require.NotNullOrWhiteSpace(xmlns);
-
-        var oldNamespace = element.Name.Namespace;
-
-        element.Descendants().ForEach(n =>
+        element.DescendantsAndSelf().ForEach(e =>
         {
-            if (n.Name.Namespace == oldNamespace)
-                n.Name = XName.Get(n.Name.LocalName, xmlns);
+            var prefix = e.GetPrefixOfNamespace(e.Name.Namespace);
+
+            if (prefix != null)
+                e.Name = ns + e.Name.LocalName;
+
+            e.SetAttribute("xmlns", ns);
         });
     }
+
+    public static XCData Cdata(string value) => new(value);
+    public static XComment Comment(string value) => new(value);
+    public static XText Text(string value) => new(value);
+    public static XAttribute Attribute(XName name, object value) => new(name, value);
 
     #endregion
 
@@ -469,6 +390,204 @@ public static class Xml
         result = element.Element(name);
         return result != null;
     }
+
+    #endregion
+
+    #region Fluent API
+
+    /// <summary>
+    /// Helper function to get the qualified name of the element.
+    /// </summary>
+    public static string GetName(this XElement element)
+    {
+        Require.NotNull(element);
+
+        var name = element.Name;
+
+        var prefix = element.GetPrefixOfNamespace(name.Namespace);
+
+        if (prefix == null)
+            return name.LocalName;
+
+        return string.Concat(prefix, ':', name.LocalName);
+    }
+
+    /// <summary>
+    /// Create a new element with respective <paramref name="name"/>, 
+    /// optionally with a <paramref name="value"/> content 
+    /// and with specified <paramref name="attributes"/>.
+    /// </summary>
+    public static XElement Element(XName name, object? value = default, in Dictionary<XName, object>? attributes = default)
+    {
+        Require.NotNull(name);
+
+        var element = new XElement(name)
+            .SetAttributes(attributes);
+
+        if (value != null)
+            element.SetValue(value);
+
+        return element;
+    }
+
+    /// <summary>
+    /// Gets the parent element or itself if it is the root element.
+    /// </summary>
+    public static XElement Up(this XElement child)
+    {
+        Require.NotNull(child);
+        return child.Parent ?? child;
+    }
+
+    /// <summary>
+    /// Determines whether the given element is the root element of the XML tree.
+    /// </summary>
+    public static bool IsRoot(this XElement element)
+        => element.Parent is null;
+
+    /// <summary>Gets the root element from the current <paramref name="node"/>, or <see langword="null" /> if the node is detached from the XML tree.</summary>
+    public static XElement Root(this XNode node)
+    {
+        Require.NotNull(node);
+
+        XElement parent = default;
+
+        while (node.Parent != null)
+        {
+            parent = node.Parent;
+            node = node.Parent;
+        }
+
+        return parent;
+    }
+
+    /// <summary>Gets the root element from the current node and cast to <typeparamref name="TRoot"/>.</summary>
+    public static TRoot Root<TRoot>(this XElement child) where TRoot : XElement
+        => child.Root() as TRoot;
+
+    #region Set/Get Attr Typed
+
+#if NET7_0_OR_GREATER
+
+    public static T GetAttr<T>(this XElement element, XName name, T defaultValue = default, IFormatProvider provider = default) where T : IParsable<T>
+    {
+        Require.NotNull(element);
+        Require.NotNull(name);
+
+        var value = element.GetAttribute(name);
+
+        if (T.TryParse(value, provider ?? CultureInfo.InvariantCulture, out var result))
+            return result;
+
+        return defaultValue;
+    }
+
+#endif
+
+    public static T GetAttr<T>(this XElement element, XName name, T defaultValue = default, TryParseDelegate<T>? converter = default)
+    {
+        Require.NotNull(element);
+        Require.NotNull(name);
+
+        converter ??= TryParseHelpers.GetConverter(typeof(T)) as TryParseDelegate<T>;
+        Require.NotNull(converter);
+
+        if (element.HasAttribute(name))
+        {
+            var val = element.GetAttribute(name);
+
+            if (val != null && converter(val, out T result))
+                return result;
+        }
+
+        return defaultValue;
+    }
+
+    // Nullable<T>
+    public static TElement SetAttr<TElement, TValue>(this TElement element, XName name, TValue? value, string? format = default, IFormatProvider? ifp = default)
+        where TElement : XElement where TValue : struct
+    {
+        Require.NotNull(element);
+        Require.NotNull(name);
+
+        return element.SetAttr(name, rawValue: value.GetValueOrDefault(), format, ifp);
+    }
+
+    // raw object
+    public static TElement SetAttr<TElement>(this TElement element, XName name, object rawValue, string? format = default, IFormatProvider? ifp = default)
+        where TElement : XElement
+    {
+        Require.NotNull(element);
+        Require.NotNull(name);
+
+        ifp ??= CultureInfo.InvariantCulture;
+
+        if (rawValue is IFormattable fmt)
+            element.SetAttribute(name, fmt.ToString(format, ifp));
+        else if (rawValue is IConvertible conv)
+            element.SetAttribute(name, conv.ToString(ifp));
+        else
+            element.SetAttribute(name, rawValue ?? string.Empty);
+
+        return element;
+    }
+
+    #endregion
+
+    #region Add Nodes to Parent
+
+    public static TParent C<TParent>(this TParent parent, XElement child) where TParent : XElement
+    {
+        Require.NotNull(parent);
+        Require.NotNull(child);
+
+        parent.Add(child);
+
+        return parent;
+    }
+
+    public static TElement Text<TElement>(this TElement element, string value) where TElement : XElement
+    {
+        Require.NotNull(element);
+        element.Add(new XText(value));
+        return element;
+    }
+
+    public static TElement Comment<TElement>(this TElement element, string value) where TElement : XElement
+    {
+        Require.NotNull(element);
+        element.Add(new XComment(value));
+        return element;
+    }
+
+    public static TElement Cdata<TElement>(this TElement element, string value) where TElement : XElement
+    {
+        Require.NotNull(element);
+        element.Add(new XCData(value));
+        return element;
+    }
+
+    public static XElement C(this XElement parent, string localName, params object[] content)
+    {
+        Require.NotNull(parent);
+        Require.NotNullOrWhiteSpace(localName);
+
+        var child = new XElement(parent.GetNamespace() + localName, content);
+        parent.Add(child);
+        return child;
+    }
+
+    public static XElement C(this XElement parent, XName name, params object[] content)
+    {
+        Require.NotNull(parent);
+        Require.NotNull(name);
+
+        var child = new XElement(name, content);
+        parent.Add(child);
+        return child;
+    }
+
+    #endregion
 
     #endregion
 }

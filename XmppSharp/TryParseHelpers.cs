@@ -18,6 +18,25 @@ public delegate bool TryParseDelegate<T>(ReadOnlySpan<char> s, out T result);
 /// </summary>
 public static class TryParseHelpers
 {
+    public static Delegate GetConverter(Type type)
+    {
+        if (type == typeof(sbyte)) return Int8;
+        else if (type == typeof(byte)) return UInt8;
+        else if (type == typeof(short)) return Int16;
+        else if (type == typeof(int)) return Int32;
+        else if (type == typeof(long)) return Int64;
+        else if (type == typeof(ushort)) return UInt16;
+        else if (type == typeof(uint)) return UInt32;
+        else if (type == typeof(ulong)) return UInt64;
+        else if (type == typeof(float)) return Float;
+        else if (type == typeof(double)) return Double;
+        else if (type == typeof(bool)) return Boolean;
+        else if (type == typeof(Guid)) return Guid;
+        else if (type == typeof(DateTime)) return DateTime;
+        else if (type == typeof(DateTimeOffset)) return DateTimeOffset;
+        else return null;
+    }
+
     /// <summary>
     /// Parser implementation for the <see cref="System.UInt16"/> type.
     /// </summary>
@@ -77,6 +96,10 @@ public static class TryParseHelpers
     /// Parser implementation for the <see cref="System.Guid"/> type.
     /// </summary>
     public static TryParseDelegate<Guid> Guid { get; } = System.Guid.TryParse;
+
+    public static TryParseDelegate<DateTime> DateTime { get; } = System.DateTime.TryParse;
+
+    public static TryParseDelegate<DateTimeOffset> DateTimeOffset { get; } = System.DateTimeOffset.TryParse;
 
     static bool TryParseFloat(ReadOnlySpan<char> span, out float result)
         => float.TryParse(span, NumberStyles.Float, CultureInfo.InvariantCulture, out result);

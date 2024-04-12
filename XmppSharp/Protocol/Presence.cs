@@ -33,12 +33,12 @@ public class Presence : Stanza
     {
         get
         {
-            var priority = this.GetTag("priority");
+            var value = this.GetTag("priority");
 
-            if (priority == null)
-                return 0;
+            if (sbyte.TryParse(value, out var result))
+                return result;
 
-            return sbyte.Parse(priority);
+            return 0;
         }
         set
         {
