@@ -21,26 +21,23 @@ public static class StringBuilderPool
     {
         var result = sb.ToString();
         sb.Clear();
-        s_Pool.Add(sb);
+
+        if (!s_Pool.Contains(sb))
+            s_Pool.Add(sb);
+
         return result;
     }
     public static void Return(StringBuilder sb, out string result)
         => result = Return(sb);
 
-    class Entry : IDisposable
+    readonly struct Entry : IDisposable
     {
-        private StringBuilder _builder;
+        readonly StringBuilder _builder;
 
         public Entry(StringBuilder builder)
             => _builder = builder;
 
         public void Dispose()
-        {
-            if (_builder != null)
-            {
-                StringBuilderPool.Return(_builder);
-                _builder = null;
-            }
-        }
+            => Return(_builder);
     }
 }

@@ -329,7 +329,29 @@ public static class Xml
     public static XCData Cdata(string value) => new(value);
     public static XComment Comment(string value) => new(value);
     public static XText Text(string value) => new(value);
-    public static XAttribute Attribute(XName name, object value) => new(name, value);
+
+    public static XAttribute Attr(XName name, object value) => new(name, value);
+
+    public static XAttribute Attr(XName name, object value, string format = default, IFormatProvider? ifp = default)
+    {
+        ifp ??= CultureInfo.InvariantCulture;
+
+        string attrValue;
+
+        using (StringBuilderPool.Rent(out var sb))
+        {
+            sb.Append("{0");
+
+            if (!string.IsNullOrEmpty(format))
+                sb.Append(':').Append(format);
+
+            sb.Append('}');
+
+            attrValue = string.Format(ifp, sb.ToString(), value);
+        }
+
+        return new XAttribute(name, attrValue);
+    }
 
     #endregion
 
