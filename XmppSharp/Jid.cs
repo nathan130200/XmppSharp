@@ -9,6 +9,7 @@ namespace XmppSharp;
 /// </summary>
 [DebuggerDisplay("{ToString(),nq}")]
 public sealed record Jid : IEquatable<Jid>
+
 #if NET7_0_OR_GREATER
     , IParsable<Jid>
 #endif
@@ -70,7 +71,7 @@ public sealed record Jid : IEquatable<Jid>
         set => _resource = EnsureByteSize(value);
     }
 
-    internal static string EnsureByteSize(string? s, [CallerMemberName] string param = null)
+    static string EnsureByteSize(string? s, [CallerMemberName] string memberName = null)
     {
         if (string.IsNullOrEmpty(s))
             return s;
@@ -78,7 +79,7 @@ public sealed record Jid : IEquatable<Jid>
         int len;
 
         if ((len = Encoding.UTF8.GetByteCount(s)) > 1023)
-            throw new ArgumentOutOfRangeException(param, len, $"{param} part exceeds the maximum bytes allowed.");
+            throw new ArgumentOutOfRangeException(memberName, len, $"{memberName} part exceeds the maximum bytes allowed.");
 
         return s;
     }
@@ -198,18 +199,19 @@ public sealed record Jid : IEquatable<Jid>
     /// </summary>
     public override string ToString()
     {
-        var sb = StringBuilderPool.Rent();
+        using (StringBuilderPool.Rent(out var sb))
+        {
+            if (_local != null)
+                sb.Append(_local).Append('@');
 
-        if (_local != null)
-            sb.Append(_local).Append('@');
+            if (_domain != null)
+                sb.Append(_domain);
 
-        if (_domain != null)
-            sb.Append(_domain);
+            if (_resource != null)
+                sb.Append('/').Append(_resource);
 
-        if (_resource != null)
-            sb.Append('/').Append(_resource);
-
-        return StringBuilderPool.Return(sb);
+            return sb.ToString();
+        }
     }
 
     /// <summary>
@@ -233,16 +235,28 @@ public sealed record Jid : IEquatable<Jid>
         _domain?.GetHashCode() ?? 0,
         _resource?.GetHashCode() ?? 0);
 
+    public bool Equals(Jid other)
+    {
+        if (ReferenceEquals(other, null))
+            return false;
+
+        if (ReferenceEquals(other, this))
+            return true;
+
+        return IsBare ? IsBareEquals(this, other)
+            : IsFullEqual(this, other);
+    }
+
     /// <summary>
-    /// Determines whether both JIDs are the same "Bare" (i.e. they have no resource and the other components are the same)
+    /// Determines whether both JIDs are the same "Bare" (i.e. they have no resource part)
     /// </summary>
     /// <param name="lhs">First JID to compare.</param>
     /// <param name="rhs">Second JID to compare.</param>
     /// <returns><see langword="true"/> if both JIDs are equals, otherwise <see langword="false" />.</returns>
     public static bool IsBareEquals(Jid lhs, Jid rhs)
     {
-        if (lhs is null)
-            return rhs is null;
+        if (ReferenceEquals(lhs, null) || ReferenceEquals(rhs, null))
+            return ReferenceEquals(lhs, rhs);
 
         if (!lhs.IsBare || !rhs.IsBare)
             return false;
@@ -252,26 +266,20 @@ public sealed record Jid : IEquatable<Jid>
     }
 
     /// <summary>
-    /// Determines whether both JIDs are the same "Full" (i.e. both have resources and all components are the same)
+    /// Determines whether both JIDs are the same "Full" (i.e. both have resource part)
     /// </summary>
     /// <param name="lhs">First JID to compare.</param>
     /// <param name="rhs">Second JID to compare.</param>
     /// <returns><see langword="true"/> if both JIDs are equals, otherwise <see langword="false" />.</returns>
     public static bool IsFullEqual(Jid lhs, Jid rhs)
     {
-        if (lhs is null)
-            return rhs is null;
-
-        if (lhs.IsBare || rhs.IsBare)
-            return false;
+        if (lhs is null || rhs is null)
+            return lhs is null && rhs is null;
 
         return string.Equals(lhs._local, rhs._local, StringComparison.OrdinalIgnoreCase)
              && string.Equals(lhs._domain, rhs._domain, StringComparison.OrdinalIgnoreCase)
              && string.Equals(lhs._resource, rhs.Resource, StringComparison.Ordinal);
     }
-
-    public bool Equals(Jid other)
-        => IsFullEqual(this, other);
 
     /// <summary>
     /// Implicit convert string to JID.

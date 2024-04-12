@@ -27,8 +27,17 @@ public static class StringBuilderPool
 
         return result;
     }
+
     public static void Return(StringBuilder sb, out string result)
         => result = Return(sb);
+
+    static void ReturnInplace(StringBuilder sb)
+    {
+        sb.Clear();
+
+        if (!s_Pool.Contains(sb))
+            s_Pool.Add(sb);
+    }
 
     readonly struct Entry : IDisposable
     {
@@ -38,6 +47,6 @@ public static class StringBuilderPool
             => _builder = builder;
 
         public void Dispose()
-            => Return(_builder);
+            => ReturnInplace(_builder);
     }
 }

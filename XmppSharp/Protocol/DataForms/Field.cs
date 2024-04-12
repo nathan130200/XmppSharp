@@ -61,10 +61,7 @@ public class Field : XElement
             this.Elements<Option>().Remove();
 
             foreach (var item in value)
-            {
-                if (item != null)
-                    Add(item);
-            }
+                Add(item);
         }
     }
 }
