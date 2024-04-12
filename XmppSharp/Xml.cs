@@ -484,7 +484,7 @@ public static class Xml
 
 #endif
 
-    public static T GetAttr<T>(this XElement element, XName name, T defaultValue = default, TryParseDelegate<T>? converter = default)
+    public static T GetAttr<T>(this XElement element, XName name, TryParseDelegate<T>? converter, T defaultValue = default)
     {
         Require.NotNull(element);
         Require.NotNull(name);
