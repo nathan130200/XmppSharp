@@ -308,21 +308,25 @@ public static class Xml
         return ns;
     }
 
-    public static void SetNamespace(this XElement element, string @namespace)
+    public static void SetNamespace(this XElement element, string xmlns)
     {
         Require.NotNull(element);
-        Require.NotNullOrWhiteSpace(@namespace);
+        Require.NotNull(xmlns);
 
-        var ns = XNamespace.Get(@namespace);
+        var ns = XNamespace.Get(xmlns);
+        var prefix = element.GetPrefixOfNamespace(element.Name.Namespace);
 
         element.DescendantsAndSelf().ForEach(e =>
         {
-            var prefix = e.GetPrefixOfNamespace(e.Name.Namespace);
+            var srcPrefix = e.GetPrefixOfNamespace(e.Name.Namespace);
 
-            if (prefix != null)
+            if (srcPrefix == prefix)
                 e.Name = ns + e.Name.LocalName;
 
-            e.SetAttribute("xmlns", ns);
+            if (prefix == null)
+                e.SetAttribute("xmlns", ns);
+            else
+                e.SetAttribute(XNamespace.Xmlns + prefix, ns);
         });
     }
 

@@ -4,10 +4,10 @@ namespace XmppSharp;
 
 public sealed class Namespace
 {
-    private readonly XNamespace _value;
+    private readonly string _value;
 
     Namespace(string value)
-        => _value = XNamespace.Get(value);
+        => _value = value;
 
     /// <summary>
     /// <a href="http://www.w3.org/XML/1998/namespace">W3C: Xml Namespace</a> — <c>http://www.w3.org/XML/1998/namespace</c>
@@ -379,13 +379,13 @@ public sealed class Namespace
     /// </summary>
     public static readonly Namespace CryOnline = new("urn:cryonline:k01");
 
-    public override string ToString() => _value.NamespaceName;
+    public override string ToString() => _value;
 
     public static implicit operator string(Namespace ns)
         => ns.ToString();
 
     public static implicit operator XNamespace(Namespace ns)
-        => ns._value;
+        => XNamespace.Get(ns._value);
 
     public static XName operator +(Namespace ns, string localName)
         => XName.Get(localName, ns);
