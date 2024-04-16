@@ -82,6 +82,13 @@ public class Element : Node
         return result;
     }
 
+    public IEnumerable<Element> DescendantsAndSelf()
+    {
+        var result = new List<Element> { this };
+        GetDescendantElements(this, result);
+        return result;
+    }
+
     public override string Value
     {
         get => string.Concat(DescendantNodes().OfType<Text>().Select(x => x.Value));
