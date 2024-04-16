@@ -44,9 +44,13 @@ A manipulation library and utility for XMPP inspired by the classic agsXMPP libr
 
 - Minor bug fixes around `XmppSharp.Jid` equality comparer.
 
-### 2.1
+### 3.0
 
-- Revert using `System.Xml.Linq` (i'm so sorry for reverting this change). I've found a critical issue around namespace declarations in XElement, so i've decided to do not keep using. Instead i've reimplemente again `Element` classes now with extra helpers `Cdata`
+- Rollback using builtin .NET xml types in `System.Xml.Linq`
+
+	> I'm so sorry for reverting this change). I've found a critical issue around namespace declarations in XElement, so i've decided to do not keep using. Instead i've reimplemente again `Element` classes now with support for `Cdata`, `Text` and `Comment` nodes.
+
+- All other features still the same (extend to `Element` class and etc...)
 
 ### Notes
 I ask users to report any bugs that may exist. Even though I carry out internal tests on my XMPP server, there may be some bug or other that goes unnoticed during the tests.

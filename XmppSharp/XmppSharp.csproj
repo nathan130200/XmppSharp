@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>annotations</Nullable>
 		<NoWarn>CA2255;CS1998;CS1591;IDE0028</NoWarn>
+		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -16,10 +16,19 @@
 		<PackageTags>xml, jabber, xmpp, xmpp-client, xmpp-server, xmpp-component</PackageTags>
 	</PropertyGroup>
 
-	<PropertyGroup>
-		<Version>2.0.1</Version>
-		<DebugSymbols>true</DebugSymbols>
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<DebugType>full</DebugType>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<DebugType>embedded</DebugType>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<Version>3.0.0</Version>
+		<DebugSymbols>true</DebugSymbols>
 		<Copyright>nathan130200</Copyright>
 		<PackageReadmeFile>CHANGELOG.md</PackageReadmeFile>
 		<RepositoryType>git</RepositoryType>
