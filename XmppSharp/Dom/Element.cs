@@ -1,5 +1,7 @@
 ﻿using System.Globalization;
+using System.Text;
 using System.Xml;
+using XmppSharp.Factory;
 
 namespace XmppSharp.Dom;
 
@@ -92,27 +94,49 @@ public class Element : Node
         }
     }
 
-    public override Node Clone()
+    public override string ToString()
+        => ToString(false);
+
+    public string ToString(bool indented, char indentChar = ' ', int indentSize = 2)
     {
-        var result = Activator.CreateInstance(GetType(), true) as Element;
+        using (StringBuilderPool.Rent(out var sb))
+        {
+            using (var writer = Xml.CreateWriter(indented, sb, indentChar, indentSize))
+                WriteTo(writer);
+
+            return sb.ToString();
+        }
+    }
+
+    public string? DefaultNamespace
+    {
+        get => GetNamespace();
+        set => SetNamespace(value);
+    }
+
+    public override Element Clone()
+    {
+        var elem = ElementFactory.Create(TagName, GetNamespace(Prefix));
+        elem._localName = _localName;
+        elem._prefix = _prefix;
 
         lock (_attributes)
         {
             foreach (var (key, value) in _attributes)
-                result._attributes[key] = value;
+                elem._attributes[key] = value;
         }
 
         lock (_childNodes)
         {
             foreach (var node in _childNodes)
             {
-                var newNode = node.Clone();
-                result._childNodes.Add(newNode);
-                newNode._parent = result;
+                var childNode = node.Clone();
+                elem._childNodes.Add(childNode);
+                childNode._parent = elem;
             }
         }
 
-        return result;
+        return elem;
     }
 
     public override void WriteTo(XmlWriter writer)

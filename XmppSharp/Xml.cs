@@ -34,19 +34,6 @@ public static class Xml
         };
     }
 
-    public static string ToString(this Element element, bool indented, char indentChar = ' ', int indentSize = 2)
-    {
-        Require.NotNull(element);
-
-        using (StringBuilderPool.Rent(out var sb))
-        {
-            using (var writer = CreateWriter(indented, sb, indentChar, indentSize))
-                element.WriteTo(writer);
-
-            return sb.ToString();
-        }
-    }
-
     internal static XmlWriter CreateWriter(bool indented, StringBuilder output, char indentChar, int indentSize)
     {
         Require.NotNull(output);

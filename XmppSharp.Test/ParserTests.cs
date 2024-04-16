@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using XmppSharp.Dom;
 
@@ -7,7 +8,7 @@ namespace XmppSharp.Test;
 [TestClass]
 public class ParserTests
 {
-    internal static async Task<Element> ParseFromBuffer(string xml, [CallerMemberName] string callerName = default!)
+    internal static async Task<Element> ParseFromBuffer([StringSyntax("Xml")] string xml, [CallerMemberName] string callerName = default!)
     {
         using var stream = new MemoryStream();
         stream.Write(xml.GetBytes());
