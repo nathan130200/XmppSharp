@@ -3,10 +3,10 @@ using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Protocol;
 
-[XmppTag("message", "jabber:client")]
-[XmppTag("message", "jabber:server")]
-[XmppTag("message", "jabber:component:accept")]
-[XmppTag("message", "jabber:component:connect")]
+[XmppTag("message", Namespace.Client)]
+[XmppTag("message", Namespace.Server)]
+[XmppTag("message", Namespace.Accept)]
+[XmppTag("message", Namespace.Connect)]
 public class Message : Stanza
 {
     public Message() : base("message", Namespace.Client)
@@ -31,40 +31,40 @@ public class Message : Stanza
 
     public string Body
     {
-        get => this.GetTag("body");
+        get => GetTag("body");
         set
         {
             if (string.IsNullOrEmpty(value))
-                this.RemoveTag("body");
+                RemoveTag("body");
             else
-                this.SetTag("body", value);
+                SetTag("body", value);
         }
     }
 
     public bool IsXHtml
-        => this.HasTag(Namespace.XHtml + "body");
+        => HasTag("body", Namespace.XHtml);
 
     public string Subject
     {
-        get => this.GetTag("subject");
+        get => GetTag("subject");
         set
         {
             if (string.IsNullOrEmpty(value))
-                this.RemoveTag("subject");
+                RemoveTag("subject");
             else
-                this.SetTag("subject", value);
+                SetTag("subject", value);
         }
     }
 
     public string Thread
     {
-        get => this.GetTag("thread");
+        get => GetTag("thread");
         set
         {
             if (string.IsNullOrEmpty(value))
-                this.RemoveTag("thread");
+                RemoveTag("thread");
             else
-                this.SetTag("thread", value);
+                SetTag("thread", value);
         }
     }
 }

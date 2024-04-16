@@ -3,13 +3,13 @@ using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Protocol;
 
-[XmppTag("presence", "jabber:client")]
-[XmppTag("presence", "jabber:server")]
-[XmppTag("presence", "jabber:component:accept")]
-[XmppTag("presence", "jabber:component:connect")]
+[XmppTag("presence", Namespace.Client)]
+[XmppTag("presence", Namespace.Server)]
+[XmppTag("presence", Namespace.Accept)]
+[XmppTag("presence", Namespace.Connect)]
 public class Presence : Stanza
 {
-    public Presence() : base(Namespace.Client + "presence")
+    public Presence() : base("presence", Namespace.Client)
     {
 
     }
@@ -33,7 +33,7 @@ public class Presence : Stanza
     {
         get
         {
-            var value = this.GetTag("priority");
+            var value = GetTag("priority");
 
             if (sbyte.TryParse(value, out var result))
                 return result;
@@ -43,33 +43,33 @@ public class Presence : Stanza
         set
         {
             if (value == 0)
-                this.RemoveTag("priority");
+                RemoveTag("priority");
             else
-                this.SetTag("priority", value);
+                SetTag("priority", value);
         }
     }
 
     public PresenceShow Show
     {
-        get => XmppEnum.ParseOrDefault(this.GetTag("show"), PresenceShow.Online);
+        get => XmppEnum.ParseOrDefault(GetTag("show"), PresenceShow.Online);
         set
         {
             if (value == PresenceShow.Online)
-                this.RemoveTag("show");
+                RemoveTag("show");
             else
-                this.SetTag("show", value.ToXmppName());
+                SetTag("show", value.ToXmppName());
         }
     }
 
     public string? Status
     {
-        get => this.GetTag("status");
+        get => GetTag("status");
         set
         {
             if (value == null)
-                this.RemoveTag("status");
+                RemoveTag("status");
             else
-                this.SetTag("status", value);
+                SetTag("status", value);
         }
     }
 }

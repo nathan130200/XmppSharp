@@ -1,12 +1,11 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.ServiceDiscovery;
 
-[XmppTag("query", "http://jabber.org/protocol/disco#info")]
-public class DiscoInfo : XElement
+[XmppTag("query", Namespace.DiscoInfo)]
+public class DiscoInfo : Element
 {
-    public DiscoInfo() : base(Namespace.DiscoInfo + "query")
+    public DiscoInfo() : base("query", Namespace.DiscoInfo)
     {
     }
 
@@ -23,36 +22,36 @@ public class DiscoInfo : XElement
 
     public string? Node
     {
-        get => this.GetAttribute("node");
-        set => this.SetAttribute("node", value);
+        get => GetAttribute("node");
+        set => SetAttribute("node", value);
     }
 
     public IEnumerable<Identity> Identities
     {
-        get => this.Elements<Identity>();
+        get => Children<Identity>();
         set
         {
-            this.Elements<Identity>().Remove();
+            Children<Identity>().Remove();
 
             if (value != null)
             {
                 foreach (var item in value)
-                    Add(item);
+                    AddChild(item);
             }
         }
     }
 
     public IEnumerable<Feature> Features
     {
-        get => this.Elements<Feature>();
+        get => Children<Feature>();
         set
         {
-            this.Elements<Feature>().Remove();
+            Children<Feature>().Remove();
 
             if (value != null)
             {
                 foreach (var feature in value)
-                    Add(feature);
+                    AddChild(feature);
             }
         }
     }

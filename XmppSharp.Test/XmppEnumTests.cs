@@ -7,7 +7,7 @@ using XmppSharp.Protocol.Tls;
 namespace XmppSharp.Test;
 
 [TestClass]
-public class XmppEnumTest
+public class XmppEnumTests
 {
     [TestMethod]
     public void ParseOrThrow()
@@ -21,8 +21,8 @@ public class XmppEnumTest
         ParseFromString(MechanismType.ScramSha1, "SCRAM-SHA-1");
         ParseFromString(MechanismType.ScramSha1Plus, "SCRAM-SHA-1-PLUS");
         ParseFromString(MechanismType.External, "EXTERNAL");
-        ParseFromString(StartTlsPolicy.Required, "required");
-        ParseFromString(StartTlsPolicy.Optional, "optional");
+        ParseFromString(TlsPolicy.Required, "required");
+        ParseFromString(TlsPolicy.Optional, "optional");
         ParseFromString(ComponentValues.C2S, "c2s");
         ParseFromString(ComponentValues.Router, "router");
         ParseFromString(ComponentValues.S2S, "s2s");
@@ -50,8 +50,8 @@ public class XmppEnumTest
         ToXmppName(MechanismType.ScramSha1Plus, "SCRAM-SHA-1-PLUS");
         ToXmppName(MechanismType.External, "EXTERNAL");
         ToXmppName(MechanismType.Unspecified, null!);
-        ToXmppName(StartTlsPolicy.Required, "required");
-        ToXmppName(StartTlsPolicy.Optional, "optional");
+        ToXmppName(TlsPolicy.Required, "required");
+        ToXmppName(TlsPolicy.Optional, "optional");
         ToXmppName(ComponentValues.C2S, "c2s");
         ToXmppName(ComponentValues.Router, "router");
         ToXmppName(ComponentValues.S2S, "s2s");

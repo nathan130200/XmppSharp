@@ -4,9 +4,9 @@ using XmppSharp.Attributes;
 namespace XmppSharp.Protocol.Sasl;
 
 [XmppTag("failure", "urn:ietf:params:xml:ns:xmpp-sasl")]
-public class Failure : XElement
+public class Failure : Element
 {
-    public Failure() : base(Namespace.Sasl + "failure")
+    public Failure() : base("failure", Namespace.Sasl)
     {
 
     }
@@ -25,7 +25,7 @@ public class Failure : XElement
         {
             foreach (var (key, value) in XmppEnum.GetValues<FailureCondition>())
             {
-                if (this.HasTag(key))
+                if (HasTag(key))
                     return value;
             }
 
@@ -34,22 +34,22 @@ public class Failure : XElement
         set
         {
             if (Condition.TryGetValue(out var oldValue))
-                this.RemoveTag(oldValue.ToXmppName());
+                RemoveTag(oldValue.ToXmppName());
 
             if (value.TryGetValue(out var result))
-                this.SetTag(result.ToXmppName());
+                SetTag(result.ToXmppName());
         }
     }
 
     public string? Text
     {
-        get => this.GetTag("text");
+        get => GetTag("text");
         set
         {
             if (value == null)
-                this.RemoveTag("text");
+                RemoveTag("text");
             else
-                this.SetTag("text", value);
+                SetTag("text", value);
         }
     }
 }

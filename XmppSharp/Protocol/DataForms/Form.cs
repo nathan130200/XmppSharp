@@ -1,65 +1,64 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.DataForms;
 
-[XmppTag("x", "jabber:x:data")]
-public class Form : XElement
+[XmppTag("x", Namespace.DataForms)]
+public class Form : Element
 {
-    public Form() : base(Namespace.DataForms + "x")
+    public Form() : base("x", Namespace.DataForms)
     {
 
     }
 
     public FormType Type
     {
-        get => XmppEnum.ParseOrDefault(this.GetAttribute("type"), FormType.Form);
-        set => this.SetAttribute("type", value.ToXmppName());
+        get => XmppEnum.ParseOrDefault(GetAttribute("type"), FormType.Form);
+        set => SetAttribute("type", value.ToXmppName());
     }
 
     public string? Instructions
     {
-        get => this.GetTag("instructions");
+        get => GetTag("instructions");
         set
         {
             if (value == null)
-                this.RemoveTag("instructions");
+                RemoveTag("instructions");
             else
-                this.SetTag("instructions", value);
+                SetTag("instructions", value);
         }
     }
 
     public string? Title
     {
-        get => this.GetTag("title");
+        get => GetTag("title");
         set
         {
             if (value == null)
-                this.RemoveTag("title");
+                RemoveTag("title");
             else
-                this.SetTag("title", value);
+                SetTag("title", value);
         }
     }
 
     public Reported? Reported
     {
-        get => this.Element<Reported>();
+        get => Child<Reported>();
         set
         {
             Reported?.Remove();
-            Add(value);
+            AddChild(value);
         }
     }
 
     public IEnumerable<Field> Fields
     {
-        get => this.Elements<Field>();
+        get => Children<Field>();
         set
         {
             Fields.Remove();
 
             foreach (var item in value)
-                Add(item);
+                AddChild(item);
         }
     }
 }

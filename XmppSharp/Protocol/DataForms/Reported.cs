@@ -1,25 +1,24 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.DataForms;
 
-[XmppTag("reported", "jabber:x:data")]
-public class Reported : XElement
+[XmppTag("reported", Namespace.DataForms)]
+public class Reported : Element
 {
-    public Reported() : base(Namespace.DataForms + "reported")
+    public Reported() : base("reported", Namespace.DataForms)
     {
 
     }
 
     public IEnumerable<Field> Fields
     {
-        get => this.Elements<Field>();
+        get => Children<Field>();
         set
         {
             Fields.Remove();
 
             foreach (var item in value)
-                Add(item);
+                AddChild(item);
         }
     }
 }

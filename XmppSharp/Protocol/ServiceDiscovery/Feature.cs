@@ -1,12 +1,11 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.ServiceDiscovery;
 
-[XmppTag("feature", "http://jabber.org/protocol/disco#info")]
-public class Feature : XElement
+[XmppTag("feature", Namespace.DiscoInfo)]
+public class Feature : Element
 {
-    public Feature() : base(Namespace.DiscoInfo + "feature")
+    public Feature() : base("feature", Namespace.DiscoInfo)
     {
 
     }
@@ -16,9 +15,9 @@ public class Feature : XElement
         Name = featureName;
     }
 
-    public new string Name
+    public string Name
     {
-        get => this.GetAttribute("var");
-        set => this.SetAttribute("var", value);
+        get => GetAttribute("var");
+        set => SetAttribute("var", value);
     }
 }

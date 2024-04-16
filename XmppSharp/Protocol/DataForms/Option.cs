@@ -1,25 +1,24 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.DataForms;
 
-[XmppTag("option", "jabber:x:data")]
-public class Option : XElement
+[XmppTag("option", Namespace.DataForms)]
+public class Option : Element
 {
-    public Option() : base(Namespace.DataForms + "option")
+    public Option() : base("option", Namespace.DataForms)
     {
 
     }
 
     public string? Label
     {
-        get => this.GetAttribute("label");
-        set => this.SetAttribute("label", value);
+        get => GetAttribute("label");
+        set => SetAttribute("label", value);
     }
 
     public new string Value
     {
-        get => this.GetTag("value");
-        set => this.SetTag("value", value);
+        get => GetTag("value");
+        set => SetTag("value", value);
     }
 }

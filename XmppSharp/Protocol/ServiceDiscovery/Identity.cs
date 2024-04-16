@@ -1,13 +1,12 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 using XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 
 namespace XmppSharp.Protocol.ServiceDiscovery;
 
-[XmppTag("identity", "http://jabber.org/protocol/disco#info")]
-public class Identity : XElement
+[XmppTag("identity", Namespace.DiscoInfo)]
+public class Identity : Element
 {
-    public Identity() : base(Namespace.DiscoInfo + "identity")
+    public Identity() : base("identity", Namespace.DiscoInfo)
     {
 
     }
@@ -24,22 +23,22 @@ public class Identity : XElement
         Name = name;
     }
 
-    public string Category
+    public string? Category
     {
-        get => this.GetAttribute("category");
-        set => this.SetAttribute("category", value);
+        get => GetAttribute("category");
+        set => SetAttribute("category", value);
     }
 
-    public new string? Name
+    public string? Name
     {
-        get => this.GetAttribute("name");
-        set => this.SetAttribute("name", value);
+        get => GetAttribute("name");
+        set => SetAttribute("name", value);
     }
 
-    public string Type
+    public string? Type
     {
-        get => this.GetAttribute("type");
-        set => this.SetAttribute("type", value);
+        get => GetAttribute("type");
+        set => SetAttribute("type", value);
     }
 
     /// <summary>

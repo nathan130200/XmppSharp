@@ -1,32 +1,30 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Base;
 
-[XmppTag("stream", "http://etherx.jabber.org/streams")]
-public class StreamStream : DirectionalElement
+[XmppTag("stream:stream", "http://etherx.jabber.org/streams")]
+public class StreamStream : Element
 {
-    public StreamStream() : base(Namespace.Stream + "stream",
-        new XAttribute(XNamespace.Xmlns + "stream", Namespace.Stream))
+    public StreamStream() : base("stream:stream", Namespace.Stream)
     {
 
     }
 
     public string Id
     {
-        get => this.GetAttribute("id");
-        set => this.SetAttribute("id", value);
+        get => GetAttribute("id");
+        set => SetAttribute("id", value);
     }
 
     public string Language
     {
-        get => this.GetAttribute(XNamespace.Xml + "lang");
-        set => this.SetAttribute(XNamespace.Xml + "lang", value);
+        get => GetAttribute("xml:lang");
+        set => SetAttribute("xml:lang", value);
     }
 
     public string Version
     {
-        get => this.GetAttribute("version");
-        set => this.SetAttribute("version", value);
+        get => GetAttribute("version");
+        set => SetAttribute("version", value);
     }
 }

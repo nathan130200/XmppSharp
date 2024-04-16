@@ -1,12 +1,11 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Client;
 
-[XmppTag("bind", "urn:ietf:params:xml:ns:xmpp-bind")]
-public class Bind : XElement
+[XmppTag("bind", Namespace.Bind)]
+public class Bind : Element
 {
-    public Bind() : base(Namespace.Bind + "bind")
+    public Bind() : base("bind", Namespace.Bind)
     {
 
     }
@@ -19,13 +18,13 @@ public class Bind : XElement
 
     public string Resource
     {
-        get => this.GetTag("resource");
+        get => GetTag("resource");
         set
         {
             if (value == null)
-                this.RemoveTag("resource");
+                RemoveTag("resource");
             else
-                this.SetTag("resource", value);
+                SetTag("resource", value);
         }
     }
 
@@ -33,7 +32,7 @@ public class Bind : XElement
     {
         get
         {
-            var jid = this.GetTag("jid");
+            var jid = GetTag("jid");
 
             if (Jid.TryParse(jid, out var result))
                 return result;
@@ -43,9 +42,9 @@ public class Bind : XElement
         set
         {
             if (value == null)
-                this.RemoveTag("jid");
+                RemoveTag("jid");
             else
-                this.SetTag("jid", value.ToString());
+                SetTag("jid", value.ToString());
         }
     }
 }

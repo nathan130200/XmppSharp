@@ -4,9 +4,9 @@ using XmppSharp.Attributes;
 namespace XmppSharp.Protocol.Sasl;
 
 [XmppTag("abort", "urn:ietf:params:xml:ns:xmpp-sasl")]
-public class Abort : XElement
+public class Abort : Element
 {
-    public Abort() : base(Namespace.Sasl + "abort")
+    public Abort() : base("abort", Namespace.Sasl)
     {
 
     }

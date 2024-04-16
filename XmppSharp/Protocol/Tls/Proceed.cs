@@ -1,12 +1,11 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Tls;
 
-[XmppTag("proceed", "urn:ietf:params:xml:ns:xmpp-tls")]
-public sealed class Proceed : XElement
+[XmppTag("proceed", Namespace.Tls)]
+public sealed class Proceed : Element
 {
-    public Proceed() : base(Namespace.Tls + "proceed")
+    public Proceed() : base("proceed", Namespace.Tls)
     {
 
     }

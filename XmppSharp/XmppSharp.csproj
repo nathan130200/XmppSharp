@@ -4,7 +4,7 @@
 		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>annotations</Nullable>
-		<NoWarn>CA2255;CS1998;CS1591</NoWarn>
+		<NoWarn>CA2255;CS1998;CS1591;IDE0028</NoWarn>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -27,6 +27,11 @@
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<Using Include="XmppSharp" />
+		<Using Include="XmppSharp.Dom" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<None Include="..\CHANGELOG.md">

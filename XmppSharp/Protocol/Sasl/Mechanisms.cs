@@ -1,34 +1,39 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Sasl;
 
-[XmppTag("mechanisms", "urn:ietf:params:xml:ns:xmpp-sasl")]
-public class Mechanisms : XElement
+[XmppTag("mechanisms", Namespace.Sasl)]
+public class Mechanisms : Element
 {
-    public Mechanisms() : base(Namespace.Sasl + "mechanisms")
+    public Mechanisms() : base("mechanisms", Namespace.Sasl)
     {
 
     }
 
     public IEnumerable<Mechanism> SupportedMechanisms
     {
-        get => this.Elements<Mechanism>();
+        get => Children<Mechanism>();
         set
         {
-            Elements().ForEach(n => n.Remove());
+            Children().Remove();
 
             foreach (var item in value)
-                Add(item);
+                AddChild(item);
         }
     }
+
     public void AddMechanism(MechanismType type)
-        => AddMechanism(type.ToXmppName());
+    {
+        if (type == MechanismType.Unspecified || !Enum.IsDefined(type))
+            return;
+
+        AddMechanism(type.ToXmppName());
+    }
 
     public void AddMechanism(string name)
     {
         Require.NotNullOrWhiteSpace(name);
-        Add(new XElement(Namespace.Sasl + "mechanism", name));
+        AddChild(new Element("mechanism", Namespace.Sasl));
     }
 
     public bool IsMechanismSupported(string name)

@@ -1,16 +1,15 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Protocol;
 
-[XmppTag("iq", "jabber:client")]
-[XmppTag("iq", "jabber:server")]
-[XmppTag("iq", "jabber:component:accept")]
-[XmppTag("iq", "jabber:component:connect")]
+[XmppTag("iq", Namespace.Client)]
+[XmppTag("iq", Namespace.Server)]
+[XmppTag("iq", Namespace.Accept)]
+[XmppTag("iq", Namespace.Connect)]
 public class Iq : Stanza
 {
-    public Iq() : base(Namespace.Client + "iq")
+    public Iq() : base("iq", Namespace.Client)
     {
 
     }
@@ -24,16 +23,16 @@ public class Iq : Stanza
         set => base.Type = value.ToXmppName();
     }
 
-    public XElement Query
+    public Element Query
     {
         get
         {
-            _ = this.TryGetChild(Namespace.CryOnline + "query", out XElement result)
-                || this.TryGetChild(Namespace.Bind + "bind", out result)
-                || this.TryGetChild(Namespace.Session + "session", out result)
-                || this.TryGetChild(Namespace.DiscoInfo + "query", out result)
-                || this.TryGetChild(Namespace.DiscoItems + "query", out result)
-                || this.TryGetChild(Namespace.Ping + "ping", out result);
+            _ = this.TryGetChild("query", Namespace.CryOnline, out Element result)
+                || this.TryGetChild("bind", Namespace.Bind, out result)
+                || this.TryGetChild("session", Namespace.Session, out result)
+                || this.TryGetChild("query", Namespace.DiscoInfo, out result)
+                || this.TryGetChild("query", Namespace.DiscoItems, out result)
+                || this.TryGetChild("ping", Namespace.Ping, out result);
 
             return result;
         }
@@ -42,7 +41,7 @@ public class Iq : Stanza
             Query?.Remove();
 
             if (value != null)
-                Add(value);
+                AddChild(value);
         }
     }
 }

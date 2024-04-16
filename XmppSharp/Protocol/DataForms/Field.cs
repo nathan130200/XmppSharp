@@ -1,67 +1,66 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.DataForms;
 
-[XmppTag("field", "jabber:x:data")]
-public class Field : XElement
+[XmppTag("field", Namespace.DataForms)]
+public class Field : Element
 {
-    public Field() : base(Namespace.DataForms + "field")
+    public Field() : base("field", Namespace.DataForms)
     {
 
     }
 
-    public new string? Name
+    public string? Name
     {
-        get => this.GetAttribute("var");
-        set => this.SetAttribute("var", value);
+        get => GetAttribute("var");
+        set => SetAttribute("var", value);
     }
 
     public FieldType Type
     {
-        get => XmppEnum.ParseOrDefault(this.GetAttribute("type"), FieldType.TextSingle);
-        set => this.SetAttribute("type", value.ToXmppName());
+        get => XmppEnum.ParseOrDefault(GetAttribute("type"), FieldType.TextSingle);
+        set => SetAttribute("type", value.ToXmppName());
     }
 
     public string? Label
     {
-        get => this.GetAttribute("label");
-        set => this.SetAttribute("label", value);
+        get => GetAttribute("label");
+        set => SetAttribute("label", value);
     }
 
     public string? Description
     {
-        get => this.GetTag("desc");
-        set => this.SetTag("desc", value);
+        get => GetTag("desc");
+        set => SetTag("desc", value);
     }
 
     public bool IsRequired
     {
-        get => this.HasTag("required");
+        get => HasTag("required");
         set
         {
             if (!value)
-                this.RemoveTag("required");
+                RemoveTag("required");
             else
-                this.SetTag("required");
+                SetTag("required");
         }
     }
 
     public new string Value
     {
-        get => this.GetTag("value");
-        set => this.SetTag("value", value);
+        get => GetTag("value");
+        set => SetTag("value", value);
     }
 
     public IEnumerable<Option> Option
     {
-        get => this.Elements<Option>();
+        get => Children<Option>();
         set
         {
-            this.Elements<Option>().Remove();
+            Children<Option>().Remove();
 
             foreach (var item in value)
-                Add(item);
+                AddChild(item);
         }
     }
 }

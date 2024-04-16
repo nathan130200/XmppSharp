@@ -4,9 +4,9 @@ using XmppSharp.Attributes;
 namespace XmppSharp.Protocol.Sasl;
 
 [XmppTag("mechanism", "urn:ietf:params:xml:ns:xmpp-sasl")]
-public class Mechanism : XElement
+public class Mechanism : Element
 {
-    public Mechanism() : base(Namespace.Sasl + "mechanism")
+    public Mechanism() : base("mechanism", Namespace.Sasl)
     {
         MechanismType = MechanismType.Plain;
     }

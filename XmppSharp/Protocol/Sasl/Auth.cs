@@ -1,12 +1,11 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Sasl;
 
-[XmppTag("auth", "urn:ietf:params:xml:ns:xmpp-sasl")]
-public sealed class Auth : XElement
+[XmppTag("auth", Namespace.Sasl)]
+public sealed class Auth : Element
 {
-    public Auth() : base(Namespace.Sasl + "auth")
+    public Auth() : base("auth", Namespace.Sasl)
     {
 
     }
@@ -31,7 +30,7 @@ public sealed class Auth : XElement
 
     public string MechanismName
     {
-        get => this.GetAttribute("mechanism");
-        set => this.SetAttribute("mechanism", value);
+        get => GetAttribute("mechanism");
+        set => SetAttribute("mechanism", value);
     }
 }

@@ -32,17 +32,28 @@ public static class Utilities
     public static byte[] FromHex(this string str)
         => Convert.FromHexString(str);
 
-    public static IEnumerable<T> ForEach<T>(this IEnumerable<T> collection, Action<T> callback)
+    public static IEnumerable<T> ForEach<T>(this IEnumerable<T> source, Action<T> callback)
     {
-        Require.NotNull(collection);
+        Require.NotNull(source);
         Require.NotNull(callback);
 
-        if (collection.Any())
+        if (source is IList<T> list)
         {
-            foreach (var item in collection)
+            foreach (var item in list)
+                callback(item);
+        }
+        else
+        {
+            foreach (var item in source)
                 callback(item);
         }
 
-        return collection;
+        return source;
+    }
+
+    public static bool TryGetChild(this Element e, string localName, string? namespaceURI, out Element result)
+    {
+        result = e.Child(localName, namespaceURI);
+        return result != null;
     }
 }

@@ -1,74 +1,64 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 using XmppSharp.Protocol.Sasl;
 using XmppSharp.Protocol.Tls;
 
 namespace XmppSharp.Protocol.Base;
 
-[XmppTag("features", "http://etherx.jabber.org/streams")]
-public class StreamFeatures : XElement
+[XmppTag("stream:features", Namespace.Stream)]
+public class StreamFeatures : Element
 {
-    public StreamFeatures() : base(Namespace.Stream + "features",
-        new XAttribute(XNamespace.Xmlns + "stream", Namespace.Stream))
+    public StreamFeatures() : base("stream:features", Namespace.Stream)
     {
 
     }
 
     public Mechanisms Mechanisms
     {
-        get => this.Element<Mechanisms>();
+        get => Child<Mechanisms>();
         set
         {
-            this.RemoveTag(Namespace.Sasl + "mechanisms");
+            RemoveTag("mechanisms", Namespace.Sasl);
 
             if (value != null)
-                Add(value);
+                AddChild(value);
         }
     }
 
     public StartTls StartTls
     {
-        get => this.Element<StartTls>();
+        get => Child<StartTls>();
         set
         {
-            this.RemoveTag(Namespace.Tls + "starttls");
+            RemoveTag("starttls", Namespace.Tls);
 
             if (value != null)
-                Add(value);
+                AddChild(value);
         }
     }
 
     public bool SupportsStartTls
-        => this.HasTag(Namespace.Tls + "starttls");
+        => HasTag("starttls", Namespace.Tls);
 
     public bool SupportsAuthentication
-        => this.HasTag(Namespace.Sasl + "mechanisms");
+        => HasTag("mechanisms", Namespace.Sasl);
 
     public bool SupportsBind
     {
-        get => this.HasTag(Namespace.Bind + "bind");
+        get => HasTag("bind", Namespace.Bind);
         set
         {
-            var name = Namespace.Bind + "bind";
-
-            if (!value)
-                this.RemoveTag(name);
-            else
-                this.SetTag(name);
+            Action<string, string> fn = !value ? RemoveTag : SetTag;
+            fn("bind", Namespace.Bind);
         }
     }
 
     public bool SupportsSession
     {
-        get => this.HasTag(Namespace.Session + "session");
+        get => HasTag("session", Namespace.Session);
         set
         {
-            var name = Namespace.Session + "session";
-
-            if (!value)
-                this.RemoveTag(name);
-            else
-                this.SetTag(name);
+            Action<string, string> fn = !value ? RemoveTag : SetTag;
+            fn("session", Namespace.Session);
         }
     }
 }

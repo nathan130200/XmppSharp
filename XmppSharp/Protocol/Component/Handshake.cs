@@ -1,12 +1,11 @@
 ﻿using System.Security.Cryptography;
-using System.Xml.Linq;
 using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Component;
 
-[XmppTag("handshake", "jabber:component:accept")]
-[XmppTag("handshake", "jabber:component:connect")]
-public class Handshake : XElement
+[XmppTag("handshake", Namespace.Accept)]
+[XmppTag("handshake", Namespace.Connect)]
+public class Handshake : Element
 {
     public Handshake() : base("handshake", Namespace.Accept)
     {

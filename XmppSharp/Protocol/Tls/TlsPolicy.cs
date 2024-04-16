@@ -6,7 +6,7 @@ namespace XmppSharp.Protocol.Tls;
 /// Enumerates the possible TLS (Transport Layer Security) policies used in the "starttls" element during XMPP communication.
 /// </summary>
 [XmppEnum]
-public enum StartTlsPolicy
+public enum TlsPolicy
 {
     /// <summary>
     /// Indicates that TLS is optional for the connection.

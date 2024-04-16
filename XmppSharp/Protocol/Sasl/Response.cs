@@ -1,12 +1,11 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Sasl;
 
 [XmppTag("response", "urn:ietf:params:xml:ns:xmpp-sasl")]
-public class Response : XElement
+public class Response : Element
 {
-    public Response() : base(Namespace.Sasl + "response")
+    public Response() : base("response", Namespace.Sasl)
     {
 
     }

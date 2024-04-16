@@ -1,10 +1,9 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.DataForms;
 
-[XmppTag("item", "jabber:x:data")]
-public class Item : XElement
+[XmppTag("item", Namespace.DataForms)]
+public class Item : Element
 {
     public Item() : base("item", Namespace.DataForms)
     {
@@ -13,11 +12,11 @@ public class Item : XElement
 
     public Field? Field
     {
-        get => this.Element<Field>();
+        get => Child<Field>();
         set
         {
             Field?.Remove();
-            Add(value);
+            AddChild(value);
         }
     }
 }

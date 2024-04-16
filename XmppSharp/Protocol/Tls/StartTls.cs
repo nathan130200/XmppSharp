@@ -1,38 +1,37 @@
-﻿using System.Xml.Linq;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Tls;
 
-[XmppTag("starttls", "urn:ietf:params:xml:ns:xmpp-tls")]
-public sealed class StartTls : XElement
+[XmppTag("starttls", Namespace.Tls)]
+public sealed class StartTls : Element
 {
-    public StartTls() : base(Namespace.Tls + "starttls")
+    public StartTls() : base("starttls", Namespace.Tls)
     {
 
     }
 
-    public StartTls(StartTlsPolicy policy) : this()
+    public StartTls(TlsPolicy policy) : this()
         => Policy = policy;
 
-    public StartTlsPolicy? Policy
+    public TlsPolicy? Policy
     {
         get
         {
-            if (this.HasTag("optional"))
-                return StartTlsPolicy.Optional;
+            if (HasTag("optional"))
+                return TlsPolicy.Optional;
 
-            if (this.HasTag("required"))
-                return StartTlsPolicy.Required;
+            if (HasTag("required"))
+                return TlsPolicy.Required;
 
             return null;
         }
         set
         {
-            this.RemoveTag("optional");
-            this.RemoveTag("required");
+            RemoveTag("optional");
+            RemoveTag("required");
 
-            if (value.TryGetValue(out var result))
-                this.SetTag(result.ToXmppName());
+            if (value.TryGetValue(out var policy))
+                SetTag(policy.ToXmppName());
         }
     }
 }

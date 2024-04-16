@@ -1,26 +1,12 @@
-﻿using System.Xml.Linq;
+﻿namespace XmppSharp.Protocol.Base;
 
-namespace XmppSharp.Protocol.Base;
-
-public abstract class DirectionalElement : XElement
+public abstract class DirectionalElement : Element
 {
-    public DirectionalElement(XElement other) : base(other)
+    protected DirectionalElement(string qualifiedName) : base(qualifiedName)
     {
     }
 
-    public DirectionalElement(XName name) : base(name)
-    {
-    }
-
-    public DirectionalElement(XStreamingElement other) : base(other)
-    {
-    }
-
-    public DirectionalElement(XName name, object? content) : base(name, content)
-    {
-    }
-
-    public DirectionalElement(XName name, params object?[] content) : base(name, content)
+    protected DirectionalElement(string qualifiedName, string namespaceURI) : base(qualifiedName, namespaceURI)
     {
     }
 
@@ -28,28 +14,28 @@ public abstract class DirectionalElement : XElement
     {
         get
         {
-            var jid = this.GetAttribute("from");
+            var jid = GetAttribute("from");
 
             if (Jid.TryParse(jid, out var result))
                 return result;
 
             return null;
         }
-        set => this.SetAttribute("from", value?.ToString());
+        set => SetAttribute("from", value?.ToString());
     }
 
     public Jid To
     {
         get
         {
-            var jid = this.GetAttribute("to");
+            var jid = GetAttribute("to");
 
             if (Jid.TryParse(jid, out var result))
                 return result;
 
             return null;
         }
-        set => this.SetAttribute("to", value?.ToString());
+        set => SetAttribute("to", value?.ToString());
     }
 
     public void SwitchDirection()
