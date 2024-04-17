@@ -8,21 +8,21 @@ namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 [XmppEnum]
 public enum HeadlineValues
 {
-    /// <summary>
-    /// Service that notifies a user of new email messages.
-    /// </summary>
-    [XmppMember("newmail")]
-    NewMail,
+	/// <summary>
+	/// Service that notifies a user of new email messages.
+	/// </summary>
+	[XmppMember("newmail")]
+	NewMail,
 
-    /// <summary>
-    /// RSS notification service.
-    /// </summary>
-    [XmppMember("rss")]
-    RSS,
+	/// <summary>
+	/// RSS notification service.
+	/// </summary>
+	[XmppMember("rss")]
+	RSS,
 
-    /// <summary>
-    /// Service that provides weather alerts.
-    /// </summary>
-    [XmppMember("weather")]
-    Weather
+	/// <summary>
+	/// Service that provides weather alerts.
+	/// </summary>
+	[XmppMember("weather")]
+	Weather
 }

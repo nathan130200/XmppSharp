@@ -5,15 +5,13 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XmppSharp", "XmppSharp\XmppSharp.csproj", "{9524D04E-04EA-4BE2-866D-36513B852BB5}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{BCAADF99-16AC-4E6C-94FC-A7DB74FDF621}"
-	ProjectSection(SolutionItems) = preProject
-		.gitignore = .gitignore
-		CHANGELOG.md = CHANGELOG.md
-		LICENSE = LICENSE
-		README.md = README.md
-	EndProjectSection
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XmppSharp.Test", "XmppSharp.Test\XmppSharp.Test.csproj", "{37601B18-4B72-4BBE-8600-0E73D96BA6CD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmppSharp.Test", "XmppSharp.Test\XmppSharp.Test.csproj", "{37601B18-4B72-4BBE-8600-0E73D96BA6CD}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{5D1FF1C4-B9ED-461B-8EAE-A23C799AED0F}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		CHANGELOG.md = CHANGELOG.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

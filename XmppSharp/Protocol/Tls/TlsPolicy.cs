@@ -8,15 +8,15 @@ namespace XmppSharp.Protocol.Tls;
 [XmppEnum]
 public enum TlsPolicy
 {
-    /// <summary>
-    /// Indicates that TLS is optional for the connection.
-    /// </summary>
-    [XmppMember("optional")]
-    Optional,
+	/// <summary>
+	/// Indicates that TLS is optional for the connection.
+	/// </summary>
+	[XmppMember("optional")]
+	Optional,
 
-    /// <summary>
-    /// Indicates that TLS is required for the connection.
-    /// </summary>
-    [XmppMember("required")]
-    Required
+	/// <summary>
+	/// Indicates that TLS is required for the connection.
+	/// </summary>
+	[XmppMember("required")]
+	Required
 }

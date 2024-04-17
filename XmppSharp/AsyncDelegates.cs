@@ -34,86 +34,86 @@ public delegate Task<TResult> AsyncFunc<TResult, TParam>(TParam param);
 
 public static class AsyncUtilities
 {
-    /// <summary>
-    /// Helper function that safely invokes the event.
-    /// </summary>
-    /// <param name="func">Delegate of the event that will be invoked.</param>
-    /// <returns>Returns a task that invokes the event asynchronously.</returns>
-    public static async Task InvokeAsync(this AsyncAction func)
-    {
-        try
-        {
-            if (func != null)
-                await func();
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex);
-        }
-    }
+	/// <summary>
+	/// Helper function that safely invokes the event.
+	/// </summary>
+	/// <param name="func">Delegate of the event that will be invoked.</param>
+	/// <returns>Returns a task that invokes the event asynchronously.</returns>
+	public static async Task InvokeAsync(this AsyncAction func)
+	{
+		try
+		{
+			if (func != null)
+				await func();
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine(ex);
+		}
+	}
 
-    /// <summary>
-    /// Helper function that safely invokes the event.
-    /// </summary>
-    /// <typeparam name="TParam"> Parameter type for the event.</typeparam>
-    /// <param name="func">Delegate of the event that will be invoked.</param>
-    /// <param name="param">Parameter value.</param>
-    /// <returns>Returns a task that invokes the event asynchronously.</returns>
-    public static async Task InvokeAsync<TParam>(this AsyncAction<TParam> func, TParam param)
-    {
-        try
-        {
-            if (func != null)
-                await func(param);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex);
-        }
-    }
+	/// <summary>
+	/// Helper function that safely invokes the event.
+	/// </summary>
+	/// <typeparam name="TParam"> Parameter type for the event.</typeparam>
+	/// <param name="func">Delegate of the event that will be invoked.</param>
+	/// <param name="param">Parameter value.</param>
+	/// <returns>Returns a task that invokes the event asynchronously.</returns>
+	public static async Task InvokeAsync<TParam>(this AsyncAction<TParam> func, TParam param)
+	{
+		try
+		{
+			if (func != null)
+				await func(param);
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine(ex);
+		}
+	}
 
-    /// <summary>
-    /// Helper function that safely invokes the event and returns a value.
-    /// </summary>
-    /// <typeparam name="TResult">Type of result that will be returned.</typeparam>
-    /// <returns>When awaited, returns the event value or the default value of <typeparamref name="TResult"/> if an error occurs.</returns>
-    public static async Task<TResult> InvokeAsync<TResult>(this AsyncFunc<TResult> func)
-    {
-        try
-        {
-            if (func != null)
-                return await func();
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex);
-        }
+	/// <summary>
+	/// Helper function that safely invokes the event and returns a value.
+	/// </summary>
+	/// <typeparam name="TResult">Type of result that will be returned.</typeparam>
+	/// <returns>When awaited, returns the event value or the default value of <typeparamref name="TResult"/> if an error occurs.</returns>
+	public static async Task<TResult> InvokeAsync<TResult>(this AsyncFunc<TResult> func)
+	{
+		try
+		{
+			if (func != null)
+				return await func();
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine(ex);
+		}
 
-        return default;
-    }
+		return default;
+	}
 
-    /// <summary>
-    /// Helper function that safely invokes the event.
-    /// </summary>
-    /// <typeparam name="TParam">Parameter type for the event.</typeparam>
-    /// <typeparam name="TResult">Type of result that will be returned.</typeparam>
-    /// <param name="func">Delegate of the event that will be invoked.</param>
-    /// <param name="param">Parameter value.</param>
-    /// <returns>When awaited, returns the event value or the default value of <typeparamref name="TResult" /> if an error occurs.
-    /// <para>The error will be displayed in the debug window using <see cref="Debug.WriteLine(object)" />.</para>
-    /// </returns>
-    public static async Task<TResult> InvokeAsync<TResult, TParam>(this AsyncFunc<TResult, TParam> func, TParam param)
-    {
-        try
-        {
-            if (func != null)
-                return await func(param);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex);
-        }
+	/// <summary>
+	/// Helper function that safely invokes the event.
+	/// </summary>
+	/// <typeparam name="TParam">Parameter type for the event.</typeparam>
+	/// <typeparam name="TResult">Type of result that will be returned.</typeparam>
+	/// <param name="func">Delegate of the event that will be invoked.</param>
+	/// <param name="param">Parameter value.</param>
+	/// <returns>When awaited, returns the event value or the default value of <typeparamref name="TResult" /> if an error occurs.
+	/// <para>The error will be displayed in the debug window using <see cref="Debug.WriteLine(object)" />.</para>
+	/// </returns>
+	public static async Task<TResult> InvokeAsync<TResult, TParam>(this AsyncFunc<TResult, TParam> func, TParam param)
+	{
+		try
+		{
+			if (func != null)
+				return await func(param);
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine(ex);
+		}
 
-        return default;
-    }
+		return default;
+	}
 }

@@ -5,49 +5,49 @@ namespace XmppSharp.Protocol.Base;
 [XmppTag("stream:error", "http://etherx.jabber.org/streams")]
 public class StreamError : Element
 {
-    public StreamError() : base("stream:error", Namespace.Stream)
-    {
+	public StreamError() : base("stream:error", Namespace.Stream)
+	{
 
-    }
+	}
 
-    public StreamError(StreamErrorCondition condition, string text = default) : this()
-    {
-        Condition = condition;
+	public StreamError(StreamErrorCondition condition, string text = default) : this()
+	{
+		this.Condition = condition;
 
-        if (text != null)
-            Text = text;
-    }
+		if (text != null)
+			this.Text = text;
+	}
 
-    public StreamErrorCondition Condition
-    {
-        get
-        {
-            foreach (var (name, value) in XmppEnum.GetValues<StreamErrorCondition>())
-            {
-                if (HasTag(Namespace.Streams + name))
-                    return value;
-            }
+	public StreamErrorCondition Condition
+	{
+		get
+		{
+			foreach (var (name, value) in XmppEnum.GetValues<StreamErrorCondition>())
+			{
+				if (this.HasTag(Namespace.Streams + name))
+					return value;
+			}
 
-            return StreamErrorCondition.UndefinedCondition;
-        }
-        set
-        {
-            RemoveTag(Namespace.Streams + Condition.ToXmppName());
+			return StreamErrorCondition.UndefinedCondition;
+		}
+		set
+		{
+			this.RemoveTag(Namespace.Streams + this.Condition.ToXmppName());
 
-            if (XmppEnum.IsDefined(value))
-                SetTag(Namespace.Streams + value.ToXmppName());
-        }
-    }
+			if (XmppEnum.IsDefined(value))
+				this.SetTag(Namespace.Streams + value.ToXmppName());
+		}
+	}
 
-    public string? Text
-    {
-        get => GetTag("text", Namespace.Streams);
-        set
-        {
-            if (value == null)
-                RemoveTag("text", Namespace.Streams);
-            else
-                SetTag("text", Namespace.Streams, value);
-        }
-    }
+	public string? Text
+	{
+		get => this.GetTag("text", Namespace.Streams);
+		set
+		{
+			if (value == null)
+				this.RemoveTag("text", Namespace.Streams);
+			else
+				this.SetTag("text", Namespace.Streams, value);
+		}
+	}
 }

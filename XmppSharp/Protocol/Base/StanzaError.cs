@@ -8,54 +8,54 @@ namespace XmppSharp.Protocol.Base;
 [XmppTag("error", "jabber:component:connect")]
 public class StanzaError : Element
 {
-    public StanzaError() : base("error", Namespace.Client)
-    {
+	public StanzaError() : base("error", Namespace.Client)
+	{
 
-    }
+	}
 
-    public StanzaErrorType? Type
-    {
-        get => XmppEnum.Parse<StanzaErrorType>(GetAttribute("type"));
-        set
-        {
-            if (!value.TryGetValue(out var result))
-                RemoveAttribute("type");
-            else
-                SetAttribute("type", result.ToXmppName());
-        }
-    }
+	public StanzaErrorType? Type
+	{
+		get => XmppEnum.Parse<StanzaErrorType>(this.GetAttribute("type"));
+		set
+		{
+			if (!value.TryGetValue(out var result))
+				this.RemoveAttribute("type");
+			else
+				this.SetAttribute("type", result.ToXmppName());
+		}
+	}
 
-    public StanzaErrorCondition? Condition
-    {
-        get
-        {
-            foreach (var (tag, value) in XmppEnum.GetValues<StanzaErrorCondition>())
-            {
-                if (HasTag(Namespace.Stanzas + tag))
-                    return value;
-            }
+	public StanzaErrorCondition? Condition
+	{
+		get
+		{
+			foreach (var (tag, value) in XmppEnum.GetValues<StanzaErrorCondition>())
+			{
+				if (this.HasTag(Namespace.Stanzas + tag))
+					return value;
+			}
 
-            return default;
-        }
-        set
-        {
-            XmppEnum.GetNames<StanzaErrorCondition>()
-                .ForEach(tag => RemoveTag(Namespace.Stanzas + tag));
+			return default;
+		}
+		set
+		{
+			XmppEnum.GetNames<StanzaErrorCondition>()
+				.ForEach(tag => this.RemoveTag(Namespace.Stanzas + tag));
 
-            if (value.TryGetValue(out var result))
-                SetTag(Namespace.Stanzas + result.ToXmppName());
-        }
-    }
+			if (value.TryGetValue(out var result))
+				this.SetTag(Namespace.Stanzas + result.ToXmppName());
+		}
+	}
 
-    public string Text
-    {
-        get => GetTag("text", Namespace.Stanzas);
-        set
-        {
-            if (value == null)
-                RemoveTag("text", Namespace.Stanzas);
-            else
-                SetTag("text", Namespace.Stanzas, value);
-        }
-    }
+	public string Text
+	{
+		get => this.GetTag("text", Namespace.Stanzas);
+		set
+		{
+			if (value == null)
+				this.RemoveTag("text", Namespace.Stanzas);
+			else
+				this.SetTag("text", Namespace.Stanzas, value);
+		}
+	}
 }

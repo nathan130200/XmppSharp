@@ -3,15 +3,15 @@
 /// <inheritdoc/>
 public class XmppEnumException : Exception
 {
-    /// <inheritdoc/>
-    internal XmppEnumException() : base()
-    {
+	/// <inheritdoc/>
+	internal XmppEnumException() : base()
+	{
 
-    }
+	}
 
-    /// <inheritdoc/>
-    internal XmppEnumException(string? message) : base(message)
-    {
+	/// <inheritdoc/>
+	internal XmppEnumException(string? message) : base(message)
+	{
 
-    }
+	}
 }

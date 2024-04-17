@@ -8,15 +8,15 @@ namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 [XmppEnum]
 public enum ConferenceValues
 {
-    /// <summary>
-    /// Internet Relay Chat service.
-    /// </summary>
-    [XmppMember("irc")]
-    Irc,
+	/// <summary>
+	/// Internet Relay Chat service.
+	/// </summary>
+	[XmppMember("irc")]
+	Irc,
 
-    /// <summary>
-    /// Text conferencing service.
-    /// </summary>
-    [XmppMember("text")]
-    Text,
+	/// <summary>
+	/// Text conferencing service.
+	/// </summary>
+	[XmppMember("text")]
+	Text,
 }

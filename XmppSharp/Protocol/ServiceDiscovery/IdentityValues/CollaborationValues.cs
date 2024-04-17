@@ -8,9 +8,9 @@ namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 [XmppEnum]
 public enum CollaborationValues
 {
-    /// <summary>
-    /// Multi-user whiteboarding service
-    /// </summary>
-    [XmppMember("whiteboard")]
-    Whiteboard,
+	/// <summary>
+	/// Multi-user whiteboarding service
+	/// </summary>
+	[XmppMember("whiteboard")]
+	Whiteboard,
 }

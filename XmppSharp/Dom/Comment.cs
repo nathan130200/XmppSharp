@@ -6,12 +6,12 @@ namespace XmppSharp.Dom;
 [DebuggerDisplay("{Value,nq}")]
 public class Comment : Node
 {
-    public Comment(string value) => Value = value;
-    public Comment(Comment other) => Value = other.Value;
+	public Comment(string value) => this.Value = value;
+	public Comment(Comment other) => this.Value = other.Value;
 
-    public override Node Clone()
-       => new Comment(this);
+	public override Node Clone()
+	   => new Comment(this);
 
-    public override void WriteTo(XmlWriter writer)
-        => writer.WriteComment(Value);
+	public override void WriteTo(XmlWriter writer)
+		=> writer.WriteComment(this.Value);
 }

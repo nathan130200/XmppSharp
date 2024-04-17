@@ -5,62 +5,62 @@ namespace XmppSharp.Protocol.DataForms;
 [XmppTag("field", Namespace.DataForms)]
 public class Field : Element
 {
-    public Field() : base("field", Namespace.DataForms)
-    {
+	public Field() : base("field", Namespace.DataForms)
+	{
 
-    }
+	}
 
-    public string? Name
-    {
-        get => GetAttribute("var");
-        set => SetAttribute("var", value);
-    }
+	public string? Name
+	{
+		get => this.GetAttribute("var");
+		set => this.SetAttribute("var", value);
+	}
 
-    public FieldType Type
-    {
-        get => XmppEnum.ParseOrDefault(GetAttribute("type"), FieldType.TextSingle);
-        set => SetAttribute("type", value.ToXmppName());
-    }
+	public FieldType Type
+	{
+		get => XmppEnum.ParseOrDefault(this.GetAttribute("type"), FieldType.TextSingle);
+		set => this.SetAttribute("type", value.ToXmppName());
+	}
 
-    public string? Label
-    {
-        get => GetAttribute("label");
-        set => SetAttribute("label", value);
-    }
+	public string? Label
+	{
+		get => this.GetAttribute("label");
+		set => this.SetAttribute("label", value);
+	}
 
-    public string? Description
-    {
-        get => GetTag("desc");
-        set => SetTag("desc", value);
-    }
+	public string? Description
+	{
+		get => this.GetTag("desc");
+		set => this.SetTag("desc", value);
+	}
 
-    public bool IsRequired
-    {
-        get => HasTag("required");
-        set
-        {
-            if (!value)
-                RemoveTag("required");
-            else
-                SetTag("required");
-        }
-    }
+	public bool IsRequired
+	{
+		get => this.HasTag("required");
+		set
+		{
+			if (!value)
+				this.RemoveTag("required");
+			else
+				this.SetTag("required");
+		}
+	}
 
-    public new string Value
-    {
-        get => GetTag("value");
-        set => SetTag("value", value);
-    }
+	public new string Value
+	{
+		get => this.GetTag("value");
+		set => this.SetTag("value", value);
+	}
 
-    public IEnumerable<Option> Option
-    {
-        get => Children<Option>();
-        set
-        {
-            Children<Option>().Remove();
+	public IEnumerable<Option> Option
+	{
+		get => this.Children<Option>();
+		set
+		{
+			this.Children<Option>().Remove();
 
-            foreach (var item in value)
-                AddChild(item);
-        }
-    }
+			foreach (var item in value)
+				this.AddChild(item);
+		}
+	}
 }

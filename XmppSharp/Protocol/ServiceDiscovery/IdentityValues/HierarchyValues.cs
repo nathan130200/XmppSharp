@@ -8,15 +8,15 @@ namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 [XmppEnum]
 public enum HierarchyValues
 {
-    /// <summary>
-    /// A service discovery node that contains further nodes in the hierarchy.
-    /// </summary>
-    [XmppMember("branch")]
-    Branch,
+	/// <summary>
+	/// A service discovery node that contains further nodes in the hierarchy.
+	/// </summary>
+	[XmppMember("branch")]
+	Branch,
 
-    /// <summary>
-    /// A service discovery node that does not contain further nodes in the hierarchy.
-    /// </summary>
-    [XmppMember("leaf")]
-    Leaf
+	/// <summary>
+	/// A service discovery node that does not contain further nodes in the hierarchy.
+	/// </summary>
+	[XmppMember("leaf")]
+	Leaf
 }

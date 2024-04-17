@@ -5,19 +5,19 @@ namespace XmppSharp.Protocol.ServiceDiscovery;
 [XmppTag("feature", Namespace.DiscoInfo)]
 public class Feature : Element
 {
-    public Feature() : base("feature", Namespace.DiscoInfo)
-    {
+	public Feature() : base("feature", Namespace.DiscoInfo)
+	{
 
-    }
+	}
 
-    public Feature(string featureName) : this()
-    {
-        Name = featureName;
-    }
+	public Feature(string featureName) : this()
+	{
+		this.Name = featureName;
+	}
 
-    public string Name
-    {
-        get => GetAttribute("var");
-        set => SetAttribute("var", value);
-    }
+	public string Name
+	{
+		get => this.GetAttribute("var");
+		set => this.SetAttribute("var", value);
+	}
 }

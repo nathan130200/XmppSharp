@@ -9,39 +9,39 @@ namespace XmppSharp.Protocol;
 [XmppTag("iq", Namespace.Connect)]
 public class Iq : Stanza
 {
-    public Iq() : base("iq", Namespace.Client)
-    {
+	public Iq() : base("iq", Namespace.Client)
+	{
 
-    }
+	}
 
-    public Iq(IqType type) : this()
-        => Type = type;
+	public Iq(IqType type) : this()
+		=> this.Type = type;
 
-    public new IqType Type
-    {
-        get => XmppEnum.ParseOrThrow<IqType>(base.Type);
-        set => base.Type = value.ToXmppName();
-    }
+	public new IqType Type
+	{
+		get => XmppEnum.ParseOrThrow<IqType>(base.Type);
+		set => base.Type = value.ToXmppName();
+	}
 
-    public Element Query
-    {
-        get
-        {
-            _ = this.TryGetChild("query", Namespace.CryOnline, out Element result)
-                || this.TryGetChild("bind", Namespace.Bind, out result)
-                || this.TryGetChild("session", Namespace.Session, out result)
-                || this.TryGetChild("query", Namespace.DiscoInfo, out result)
-                || this.TryGetChild("query", Namespace.DiscoItems, out result)
-                || this.TryGetChild("ping", Namespace.Ping, out result);
+	public Element Query
+	{
+		get
+		{
+			_ = this.TryGetChild("query", Namespace.CryOnline, out Element result)
+				|| this.TryGetChild("bind", Namespace.Bind, out result)
+				|| this.TryGetChild("session", Namespace.Session, out result)
+				|| this.TryGetChild("query", Namespace.DiscoInfo, out result)
+				|| this.TryGetChild("query", Namespace.DiscoItems, out result)
+				|| this.TryGetChild("ping", Namespace.Ping, out result);
 
-            return result;
-        }
-        set
-        {
-            Query?.Remove();
+			return result;
+		}
+		set
+		{
+			this.Query?.Remove();
 
-            if (value != null)
-                AddChild(value);
-        }
-    }
+			if (value != null)
+				this.AddChild(value);
+		}
+	}
 }

@@ -5,34 +5,34 @@ namespace XmppSharp.Protocol.ServiceDiscovery;
 [XmppTag("query", Namespace.DiscoItems)]
 public class DiscoItems : Element
 {
-    public DiscoItems() : base("query", Namespace.DiscoItems)
-    {
+	public DiscoItems() : base("query", Namespace.DiscoItems)
+	{
 
-    }
+	}
 
-    public DiscoItems(string? node) : this()
-    {
-        Node = node;
-    }
+	public DiscoItems(string? node) : this()
+	{
+		this.Node = node;
+	}
 
-    public string? Node
-    {
-        get => GetAttribute("node");
-        set => SetAttribute("node", value);
-    }
+	public string? Node
+	{
+		get => this.GetAttribute("node");
+		set => this.SetAttribute("node", value);
+	}
 
-    public IEnumerable<Item> Items
-    {
-        get => Children<Item>();
-        set
-        {
-            Children<Item>().Remove();
+	public IEnumerable<Item> Items
+	{
+		get => this.Children<Item>();
+		set
+		{
+			this.Children<Item>().Remove();
 
-            if (value != null)
-            {
-                foreach (var item in value)
-                    AddChild(item);
-            }
-        }
-    }
+			if (value != null)
+			{
+				foreach (var item in value)
+					this.AddChild(item);
+			}
+		}
+	}
 }

@@ -8,9 +8,9 @@ namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 [XmppEnum]
 public enum ProxyValues
 {
-    /// <summary>
-    /// SOCKS5 bytestreams proxy service.
-    /// </summary>
-    [XmppMember("bytestreams")]
-    ByteStreams
+	/// <summary>
+	/// SOCKS5 bytestreams proxy service.
+	/// </summary>
+	[XmppMember("bytestreams")]
+	ByteStreams
 }

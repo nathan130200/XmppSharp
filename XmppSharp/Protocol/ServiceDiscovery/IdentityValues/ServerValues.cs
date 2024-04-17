@@ -8,9 +8,9 @@ namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 [XmppEnum]
 public enum ServerValues
 {
-    /// <summary>
-    /// Standard Jabber/XMPP server used for instant messaging and presence.
-    /// </summary>
-    [XmppMember("im")]
-    IM
+	/// <summary>
+	/// Standard Jabber/XMPP server used for instant messaging and presence.
+	/// </summary>
+	[XmppMember("im")]
+	IM
 }

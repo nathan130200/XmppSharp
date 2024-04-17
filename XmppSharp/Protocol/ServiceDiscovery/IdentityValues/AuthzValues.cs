@@ -8,9 +8,9 @@ namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 [XmppEnum]
 public enum AuthzValues
 {
-    /// <summary>
-    /// An authorization service that provides ephemeral identities.
-    /// </summary>
-    [XmppMember("ephemeral")]
-    Ephemeral
+	/// <summary>
+	/// An authorization service that provides ephemeral identities.
+	/// </summary>
+	[XmppMember("ephemeral")]
+	Ephemeral
 }

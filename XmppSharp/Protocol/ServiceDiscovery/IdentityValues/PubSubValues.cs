@@ -8,27 +8,27 @@ namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 [XmppEnum]
 public enum PubSubValues
 {
-    /// <summary>
-    /// A pubsub node of the "collection" type.
-    /// </summary>
-    [XmppMember("collection")]
-    Collection,
+	/// <summary>
+	/// A pubsub node of the "collection" type.
+	/// </summary>
+	[XmppMember("collection")]
+	Collection,
 
-    /// <summary>
-    /// A pubsub node of the "leaf" type.
-    /// </summary>
-    [XmppMember("leaf")]
-    Leaf,
+	/// <summary>
+	/// A pubsub node of the "leaf" type.
+	/// </summary>
+	[XmppMember("leaf")]
+	Leaf,
 
-    /// <summary>
-    /// A personal eventing service that supports the publish-subscribe subset defined in XEP-0163.
-    /// </summary>
-    [XmppMember("pep")]
-    Owned,
+	/// <summary>
+	/// A personal eventing service that supports the publish-subscribe subset defined in XEP-0163.
+	/// </summary>
+	[XmppMember("pep")]
+	Owned,
 
-    /// <summary>
-    /// A pubsub service that supports the functionality defined in XEP-0060.
-    /// </summary>
-    [XmppMember("service")]
-    Service
+	/// <summary>
+	/// A pubsub service that supports the functionality defined in XEP-0060.
+	/// </summary>
+	[XmppMember("service")]
+	Service
 }

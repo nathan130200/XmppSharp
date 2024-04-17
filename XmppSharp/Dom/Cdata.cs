@@ -6,12 +6,12 @@ namespace XmppSharp.Dom;
 [DebuggerDisplay("{Value,nq}")]
 public class Cdata : Node
 {
-    public Cdata(string value) => Value = value;
-    public Cdata(Cdata other) => Value = other.Value;
+	public Cdata(string value) => this.Value = value;
+	public Cdata(Cdata other) => this.Value = other.Value;
 
-    public override Node Clone()
-       => new Cdata(this);
+	public override Node Clone()
+	   => new Cdata(this);
 
-    public override void WriteTo(XmlWriter writer)
-        => writer.WriteCData(Value);
+	public override void WriteTo(XmlWriter writer)
+		=> writer.WriteCData(this.Value);
 }

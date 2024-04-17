@@ -1,7 +1,8 @@
 # XMPP#
-A manipulation library and utility for XMPP inspired by the classic agsXMPP library (developed by [AG-Software](https://www.ag-software.net))
 
-The main objective of this library is to reduce the level of unnecessary verbosity for constructing XML tags.
+A manipulation library and utility with the main objective to reduce the level of unnecessary verbosity for constructing XML tags for XMPP protocol.
+
+<hr/>
 
 ### XMPP Parser
 
