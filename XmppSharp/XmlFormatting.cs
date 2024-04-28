@@ -72,9 +72,9 @@ public readonly struct XmlFormatting
 	};
 
 	/// <summary>
-	/// XML formatting that does only emit nodes that are of type <see cref="Element" />
+	/// XML formatting that does only emit nodes that are of type <see cref="Element" /> but include <see cref="Text"/> nodes inside the element.
 	/// </summary>
-	public static XmlFormatting ElementsOnly { get; } = Default with
+	public static XmlFormatting Minimal { get; } = Default with
 	{
 		IncludeCommentNodes = false,
 		IncludeCdataNodes = false,
