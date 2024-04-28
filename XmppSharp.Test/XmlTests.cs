@@ -135,7 +135,7 @@ public class XmlTests
 		var cloned = elem.Clone();
 		Assert.AreNotSame(elem, cloned);
 
-		var outXml = cloned.ToString(false);
+		var outXml = cloned.ToString(XmlFormatting.Default);
 
 		Assert.AreEqual(inXml, outXml);
 	}

@@ -12,6 +12,9 @@ public class Cdata : Node
 	public override Node Clone()
 	   => new Cdata(this);
 
-	public override void WriteTo(XmlWriter writer)
-		=> writer.WriteCData(this.Value);
+	public override void WriteTo(XmlWriter writer, in XmlFormatting formatting)
+	{
+		if (formatting.IncludeCdataNodes)
+			writer.WriteCData(this.Value);
+	}
 }

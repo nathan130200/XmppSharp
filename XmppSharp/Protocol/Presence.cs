@@ -45,7 +45,7 @@ public class Presence : Stanza
 			if (value == 0)
 				this.RemoveTag("priority");
 			else
-				this.SetTag("priority", value);
+				this.SetTag("priority", value: value);
 		}
 	}
 
@@ -57,7 +57,7 @@ public class Presence : Stanza
 			if (value == PresenceShow.Online)
 				this.RemoveTag("show");
 			else
-				this.SetTag("show", value.ToXmppName());
+				this.SetTag("show", value: value.ToXmppName());
 		}
 	}
 
@@ -69,7 +69,7 @@ public class Presence : Stanza
 			if (value == null)
 				this.RemoveTag("status");
 			else
-				this.SetTag("status", value);
+				this.SetTag("status", value: value);
 		}
 	}
 }

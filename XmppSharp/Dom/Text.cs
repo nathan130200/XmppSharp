@@ -12,6 +12,9 @@ public class Text : Node
 	public override Node Clone()
 		=> new Text(this);
 
-	public override void WriteTo(XmlWriter writer)
-		=> writer.WriteString(this.Value);
+	public override void WriteTo(XmlWriter writer, in XmlFormatting formatting)
+	{
+		if (formatting.IncludeTextNodes)
+			writer.WriteString(this.Value);
+	}
 }

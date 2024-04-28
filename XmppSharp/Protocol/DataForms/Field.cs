@@ -31,7 +31,7 @@ public class Field : Element
 	public string? Description
 	{
 		get => this.GetTag("desc");
-		set => this.SetTag("desc", value);
+		set => this.SetTag("desc", value: value);
 	}
 
 	public bool IsRequired
@@ -49,7 +49,7 @@ public class Field : Element
 	public new string Value
 	{
 		get => this.GetTag("value");
-		set => this.SetTag("value", value);
+		set => this.SetTag("value", value: value);
 	}
 
 	public IEnumerable<Option> Option

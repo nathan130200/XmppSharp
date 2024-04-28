@@ -71,7 +71,7 @@ public class ParserTests
 
 	internal static void PrintResult(Element e)
 	{
-		Debug.WriteLine("\nRESULT:\n" + e.ToString(true) + "\n");
+		Debug.WriteLine("\nRESULT:\n" + e.ToString(XmlFormatting.Indented) + "\n");
 	}
 
 	[TestMethod]

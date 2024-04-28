@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Xml;
 
@@ -35,14 +36,15 @@ public static class Xml
 		};
 	}
 
-	internal static XmlWriter CreateWriter(bool indented, StringBuilder output, char indentChar, int indentSize)
+	internal static XmlWriter CreateWriter(StringBuilder output, XmlFormatting formatting)
 	{
 		Require.NotNull(output);
 
 		var settings = new XmlWriterSettings
 		{
-			Indent = indented,
-			IndentChars = new(indentChar, indentSize),
+			Indent = formatting.IndentSize > 0,
+			IndentChars = new(formatting.IndentChar, formatting.IndentSize),
+			DoNotEscapeUriAttributes = formatting.DoNotEscapeUriAttributes,
 			CheckCharacters = true,
 			CloseOutput = true,
 			ConformanceLevel = ConformanceLevel.Fragment,
@@ -55,20 +57,12 @@ public static class Xml
 		return XmlWriter.Create(new StringWriter(output), settings);
 	}
 
-	public static void Remove<T>(this IEnumerable<T> source) where T : Node
+	public static void Remove(this IEnumerable<Node> source)
 	{
 		Require.NotNull(source);
 
-		if (source is IList<T> list)
-		{
-			foreach (var item in list)
-				item.Remove();
-		}
-		else
-		{
-			foreach (var item in source)
-				item.Remove();
-		}
+		foreach (var item in source)
+			item.Remove();
 	}
 
 	public static Element C(this Element parent, string qualifiedName, string namespaceURI = default, object value = default)
@@ -86,6 +80,17 @@ public static class Xml
 		return result;
 	}
 
+	public static T SetAttributes<T>(this T element, in Dictionary<string, object> attributes) where T : Element
+	{
+		Require.NotNull(element);
+		Require.NotNull(attributes);
+
+		foreach (var (attName, attVal) in attributes)
+			element.SetAttribute(attName, attVal);
+
+		return element;
+	}
+
 	public static Element C(this Element parent, string qualifiedName, in Dictionary<string, object> attributes, object value = default)
 	{
 		Require.NotNull(parent);
@@ -99,6 +104,8 @@ public static class Xml
 
 		foreach (var (attName, attVal) in attributes)
 			child.SetAttribute(attName, attVal);
+
+		parent.AddChild(child);
 
 		return child;
 	}
@@ -137,6 +144,42 @@ public static class Xml
 			parent.AddChild(child);
 
 		return parent;
+	}
+
+	public static Element Up(this Element child)
+	{
+		Require.NotNull(child);
+		return child.Parent;
+	}
+
+	public static Element Root(this Element child)
+	{
+		while (!child.IsRootElement)
+			child = child.Parent;
+
+		return child;
+	}
+
+	public static Element Element(string name, string xmlns = default)
+	{
+		Require.NotNullOrWhiteSpace(name);
+
+		return new(name, xmlns);
+	}
+
+	public static Element Element(string name, in Dictionary<string, object> attributes)
+	{
+		Require.NotNullOrWhiteSpace(name);
+
+		var result = new Element(name);
+
+		if (attributes != null)
+		{
+			foreach (var (key, value) in attributes)
+				result.SetAttribute(key, value);
+		}
+
+		return result;
 	}
 
 	public static T SetAttributeValue<T>(this T parent, string name, object? rawValue, string? format = default, IFormatProvider? ifp = default)
@@ -217,7 +260,7 @@ public static class Xml
 
 #if NET7_0_OR_GREATER
 
-	public static T GetAttributeValue<T>(this Element parent, string name, T defaultValue, IFormatProvider? ifp = default) where T : IParsable<T>
+	public static T GetAttributeValue<T>(this Element parent, string name, T defaultValue = default, IFormatProvider? ifp = default) where T : IParsable<T>
 	{
 		Require.NotNull(parent);
 		Require.NotNullOrWhiteSpace(name);
@@ -233,9 +276,9 @@ public static class Xml
 		return result;
 	}
 
-#endif
+#else
 
-	public static T GetAttributeValue<T>(this Element parent, string name, TryParseDelegate<T>? converter, T defaultValue = default)
+	public static T GetAttributeValue<T>(this Element parent, string name, TryParseDelegate<T>? converter = default, T defaultValue = default)
 	{
 		Require.NotNull(parent);
 		Require.NotNullOrWhiteSpace(name);
@@ -253,4 +296,6 @@ public static class Xml
 
 		return result;
 	}
+
+#endif
 }

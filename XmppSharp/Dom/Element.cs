@@ -34,6 +34,9 @@ public class Element : Node
 		}
 	}
 
+	public bool IsRootElement
+		=> Parent is null;
+
 	public IEnumerable<Node> Nodes()
 	{
 		lock (this._childNodes)
@@ -101,17 +104,39 @@ public class Element : Node
 		}
 	}
 
+	/// <summary>
+	/// Gets the XML string representation of the current element and its child nodes.
+	/// </summary>
+	/// <returns>Well-formed XML serialized with the entire XML tree.</returns>
 	public override string ToString()
-		=> this.ToString(false);
+		=> this.ToString(XmlFormatting.Default);
 
-	public string ToString(bool indented, char indentChar = ' ', int indentSize = 2)
+	/// <summary>
+	/// Gets the XML string representation of the current element and its child nodes.
+	/// </summary>
+	/// <param name="formatting">Determines which formatting will be used.</param>
+	/// <returns>Well-formed XML serialized with the entire XML tree.</returns>
+	public string ToString(XmlFormatting formatting)
 	{
-		using (StringBuilderPool.Rent(out var sb))
+		StringBuilderPool.Rent(out var sb);
+
+		try
 		{
-			using (var writer = Xml.CreateWriter(indented, sb, indentChar, indentSize))
+			using (var writer = Xml.CreateWriter(sb, formatting))
+
+/* Unmerged change from project 'XmppSharp (net8.0)'
+Before:
 				this.WriteTo(writer);
+After:
+				this.WriteTo(writer, formatting);
+*/
+				this.WriteTo(writer, formatting);
 
 			return sb.ToString();
+		}
+		finally
+		{
+			StringBuilderPool.Return(sb);
 		}
 	}
 
@@ -146,7 +171,7 @@ public class Element : Node
 		return elem;
 	}
 
-	public override void WriteTo(XmlWriter writer)
+	public override void WriteTo(XmlWriter writer, in XmlFormatting formatting)
 	{
 		var ns = this.GetNamespace(this._prefix);
 
@@ -172,19 +197,19 @@ public class Element : Node
 				if (!info.HasPrefix)
 					writer.WriteAttributeString(name, value);
 				else
-					writer.WriteAttributeString(info.Prefix, info.LocalName, info.Prefix switch
+					writer.WriteAttributeString(info.LocalName, info.Prefix switch
 					{
 						"xml" => Namespace.Xml,
 						"xmlns" => Namespace.Xmlns,
 						_ => this.GetNamespace(info.Prefix) ?? string.Empty
-					});
+					}, value);
 			}
 		}
 
 		lock (this._childNodes)
 		{
 			foreach (var node in this._childNodes)
-				node.WriteTo(writer);
+				node.WriteTo(writer, formatting);
 		}
 
 		writer.WriteEndElement();
@@ -281,18 +306,20 @@ public class Element : Node
 			return;
 
 		lock (this._childNodes)
+		{
+			n._parent = null;
+
 			this._childNodes.Remove(n);
 
-		n._parent = null;
+			if (n is Element elem)
+			{
+				var prefix = elem.Prefix;
 
-		if (n is Element elem)
-		{
-			var prefix = elem.Prefix;
-
-			if (prefix != null)
-				elem.SetNamespace(prefix, this.GetNamespace(prefix));
-			else
-				elem.SetNamespace(this.GetNamespace());
+				if (prefix != null)
+					elem.SetNamespace(prefix, this.GetNamespace(prefix));
+				else
+					elem.SetNamespace(this.GetNamespace());
+			}
 		}
 	}
 
@@ -332,6 +359,16 @@ public class Element : Node
 		return value;
 	}
 
+	public IReadOnlyDictionary<string, string> Attributes()
+	{
+		KeyValuePair<string, string>[] result;
+
+		lock (_attributes)
+			result = _attributes.ToArray();
+
+		return result.ToDictionary(x => x.Key, x => x.Value);
+	}
+
 	public Element SetAttribute(string name, object? value)
 	{
 		Require.NotNullOrWhiteSpace(name);
@@ -345,6 +382,29 @@ public class Element : Node
 		}
 
 		return this;
+	}
+
+	public void RemoveAllChildNodes()
+	{
+		lock (_childNodes)
+		{
+			foreach (var item in _childNodes)
+				item._parent = null;
+
+			_childNodes.Clear();
+		}
+	}
+
+	public void RemoveAllAttributes()
+	{
+		lock (_attributes)
+			_attributes.Clear();
+	}
+
+	public void Clear()
+	{
+		RemoveAllChildNodes();
+		RemoveAllAttributes();
 	}
 
 	public Element RemoveAttribute(string name)
@@ -367,49 +427,45 @@ public class Element : Node
 
 	public IEnumerable<Element> Children()
 	{
+		var result = new List<Element>();
+
 		lock (this._childNodes)
 		{
-			foreach (var node in this._childNodes)
+			foreach (var node in _childNodes)
 			{
 				if (node is Element e)
-					yield return e;
+					result.Add(e);
 			}
 		}
+
+		return result.AsEnumerable();
 	}
 
 	public IEnumerable<T> Children<T>()
 		=> this.Children().OfType<T>();
 
-	public IEnumerable<Element> Children(string? tagName, string namespaceURI)
+	public IEnumerable<Element> Children(string? tagName, string? namespaceURI = default)
 	{
 		Require.NotNull(tagName);
 
-		return this.Children(x => x.TagName == tagName && x.Prefix == null
+		return this.Children(x => x.TagName == tagName && namespaceURI == null || (x.Prefix == null
 				? x.GetNamespace() == namespaceURI
-				: x.GetNamespace(x.Prefix) == namespaceURI);
+				: x.GetNamespace(x.Prefix) == namespaceURI));
 	}
 
 	public IEnumerable<Element> Children(Func<Element, bool> predicate)
 	{
 		Require.NotNull(predicate);
-
-		lock (this._childNodes)
-		{
-			foreach (var node in this._childNodes)
-			{
-				if (node is Element child && predicate(child))
-					yield return child;
-			}
-		}
+		return Children().Where(predicate);
 	}
 
-	public Element Child(string tagName, string? namespaceURI)
+	public Element Child(string tagName, string? namespaceURI = default)
 	{
 		Require.NotNull(tagName);
 
-		return this.Children(x => x.TagName == tagName && x.Prefix == null
+		return this.Children(x => x.TagName == tagName && namespaceURI == null || (x.Prefix == null
 			? x.GetNamespace() == namespaceURI
-			: x.GetNamespace(x.Prefix) == namespaceURI)
+			: x.GetNamespace(x.Prefix) == namespaceURI))
 				.FirstOrDefault();
 	}
 
@@ -441,19 +497,7 @@ public class Element : Node
 		this.AddChild(new Element(tagName));
 	}
 
-	public void SetTag(string tagName, object? value)
-	{
-		Require.NotNullOrWhiteSpace(tagName);
-
-		var elem = new Element(tagName);
-
-		if (value != null)
-			elem.Value = Convert.ToString(value, CultureInfo.InvariantCulture);
-
-		this.AddChild(elem);
-	}
-
-	public void SetTag(string tagName, string? namespaceURI, object? value)
+	public void SetTag(string tagName, string? namespaceURI = default, object? value = default)
 	{
 		Require.NotNullOrWhiteSpace(tagName);
 
@@ -475,5 +519,21 @@ public class Element : Node
 	{
 		Require.NotNullOrWhiteSpace(tagName);
 		return this.Child(tagName, namespaceURI) is not null;
+	}
+
+	public void ReplaceWith(Element other)
+	{
+		Require.NotNull(other);
+
+		var parent = this.Parent;
+		this.Remove();
+		parent?.AddChild(other);
+	}
+
+	public void ReplaceFrom(ref Element other)
+	{
+		Require.NotNull(other);
+		other.Remove();
+		other = this;
 	}
 }

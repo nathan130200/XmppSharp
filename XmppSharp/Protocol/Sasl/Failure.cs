@@ -19,25 +19,27 @@ public class Failure : Element
 			this.Text = text;
 	}
 
-	public FailureCondition? Condition
+	public FailureCondition Condition
 	{
 		get
 		{
 			foreach (var (key, value) in XmppEnum.GetValues<FailureCondition>())
 			{
-				if (this.HasTag(key))
+				if (this.HasTag(key, Namespace.Sasl))
 					return value;
 			}
 
-			return default;
+			return FailureCondition.Unspecified;
 		}
 		set
 		{
-			if (this.Condition.TryGetValue(out var oldValue))
-				this.RemoveTag(oldValue.ToXmppName());
+			var other = Condition;
 
-			if (value.TryGetValue(out var result))
-				this.SetTag(result.ToXmppName());
+			if (other != FailureCondition.Unspecified)
+				this.RemoveTag(other.ToXmppName(), Namespace.Sasl);
+
+			if (value != FailureCondition.Unspecified)
+				this.SetTag(value.ToXmppName(), Namespace.Sasl);
 		}
 	}
 
@@ -49,7 +51,7 @@ public class Failure : Element
 			if (value == null)
 				this.RemoveTag("text");
 			else
-				this.SetTag("text", value);
+				this.SetTag("text", value: value);
 		}
 	}
 }

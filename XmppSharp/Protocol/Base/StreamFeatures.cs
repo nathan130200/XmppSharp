@@ -47,8 +47,10 @@ public class StreamFeatures : Element
 		get => this.HasTag("bind", Namespace.Bind);
 		set
 		{
-			Action<string, string> fn = !value ? this.RemoveTag : this.SetTag;
-			fn("bind", Namespace.Bind);
+			if (!value)
+				this.RemoveTag("bind", Namespace.Bind);
+			else
+				this.SetTag("bind", Namespace.Bind);
 		}
 	}
 
@@ -57,8 +59,10 @@ public class StreamFeatures : Element
 		get => this.HasTag("session", Namespace.Session);
 		set
 		{
-			Action<string, string> fn = !value ? this.RemoveTag : this.SetTag;
-			fn("session", Namespace.Session);
+			if (!value)
+				this.RemoveTag("session", Namespace.Session);
+			else
+				this.SetTag("session", Namespace.Session);
 		}
 	}
 }

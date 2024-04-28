@@ -1,6 +1,6 @@
 ﻿namespace XmppSharp.Protocol.Base;
 
-public abstract class Stanza : Element
+public abstract class Stanza : DirectionalElement
 {
 	protected Stanza(string qualifiedName) : base(qualifiedName)
 	{

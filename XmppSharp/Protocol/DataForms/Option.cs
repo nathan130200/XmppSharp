@@ -19,6 +19,6 @@ public class Option : Element
 	public new string Value
 	{
 		get => this.GetTag("value");
-		set => this.SetTag("value", value);
+		set => this.SetTag("value", value: value);
 	}
 }

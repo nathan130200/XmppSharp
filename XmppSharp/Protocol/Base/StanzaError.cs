@@ -2,10 +2,10 @@
 
 namespace XmppSharp.Protocol.Base;
 
-[XmppTag("error", "jabber:client")]
-[XmppTag("error", "jabber:server")]
-[XmppTag("error", "jabber:component:accept")]
-[XmppTag("error", "jabber:component:connect")]
+[XmppTag("error", Namespace.Client)]
+[XmppTag("error", Namespace.Server)]
+[XmppTag("error", Namespace.Accept)]
+[XmppTag("error", Namespace.Connect)]
 public class StanzaError : Element
 {
 	public StanzaError() : base("error", Namespace.Client)
@@ -29,9 +29,9 @@ public class StanzaError : Element
 	{
 		get
 		{
-			foreach (var (tag, value) in XmppEnum.GetValues<StanzaErrorCondition>())
+			foreach (var (name, value) in XmppEnum.GetValues<StanzaErrorCondition>())
 			{
-				if (this.HasTag(Namespace.Stanzas + tag))
+				if (this.HasTag(name, Namespace.Stanzas))
 					return value;
 			}
 
@@ -40,10 +40,10 @@ public class StanzaError : Element
 		set
 		{
 			XmppEnum.GetNames<StanzaErrorCondition>()
-				.ForEach(tag => this.RemoveTag(Namespace.Stanzas + tag));
+				.ForEach(name => this.RemoveTag(name, Namespace.Stanzas));
 
 			if (value.TryGetValue(out var result))
-				this.SetTag(Namespace.Stanzas + result.ToXmppName());
+				this.SetTag(result.ToXmppName(), Namespace.Stanzas);
 		}
 	}
 

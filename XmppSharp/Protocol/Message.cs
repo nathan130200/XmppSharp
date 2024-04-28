@@ -37,7 +37,7 @@ public class Message : Stanza
 			if (string.IsNullOrEmpty(value))
 				this.RemoveTag("body");
 			else
-				this.SetTag("body", value);
+				this.SetTag("body", value: value);
 		}
 	}
 
@@ -52,7 +52,7 @@ public class Message : Stanza
 			if (string.IsNullOrEmpty(value))
 				this.RemoveTag("subject");
 			else
-				this.SetTag("subject", value);
+				this.SetTag("subject", value: value);
 		}
 	}
 
@@ -64,7 +64,7 @@ public class Message : Stanza
 			if (string.IsNullOrEmpty(value))
 				this.RemoveTag("thread");
 			else
-				this.SetTag("thread", value);
+				this.SetTag("thread", value: value);
 		}
 	}
 }

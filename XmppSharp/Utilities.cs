@@ -37,23 +37,21 @@ public static class Utilities
 		Require.NotNull(source);
 		Require.NotNull(callback);
 
-		if (source is IList<T> list)
-		{
-			foreach (var item in list)
-				callback(item);
-		}
-		else
-		{
-			foreach (var item in source)
-				callback(item);
-		}
+		foreach (var item in source)
+			callback(item);
 
 		return source;
 	}
 
-	public static bool TryGetChild(this Element e, string localName, string? namespaceURI, out Element result)
+	public static bool TryGetChild(this Element e, string tagName, string? namespaceURI, out Element result)
 	{
-		result = e.Child(localName, namespaceURI);
+		result = e.Child(tagName, namespaceURI);
+		return result != null;
+	}
+
+	public static bool TryGetChild(this Element e, string tagName, out Element result)
+	{
+		result = e.Child(tagName);
 		return result != null;
 	}
 }

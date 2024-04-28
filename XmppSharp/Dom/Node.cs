@@ -28,7 +28,7 @@ public abstract class Node : ICloneable
 		set;
 	}
 
-	public abstract void WriteTo(XmlWriter writer);
+	public abstract void WriteTo(XmlWriter writer, in XmlFormatting formatting);
 	public abstract Node Clone();
 
 	object ICloneable.Clone() => this.Clone();

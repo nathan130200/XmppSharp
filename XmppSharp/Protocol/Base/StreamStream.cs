@@ -3,7 +3,7 @@
 namespace XmppSharp.Protocol.Base;
 
 [XmppTag("stream:stream", "http://etherx.jabber.org/streams")]
-public class StreamStream : Element
+public class StreamStream : DirectionalElement
 {
 	public StreamStream() : base("stream:stream", Namespace.Stream)
 	{

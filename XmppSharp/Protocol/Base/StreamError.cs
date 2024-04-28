@@ -24,7 +24,7 @@ public class StreamError : Element
 		{
 			foreach (var (name, value) in XmppEnum.GetValues<StreamErrorCondition>())
 			{
-				if (this.HasTag(Namespace.Streams + name))
+				if (this.HasTag(name, Namespace.Streams))
 					return value;
 			}
 
@@ -32,10 +32,10 @@ public class StreamError : Element
 		}
 		set
 		{
-			this.RemoveTag(Namespace.Streams + this.Condition.ToXmppName());
+			this.RemoveTag(this.Condition.ToXmppName(), Namespace.Streams);
 
 			if (XmppEnum.IsDefined(value))
-				this.SetTag(Namespace.Streams + value.ToXmppName());
+				this.SetTag(value.ToXmppName(), Namespace.Streams);
 		}
 	}
 

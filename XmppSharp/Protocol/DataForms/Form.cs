@@ -24,7 +24,7 @@ public class Form : Element
 			if (value == null)
 				this.RemoveTag("instructions");
 			else
-				this.SetTag("instructions", value);
+				this.SetTag("instructions", value: value);
 		}
 	}
 
@@ -36,7 +36,7 @@ public class Form : Element
 			if (value == null)
 				this.RemoveTag("title");
 			else
-				this.SetTag("title", value);
+				this.SetTag("title", value: value);
 		}
 	}
 

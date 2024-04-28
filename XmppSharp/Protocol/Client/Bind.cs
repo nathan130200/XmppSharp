@@ -16,7 +16,7 @@ public class Bind : Element
 	public Bind(Jid jid) : this()
 		=> this.Jid = jid;
 
-	public string Resource
+	public string? Resource
 	{
 		get => this.GetTag("resource");
 		set
@@ -24,11 +24,11 @@ public class Bind : Element
 			if (value == null)
 				this.RemoveTag("resource");
 			else
-				this.SetTag("resource", value);
+				this.SetTag("resource", value: value);
 		}
 	}
 
-	public Jid Jid
+	public Jid? Jid
 	{
 		get
 		{
@@ -44,7 +44,7 @@ public class Bind : Element
 			if (value == null)
 				this.RemoveTag("jid");
 			else
-				this.SetTag("jid", value.ToString());
+				this.SetTag("jid", value: value.ToString());
 		}
 	}
 }

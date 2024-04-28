@@ -12,6 +12,9 @@ public class Comment : Node
 	public override Node Clone()
 	   => new Comment(this);
 
-	public override void WriteTo(XmlWriter writer)
-		=> writer.WriteComment(this.Value);
+	public override void WriteTo(XmlWriter writer, in XmlFormatting formatting)
+	{
+		if (formatting.IncludeCommentNodes)
+			writer.WriteComment(this.Value);
+	}
 }

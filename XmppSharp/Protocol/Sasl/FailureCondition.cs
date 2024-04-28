@@ -8,6 +8,8 @@ namespace XmppSharp.Protocol.Sasl;
 [XmppEnum]
 public enum FailureCondition
 {
+	Unspecified,
+
 	/// <summary>
 	/// Indicates that the authentication process was aborted before completion, often due to external factors or client-side decisions.
 	/// </summary>
