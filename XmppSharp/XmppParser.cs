@@ -1,16 +1,6 @@
 ﻿using System.Text;
 using System.Xml;
 using System.Xml.Schema;
-
-/* Unmerged change from project 'XmppSharp (net6.0)'
-Before:
-using XmppSharp.Exceptions;
-After:
-using XmppSharp;
-using XmppSharp;
-using XmppSharp.Dom;
-using XmppSharp.Exceptions;
-*/
 using XmppSharp.Exceptions;
 using XmppSharp.Factory;
 using XmppSharp.Protocol.Base;

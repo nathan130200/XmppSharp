@@ -36,22 +36,33 @@ public static class Xml
 		};
 	}
 
-	internal static XmlWriter CreateWriter(StringBuilder output, XmlFormatting formatting)
+	internal static XmlWriter CreateWriter(StringBuilder output, in XmlFormatting formatting)
 	{
 		Require.NotNull(output);
+
+		string indentChars = string.Empty;
+
+		if (formatting.IndentSize > 0)
+		{
+			for (int i = 0; i < formatting.IndentSize; i++)
+				indentChars += formatting.IndentChars;
+		}
 
 		var settings = new XmlWriterSettings
 		{
 			Indent = formatting.IndentSize > 0,
-			IndentChars = new(formatting.IndentChar, formatting.IndentSize),
+			IndentChars = indentChars,
 			DoNotEscapeUriAttributes = formatting.DoNotEscapeUriAttributes,
+			WriteEndDocumentOnClose = formatting.WriteEndDocumentOnClose,
+			NewLineHandling = formatting.NewLineHandling,
+			NewLineOnAttributes = formatting.NewLineOnAttributes,
 			CheckCharacters = true,
 			CloseOutput = true,
 			ConformanceLevel = ConformanceLevel.Fragment,
 			Encoding = Encoding.UTF8,
 			NamespaceHandling = NamespaceHandling.OmitDuplicates,
 			OmitXmlDeclaration = true,
-			NewLineChars = "\n"
+			NewLineChars = formatting.NewLineChars
 		};
 
 		return XmlWriter.Create(new StringWriter(output), settings);

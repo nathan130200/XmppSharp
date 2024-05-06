@@ -135,8 +135,22 @@ public class XmlTests
 		var cloned = elem.Clone();
 		Assert.AreNotSame(elem, cloned);
 
-		var outXml = cloned.ToString(XmlFormatting.Default);
+		var outXml = cloned.ToString(XmlFormatting.None);
 
 		Assert.AreEqual(inXml, outXml);
+	}
+
+	[TestMethod]
+	public void StartTagTest()
+	{
+		var el = new StreamStream();
+		el.SetNamespace(Namespace.Client);
+		var xml = el.StartTag();
+		Assert.AreEqual(xml, "<stream:stream xmlns=\"" + Namespace.Client + "\" xmlns:stream=\"" + Namespace.Stream + "\">");
+		Console.WriteLine("START_TAG:\n" + xml);
+
+		xml = el.EndTag();
+		Assert.AreEqual(xml, "</stream:stream>");
+		Console.WriteLine("END_TAG:\n" + xml);
 	}
 }

@@ -1,5 +1,7 @@
 ﻿using System.Globalization;
+using System.Security;
 using System.Text;
+using System.Web;
 using System.Xml;
 using XmppSharp.Factory;
 
@@ -109,7 +111,7 @@ public class Element : Node
 	/// </summary>
 	/// <returns>Well-formed XML serialized with the entire XML tree.</returns>
 	public override string ToString()
-		=> this.ToString(XmlFormatting.Default);
+		=> this.ToString(XmlFormatting.None);
 
 	/// <summary>
 	/// Gets the XML string representation of the current element and its child nodes.
@@ -123,13 +125,6 @@ public class Element : Node
 		try
 		{
 			using (var writer = Xml.CreateWriter(sb, formatting))
-
-/* Unmerged change from project 'XmppSharp (net8.0)'
-Before:
-				this.WriteTo(writer);
-After:
-				this.WriteTo(writer, formatting);
-*/
 				this.WriteTo(writer, formatting);
 
 			return sb.ToString();
@@ -171,17 +166,37 @@ After:
 		return elem;
 	}
 
-	public override void WriteTo(XmlWriter writer, in XmlFormatting formatting)
-	{
-		var ns = this.GetNamespace(this._prefix);
+	static readonly XmlFormatting s_StartTagFormatting = XmlFormatting.None with { WriteEndDocumentOnClose = false };
 
+	public string StartTag()
+	{
+		StringBuilderPool.Rent(out var sb);
+
+		try
+		{
+			using (var writer = Xml.CreateWriter(sb, s_StartTagFormatting))
+				WriteToInternal(writer, s_StartTagFormatting, false, false);
+
+			return sb.ToString();
+		}
+		finally
+		{
+			StringBuilderPool.Return(sb);
+		}
+	}
+
+	public string EndTag()
+		=> string.Concat("</", XmlConvert.EncodeName(TagName), '>');
+
+	internal void WriteToInternal(XmlWriter writer, in XmlFormatting formatting, bool includeChildren = true, bool writeEndTag = true)
+	{
 		string skipAttribute = "xmlns";
 
 		if (this._prefix == null)
-			writer.WriteStartElement(this._localName, ns);
+			writer.WriteStartElement(this._localName, this.GetNamespace(this._prefix));
 		else
 		{
-			writer.WriteStartElement(this._prefix, this._localName, ns);
+			writer.WriteStartElement(this._prefix, this._localName, this.GetNamespace(this._prefix));
 			skipAttribute = $"xmlns:{this._prefix}";
 		}
 
@@ -206,14 +221,22 @@ After:
 			}
 		}
 
-		lock (this._childNodes)
+		if (includeChildren)
 		{
-			foreach (var node in this._childNodes)
-				node.WriteTo(writer, formatting);
+
+			lock (this._childNodes)
+			{
+				foreach (var node in this._childNodes)
+					node.WriteTo(writer, formatting);
+			}
 		}
 
-		writer.WriteEndElement();
+		if (writeEndTag)
+			writer.WriteEndElement();
 	}
+
+	public override void WriteTo(XmlWriter writer, in XmlFormatting formatting)
+		=> WriteToInternal(writer, formatting);
 
 	public string LocalName
 	{
@@ -389,7 +412,19 @@ After:
 		lock (_childNodes)
 		{
 			foreach (var item in _childNodes)
+			{
 				item._parent = null;
+
+				if (item is Element elem)
+				{
+					var prefix = elem.Prefix;
+
+					if (prefix != null)
+						elem.SetNamespace(prefix, this.GetNamespace(prefix));
+					else
+						elem.SetNamespace(this.GetNamespace());
+				}
+			}
 
 			_childNodes.Clear();
 		}
