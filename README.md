@@ -2,6 +2,8 @@
 
 A manipulation library and utility with the main objective to reduce the level of unnecessary verbosity for constructing XML tags for XMPP protocol.
 
+ [![nuget](https://img.shields.io/badge/XmppSharp-1?style=plastic&logo=nuget&label=NuGet&color=blue)](https://www.nuget.org/packages/XmppSharp/)
+
 <hr/>
 
 ### XMPP Parser
@@ -18,11 +20,4 @@ You can also implement a parser that meets your project requirements and also in
 
 ### Element Types
 
-Using the same technique to declare the elements.
-
-1. Creates a class, with a public constructor without parameters, that calls the base class `XElement` (needs to inherit the `XElement` class). 
-1. In the base constructor, put the name of the element + namespace, if the element is qualified by prefix, also add the prefix, declaring as `new XAttribute(XNamespace.Xmlns + prefix, namespaceURI)`.
-1. Add the attribute `[XmppTag(localName, namespace)]` to the class to be detectable by `ElementFactory`. Note that this attribute can be inserted multiple times, precisely to treat elements that are the same but may have different namespaces.
-1. And finally, call `ElementFactory.RegisterType` to add the type of the element to the registry with all the names and namespaces declared by the `XmppTag` attribute. Or if you prefer `ElementFactory.RegisterTypes(assembly)` to register all element types in the specified assembly.
-
-**Check in [wiki](https://github.com/nathan130200/XmppSharp/wiki/Custom-Element-Type) for examples.**
+Check in [wiki](https://github.com/nathan130200/XmppSharp/wiki/Custom-Element-Type) for a basic tutorial how to declare custom elements in **XMPP#**.
