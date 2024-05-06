@@ -33,8 +33,9 @@ public static class Utilities
 
 	public static async Task<Element> GetNextElementAsync(this XmppParser parser, CancellationToken token = default)
 	{
-		var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
 		var tcs = new TaskCompletionSource<Element>();
+
+		using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
 
 		AsyncAction<Element> handler = default;
 
