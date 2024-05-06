@@ -14,8 +14,7 @@ public class ParserTests
 		stream.Write(xml.GetBytes());
 		stream.Position = 0;
 
-		using var parser = new XmppParser(bufferSize: 16);
-		parser.Reset(stream);
+		using var parser = new XmppParser(stream, bufferSize: 16);
 
 		var tcs = new TaskCompletionSource<Element>();
 
@@ -52,19 +51,8 @@ public class ParserTests
 			}
 		});
 
-		Exception timeout;
-
-		try
-		{
-			throw new OperationCanceledException("Parser took too long?");
-		}
-		catch (Exception e)
-		{
-			timeout = e;
-		}
-
 		_ = Task.Delay(5000)
-			.ContinueWith(_ => tcs.TrySetException(timeout));
+			.ContinueWith(_ => tcs.TrySetCanceled());
 
 		return await tcs.Task;
 	}

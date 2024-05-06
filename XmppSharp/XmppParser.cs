@@ -13,15 +13,55 @@ public sealed class XmppParser : IDisposable
 	private NameTable _nameTable = new();
 	private volatile bool _disposed;
 
+
+	private readonly bool _leaveOpen;
+	private readonly Func<Stream> _streamFactory;
+	private Stream _baseStream;
+	private bool _isFromFactory;
+
 	private readonly Encoding _encoding;
 	private readonly int _bufferSize;
 
 	public const int DefaultBufferSize = 256;
 
-	public XmppParser(Encoding? encoding = default, int bufferSize = DefaultBufferSize)
+	XmppParser(Encoding? encoding, int bufferSize)
 	{
 		this._encoding = encoding ?? Encoding.UTF8;
 		this._bufferSize = bufferSize <= 0 ? DefaultBufferSize : bufferSize;
+	}
+
+	/// <summary>
+	/// Initializes a new instance of <see cref="XmppParser" />. Use this constructor for generic purposes, where the base type of the stream will not change (eg: loading from file).
+	/// </summary>
+	/// <param name="stream">Stream that will be used to read the characters.</param>
+	/// <param name="leaveOpen">Determines whether the stream should remain open after dispose this parser.</param>
+	/// <param name="encoding">Determines which type of character encoding to be used. (Default: <see cref="Encoding.UTF8"/>)</param>
+	/// <param name="bufferSize">Buffer size in chars for the internal <see cref="StreamReader" />. (Default: <see cref="DefaultBufferSize"/>)</param>
+	public XmppParser(Stream stream, bool leaveOpen = true, Encoding? encoding = default, int bufferSize = -1) : this(encoding, bufferSize)
+	{
+		Require.NotNull(stream);
+
+		this._isFromFactory = false;
+		this._leaveOpen = leaveOpen;
+		this._baseStream = stream;
+
+		Reset();
+	}
+
+	/// <summary>
+	/// Initializes a new instance of <see cref="XmppParser" />. Use this constructor only if the stream can change according to the connection state (eg: connection upgrade from raw stream to ssl stream).
+	/// </summary>
+	/// <param name="streamFactory">Factory function to get the stream when <see cref="Reset" /> is called.</param>
+	/// <param name="encoding">Determines which type of character encoding to be used. (Default: <see cref="Encoding.UTF8"/>)</param>
+	/// <param name="bufferSize">Buffer size in chars for the internal <see cref="StreamReader" />. (Default: <see cref="DefaultBufferSize"/>)</param>
+	public XmppParser(Func<Stream> streamFactory, Encoding? encoding = default, int bufferSize = -1) : this(encoding, bufferSize)
+	{
+		Require.NotNull(streamFactory);
+
+		this._streamFactory = streamFactory;
+		this._isFromFactory = true;
+
+		Reset();
 	}
 
 	/// <summary>
@@ -49,6 +89,14 @@ public sealed class XmppParser : IDisposable
 
 		this._disposed = true;
 
+		if (!this._isFromFactory)
+		{
+			if (!this._leaveOpen)
+				this._baseStream?.Dispose();
+
+			this._baseStream = null;
+		}
+
 		this._reader?.Dispose();
 		this._nameTable = null;
 	}
@@ -68,11 +116,10 @@ public sealed class XmppParser : IDisposable
 #endif
 
 	/// <summary>
-	/// Restarts the internal state of the XML parser.
+	/// Restarts the state of the XML parser.
 	/// </summary>
-	/// <param name="stream">Stream that will be used to read the characters.</param>
 	/// <exception cref="ObjectDisposedException">If this instance of <see cref="XmppParser" /> has already been disposed.</exception>
-	public void Reset(Stream stream)
+	public void Reset()
 	{
 		this._reader?.Dispose();
 
@@ -82,7 +129,7 @@ public sealed class XmppParser : IDisposable
 		if (this._disposed)
 			throw new ObjectDisposedException(this.GetType().FullName);
 #endif
-		this._reader = XmlReader.Create(new StreamReader(stream, this._encoding, false, this._bufferSize, true), new()
+		this._reader = XmlReader.Create(new StreamReader(this._isFromFactory ? this._streamFactory() : this._baseStream, this._encoding, false, this._bufferSize, true), new()
 		{
 			CloseInput = true,
 			Async = true,

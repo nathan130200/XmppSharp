@@ -29,3 +29,7 @@ ____
 - Added missing `StartTag` and `EndTag` in elements. Both strings will contains well-formed XML string.
 - Ability to make a shallow copy of element instead a full copy with `Element.Clone(deep)` overload.
 - More formatting options in `XmlFormatting` structure.
+
+**3.1.3**
+____
+- Enhance XMPP parser with different ctors provide an Stream or an factory function to create an stream. `XmppParser::Reset()` no longer needs an stream as argument.
