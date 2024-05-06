@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using XmppSharp.Dom;
@@ -9,7 +10,7 @@ namespace XmppSharp.Test;
 [TestClass]
 public class ParserTests
 {
-	internal static async Task<Element> ParseFromBuffer([StringSyntax("Xml")] string xml, [CallerMemberName] string callerName = default!)
+	internal static async Task<Element> ParseFromBuffer(string xml, [CallerMemberName] string callerName = default!)
 	{
 		using var stream = new MemoryStream();
 		stream.Write(xml.GetBytes());
@@ -35,24 +36,16 @@ public class ParserTests
 		{
 			try
 			{
-				while (true)
-				{
-					await Task.Delay(1);
-
-					var result = await parser;
-
-					if (!result)
-						break;
-				}
+				while (await parser)
+					;
 			}
-			catch (Exception error)
+			catch (Exception ex)
 			{
-				Debug.WriteLine($"<ERROR>\n{error}\n");
-				tcs.TrySetException(error);
+				Console.WriteLine(ex);
 			}
 		});
 
-		_ = Task.Delay(5000)
+		_ = Task.Delay(1500)
 			.ContinueWith(_ => tcs.TrySetCanceled());
 
 		return await tcs.Task;
@@ -161,13 +154,13 @@ public class ParserTests
 	}
 
 	[TestMethod]
-	public async Task TestWithFactory()
+	public async Task ParseWithInputStream()
 	{
 		using var ms = new MemoryStream();
 		await ms.WriteAsync("<foo xmlns='bar'><baz/></foo>".GetBytes());
 		ms.Position = 0;
 
-		using var parser = new XmppParser(() => ms);
+		using var parser = new XmppParser(ms);
 
 		Element el = default!;
 
@@ -187,5 +180,84 @@ public class ParserTests
 		Console.WriteLine(el);
 
 		Console.WriteLine("XML:\n" + el!.ToString(XmlFormatting.Indented));
+	}
+
+	[TestMethod]
+	public async Task ParseWithInputStreamAndCompetition()
+	{
+		using var ms = new MemoryStream();
+		await ms.WriteAsync("<foo xmlns='bar'><baz/></foo>".GetBytes());
+		ms.Position = 0;
+
+		using var parser = new XmppParser(ms);
+
+		var tcs = new TaskCompletionSource<Element>();
+
+		parser.OnStreamElement += e =>
+		{
+			tcs.TrySetResult(e);
+			return Task.CompletedTask;
+		};
+
+		_ = Task.Run(async () =>
+		{
+			while (true)
+			{
+				try
+				{
+					var result = await parser;
+					Console.WriteLine("parser::advance(): " + result);
+					await Task.Delay(1);
+
+					if (!result)
+						break;
+				}
+				catch (Exception e)
+				{
+					Console.WriteLine("ERROR: " + e);
+				}
+			}
+		});
+
+		_ = Task.Delay(1000).ContinueWith(_ => tcs.TrySetCanceled());
+
+		var el = await tcs.Task;
+
+		Console.WriteLine("XML:\n" + el!.ToString(XmlFormatting.Indented));
+	}
+
+	[TestMethod]
+	public async Task ParseWithFactoryStream()
+	{
+		using var ms = new MemoryStream();
+		await ms.WriteAsync("<foo xmlns='bar'><baz/></foo>".GetBytes());
+		ms.Position = 0;
+
+		using var parser = new XmppParser(() => ms);
+		var el = await parser.GetNextElementAsync();
+
+		Console.WriteLine("parser::advance(): false");
+		Console.WriteLine(el);
+
+		Console.WriteLine("XML:\n" + el!.ToString(XmlFormatting.Indented));
+	}
+
+	[TestMethod]
+	public async Task ParseFromZipEntry()
+	{
+		using var fs = File.OpenRead(Path.Combine(Directory.GetCurrentDirectory(), "zipfile.zip"));
+		using var archive = new ZipArchive(fs, ZipArchiveMode.Read);
+
+		var entry = archive.GetEntry("snippet.xml");
+		Assert.IsNotNull(entry);
+
+		using var stream = entry.Open();
+
+		using var parser = new XmppParser(stream);
+		var element = await parser.GetNextElementAsync();
+
+		Assert.AreEqual("CodeSnippets", element.TagName);
+		Assert.AreEqual("http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet", element.DefaultNamespace);
+		Assert.AreEqual("CodeSnippet", element.FirstChild.TagName);
 	}
 }

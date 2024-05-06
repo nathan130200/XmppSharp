@@ -11,14 +11,15 @@ namespace XmppSharp;
 public sealed class XmppParser : IDisposable
 {
 	private XmlReader _reader;
+	private StreamReader _textReader;
 	private NameTable _nameTable = new();
 	private volatile bool _disposed;
 
 
 	private readonly bool _leaveOpen;
+	private readonly bool _isFromFactory;
 	private Func<Stream> _streamFactory;
 	private Stream _baseStream;
-	private readonly bool _isFromFactory;
 
 	private readonly Encoding _encoding;
 	private readonly int _bufferSize;
@@ -101,6 +102,7 @@ public sealed class XmppParser : IDisposable
 		}
 
 		this._reader?.Dispose();
+        this._textReader?.Dispose();
 		this._nameTable = null;
 	}
 
@@ -125,16 +127,21 @@ public sealed class XmppParser : IDisposable
 	public void Reset()
 	{
 		this._reader?.Dispose();
+		this._textReader?.Dispose();
 
 #if NET7_0_OR_GREATER
 		ObjectDisposedException.ThrowIf(this._disposed, this);
 #else
 		if (this._disposed)
-			throw new ObjectDisposedException(this.GetType().FullName);
+			throw new ObjectDisposedException(GetType().FullName, "Cannot reset parser in a disposed parser.");
 #endif
-		this._reader = XmlReader.Create(new StreamReader(this._isFromFactory ? this._streamFactory() : this._baseStream, this._encoding, false, this._bufferSize, true), new()
+		this._textReader = new StreamReader(this._isFromFactory
+			? this._streamFactory()
+			: this._baseStream, this._encoding, false, this._bufferSize, true);
+
+		this._reader = XmlReader.Create(this._textReader, new()
 		{
-			CloseInput = true,
+			CloseInput = false,
 			Async = true,
 			IgnoreProcessingInstructions = true,
 			IgnoreWhitespace = true,
@@ -180,10 +187,13 @@ public sealed class XmppParser : IDisposable
 		if (this._disposed)
 			return false;
 
-		if (this._reader == null || this._reader != null && this._reader.EOF)
-			return false;
+        if (this._reader == null)
+            return false;
 
-		bool result;
+        if (this._reader.EOF)
+            return false;
+
+        bool result;
 
 		try
 		{

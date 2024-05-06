@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text;
+using System.Xml;
 
 namespace XmppSharp;
 
@@ -28,6 +29,47 @@ public static class Utilities
 			return result;
 
 		return result.ToLowerInvariant();
+	}
+
+	public static async Task<Element> GetNextElementAsync(this XmppParser parser, CancellationToken token = default)
+	{
+		var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
+		var tcs = new TaskCompletionSource<Element>();
+
+		AsyncAction<Element> handler = default;
+
+		handler = element =>
+		{
+			cts.Cancel();
+			tcs.TrySetResult(element);
+			parser.OnStreamElement -= handler;
+			return Task.CompletedTask;
+		};
+
+		_ = Task.Run(async () =>
+		{
+			try
+			{
+				while (!cts.IsCancellationRequested)
+				{
+					if (!await parser)
+						throw new XmlException("Unexcepted end of stream.");
+				}
+			}
+			catch (Exception e)
+			{
+				tcs.TrySetException(e);
+			}
+			finally
+			{
+				// ensure we always unbind the handler.
+				parser.OnStreamElement -= handler;
+			}
+		});
+
+		parser.OnStreamElement += handler;
+
+		return await tcs.Task;
 	}
 
 	public static TaskAwaiter<bool> GetAwaiter(this XmppParser parser)
