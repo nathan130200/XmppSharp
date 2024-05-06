@@ -33,3 +33,5 @@ ____
 **3.1.3**
 ____
 - Enhance XMPP parser with different ctors provide an Stream or an factory function to create an stream. `XmppParser::Reset()` no longer needs an stream as argument.
+- Renamed `XmppParser::Advance` to `XmppParser::AdvanceAsync` for async version and leave `XmppParser::Advance` for sync method version.
+- Added `GetAwaiter` in XMPP parser for simple calling `await myParser;` have same behaviour and return same result as calling `await myParser.AdvanceAsync()`
