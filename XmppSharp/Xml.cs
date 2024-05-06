@@ -40,18 +40,10 @@ public static class Xml
 	{
 		Require.NotNull(output);
 
-		string indentChars = string.Empty;
-
-		if (formatting.IndentSize > 0)
-		{
-			for (int i = 0; i < formatting.IndentSize; i++)
-				indentChars += formatting.IndentChars;
-		}
-
 		var settings = new XmlWriterSettings
 		{
 			Indent = formatting.IndentSize > 0,
-			IndentChars = indentChars,
+			IndentChars = formatting.IndentChars,
 			DoNotEscapeUriAttributes = formatting.DoNotEscapeUriAttributes,
 			WriteEndDocumentOnClose = formatting.WriteEndDocumentOnClose,
 			NewLineHandling = formatting.NewLineHandling,
