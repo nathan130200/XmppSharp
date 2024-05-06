@@ -120,19 +120,12 @@ public class Element : Node
 	/// <returns>Well-formed XML serialized with the entire XML tree.</returns>
 	public string ToString(XmlFormatting formatting)
 	{
-		StringBuilderPool.Rent(out var sb);
+		var sb = new StringBuilder();
 
-		try
-		{
-			using (var writer = Xml.CreateWriter(sb, formatting))
-				this.WriteTo(writer, formatting);
+		using (var writer = Xml.CreateWriter(sb, formatting))
+			this.WriteTo(writer, formatting);
 
-			return sb.ToString();
-		}
-		finally
-		{
-			StringBuilderPool.Return(sb);
-		}
+		return sb.ToString();
 	}
 
 	public string? DefaultNamespace
@@ -141,7 +134,7 @@ public class Element : Node
 		set => this.SetNamespace(value);
 	}
 
-	public override Element Clone()
+	public Element Clone(bool deep)
 	{
 		var elem = ElementFactory.Create(this.TagName, this.GetNamespace(this.Prefix));
 		elem._localName = this._localName;
@@ -153,36 +146,35 @@ public class Element : Node
 				elem._attributes[key] = value;
 		}
 
-		lock (this._childNodes)
+		if (deep)
 		{
-			foreach (var node in this._childNodes)
+			lock (this._childNodes)
 			{
-				var childNode = node.Clone();
-				elem._childNodes.Add(childNode);
-				childNode._parent = elem;
+				foreach (var node in this._childNodes)
+				{
+					var childNode = node.Clone();
+					elem._childNodes.Add(childNode);
+					childNode._parent = elem;
+				}
 			}
 		}
 
 		return elem;
 	}
 
+	public override Element Clone()
+		=> Clone(true);
+
 	static readonly XmlFormatting s_StartTagFormatting = XmlFormatting.None with { WriteEndDocumentOnClose = false };
 
 	public string StartTag()
 	{
-		StringBuilderPool.Rent(out var sb);
+		var sb = new StringBuilder();
 
-		try
-		{
-			using (var writer = Xml.CreateWriter(sb, s_StartTagFormatting))
-				WriteToInternal(writer, s_StartTagFormatting, false, false);
+		using (var writer = Xml.CreateWriter(sb, s_StartTagFormatting))
+			WriteToInternal(writer, s_StartTagFormatting, false, false);
 
-			return sb.ToString();
-		}
-		finally
-		{
-			StringBuilderPool.Return(sb);
-		}
+		return sb.ToString();
 	}
 
 	public string EndTag()
