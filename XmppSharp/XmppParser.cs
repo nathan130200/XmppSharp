@@ -15,9 +15,9 @@ public sealed class XmppParser : IDisposable
 
 
 	private readonly bool _leaveOpen;
-	private readonly Func<Stream> _streamFactory;
+	private Func<Stream> _streamFactory;
 	private Stream _baseStream;
-	private bool _isFromFactory;
+	private readonly bool _isFromFactory;
 
 	private readonly Encoding _encoding;
 	private readonly int _bufferSize;
@@ -58,8 +58,8 @@ public sealed class XmppParser : IDisposable
 	{
 		Require.NotNull(streamFactory);
 
-		this._streamFactory = streamFactory;
 		this._isFromFactory = true;
+		this._streamFactory = streamFactory;
 
 		Reset();
 	}
@@ -89,7 +89,9 @@ public sealed class XmppParser : IDisposable
 
 		this._disposed = true;
 
-		if (!this._isFromFactory)
+		if (this._isFromFactory)
+			this._streamFactory = null;
+		else
 		{
 			if (!this._leaveOpen)
 				this._baseStream?.Dispose();
