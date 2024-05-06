@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Test;
@@ -38,7 +39,7 @@ public class ParserTests
 				{
 					await Task.Delay(1);
 
-					var result = await parser.Advance();
+					var result = await parser;
 
 					if (!result)
 						break;
@@ -157,5 +158,34 @@ public class ParserTests
 		Assert.AreEqual("my cdata", cdata.Value);
 
 		PrintResult(elem);
+	}
+
+	[TestMethod]
+	public async Task TestWithFactory()
+	{
+		using var ms = new MemoryStream();
+		await ms.WriteAsync("<foo xmlns='bar'><baz/></foo>".GetBytes());
+		ms.Position = 0;
+
+		using var parser = new XmppParser(() => ms);
+
+		Element el = default!;
+
+		parser.OnStreamElement += e =>
+		{
+			el = e;
+			return Task.CompletedTask;
+		};
+
+		while (el == null && await parser)
+		{
+			Console.WriteLine("parser::advance(): true");
+			await Task.Delay(1);
+		}
+
+		Console.WriteLine("parser::advance(): false");
+		Console.WriteLine(el);
+
+		Console.WriteLine("XML:\n" + el!.ToString(XmlFormatting.Indented));
 	}
 }

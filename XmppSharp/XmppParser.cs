@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Runtime.CompilerServices;
+using System.Text;
 using System.Xml;
 using System.Xml.Schema;
 using XmppSharp.Exceptions;
@@ -171,7 +172,10 @@ public sealed class XmppParser : IDisposable
 		}
 	}
 
-	public async Task<bool> Advance()
+	public bool Advance()
+		=> AdvanceAsync().GetAwaiter().GetResult();
+
+	public async Task<bool> AdvanceAsync()
 	{
 		if (this._disposed)
 			return false;

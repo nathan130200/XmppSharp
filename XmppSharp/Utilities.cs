@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace XmppSharp;
 
@@ -28,6 +29,9 @@ public static class Utilities
 
 		return result.ToLowerInvariant();
 	}
+
+	public static TaskAwaiter<bool> GetAwaiter(this XmppParser parser)
+		=> parser.AdvanceAsync().GetAwaiter();
 
 	public static byte[] FromHex(this string str)
 		=> Convert.FromHexString(str);
