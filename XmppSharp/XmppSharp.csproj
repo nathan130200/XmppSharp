@@ -26,12 +26,12 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>3.1.4</Version>
+		<Version>3.1.5</Version>
 		<DebugSymbols>true</DebugSymbols>
 		<Copyright>nathan130200</Copyright>
-		<PackageReadmeFile>CHANGELOG.md</PackageReadmeFile>
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
+		<PackageReadmeFile>CHANGELOG.md</PackageReadmeFile>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
@@ -42,7 +42,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="..\CHANGELOG.md">
+		<None Include="CHANGELOG.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>

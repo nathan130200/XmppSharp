@@ -31,6 +31,8 @@
 		<Copyright>nathan130200</Copyright>
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
+		<PackageReadmeFile>CHANGELOG.md</PackageReadmeFile>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -42,9 +44,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="libexpat.dll">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Include="CHANGELOG.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\LICENSE">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
 	</ItemGroup>
 
 </Project>

@@ -7,7 +7,7 @@ using XmppSharp.Protocol.Base;
 namespace XmppSharp.Parsers;
 
 /// <summary>
-/// An enhanced XMPP parser built using libexpat features.
+/// An enhanced XMPP parser built using Expat library.
 /// </summary>
 public class ExpatXmppParser : BaseXmppParser
 {
@@ -29,7 +29,7 @@ public class ExpatXmppParser : BaseXmppParser
 			else
 				e.Attributes.TryGetValue("xmlns", out ns);
 
-			if (e.Name is "iq" or "message" or "presence")
+			if (e.Name is "iq" or "message" or "presence") // work-around
 				ns ??= Namespace.Client;
 
 			var element = ElementFactory.Create(e.Name, ns);
