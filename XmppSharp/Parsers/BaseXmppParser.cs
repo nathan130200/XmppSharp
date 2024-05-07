@@ -36,7 +36,7 @@ public abstract class BaseXmppParser : IDisposable
 			throw new ObjectDisposedException(GetType().FullName);
 	}
 
-	protected virtual void OnDispose()
+	protected virtual void Disposing()
 	{
 
 	}
@@ -47,7 +47,7 @@ public abstract class BaseXmppParser : IDisposable
 			return;
 
 		_disposed = true;
-		OnDispose();
+		Disposing();
 	}
 
 	protected async Task FireStreamStart(StreamStream e)

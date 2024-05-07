@@ -36,13 +36,13 @@ public static class Xml
 		};
 	}
 
-	internal static XmlWriter CreateWriter(StringBuilder output, in XmlFormatting formatting)
+	internal static XmlWriter CreateWriter(StringBuilder output, XmlFormatting formatting)
 	{
 		Require.NotNull(output);
 
 		var settings = new XmlWriterSettings
 		{
-			Indent = formatting.IndentSize > 0,
+			Indent = formatting.IndentSize != 0,
 			IndentChars = formatting.IndentChars,
 			DoNotEscapeUriAttributes = formatting.DoNotEscapeUriAttributes,
 			WriteEndDocumentOnClose = formatting.WriteEndDocumentOnClose,

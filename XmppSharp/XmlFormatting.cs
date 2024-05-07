@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using System.Diagnostics;
+using System.Xml;
 
 namespace XmppSharp;
 
@@ -79,7 +80,7 @@ public readonly struct XmlFormatting
 		DoNotEscapeUriAttributes = false;
 
 		IndentSize = 0;
-		IndentChars = "\t";
+		IndentChars = " ";
 
 		NewLineHandling = NewLineHandling.Replace;
 		NewLineOnAttributes = false;
@@ -96,6 +97,6 @@ public readonly struct XmlFormatting
 	/// </summary>
 	public static XmlFormatting Indented { get; } = None with
 	{
-		IndentSize = 2,
+		IndentSize = 4,
 	};
 }

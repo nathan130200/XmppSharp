@@ -96,7 +96,7 @@ public class Element : Node
 
 	public override string Value
 	{
-		get => string.Concat(this.DescendantNodes().OfType<Text>().Select(x => x.Value));
+		get => string.Concat(this.Nodes().OfType<Text>().Select(x => x.Value));
 		set
 		{
 			this.Nodes().Remove();
@@ -112,6 +112,14 @@ public class Element : Node
 	/// <returns>Well-formed XML serialized with the entire XML tree.</returns>
 	public override string ToString()
 		=> this.ToString(XmlFormatting.None);
+
+	/// <summary>
+	/// Gets the XML string representation of the current element and its child nodes.
+	/// </summary>
+	/// <param name="indented">Determines if result xml will be indented.</param>
+	/// <returns>Well-formed XML serialized with the entire XML tree.</returns>
+	public string ToString(bool indented)
+		=> this.ToString(indented ? XmlFormatting.Indented : XmlFormatting.None);
 
 	/// <summary>
 	/// Gets the XML string representation of the current element and its child nodes.

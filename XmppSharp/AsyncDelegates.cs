@@ -39,6 +39,7 @@ public static class AsyncUtilities
 	/// </summary>
 	/// <param name="func">Delegate of the event that will be invoked.</param>
 	/// <returns>Returns a task that invokes the event asynchronously.</returns>
+	[StackTraceHidden]
 	public static async Task InvokeAsync(this AsyncAction func)
 	{
 		try
@@ -59,6 +60,7 @@ public static class AsyncUtilities
 	/// <param name="func">Delegate of the event that will be invoked.</param>
 	/// <param name="param">Parameter value.</param>
 	/// <returns>Returns a task that invokes the event asynchronously.</returns>
+	[StackTraceHidden]
 	public static async Task InvokeAsync<TParam>(this AsyncAction<TParam> func, TParam param)
 	{
 		try
@@ -77,6 +79,7 @@ public static class AsyncUtilities
 	/// </summary>
 	/// <typeparam name="TResult">Type of result that will be returned.</typeparam>
 	/// <returns>When awaited, returns the event value or the default value of <typeparamref name="TResult"/> if an error occurs.</returns>
+	[StackTraceHidden]
 	public static async Task<TResult> InvokeAsync<TResult>(this AsyncFunc<TResult> func)
 	{
 		try
@@ -102,6 +105,7 @@ public static class AsyncUtilities
 	/// <returns>When awaited, returns the event value or the default value of <typeparamref name="TResult" /> if an error occurs.
 	/// <para>The error will be displayed in the debug window using <see cref="Debug.WriteLine(object)" />.</para>
 	/// </returns>
+	[StackTraceHidden]
 	public static async Task<TResult> InvokeAsync<TResult, TParam>(this AsyncFunc<TResult, TParam> func, TParam param)
 	{
 		try

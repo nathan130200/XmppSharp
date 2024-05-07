@@ -69,7 +69,7 @@ public class DefaultXmppParser : BaseXmppParser
 		Reset();
 	}
 
-	protected override void OnDispose()
+	protected override void Disposing()
 	{
 		if (this._disposed)
 			return;
