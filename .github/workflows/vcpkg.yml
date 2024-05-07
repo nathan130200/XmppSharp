@@ -1,12 +1,6 @@
 name: "VCPKG (libexpat)"
 
-on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
-  schedule:
-    - cron: '19 23 * * 5'
+on: workflow_dispatch
 
 jobs:
   buildme:
@@ -14,18 +8,19 @@ jobs:
     strategy:
       matrix:
         config:
+        
         - os: ubuntu-20.04
-          vcpkg_triplet: x64-linux-release
-        - os: ubuntu-20.04
-          vcpkg_triplet: x86-linux-release
+          vcpkg_triplet: x64-linux-dynamic
+          
         - os: macos-11
-          vcpkg_triplet: x64-osx-release
-        - os: macos-11
-          vcpkg_triplet: x86-osx-release
+          vcpkg_triplet: x64-osx-dynamic
+          
         - os: windows-2019
           vcpkg_triplet: x64-windows-release
-        - os: windows-2019
-          vcpkg_triplet: x86-windows-release
+          
+        - os: windows-latest
+          vcpkg_triplet: x64-windows-release
+          
     steps:
       - name: vcpkg build
         uses: johnwason/vcpkg-action@v6
@@ -37,3 +32,11 @@ jobs:
           revision: master
           token: ${{ github.token }}
           github-binarycache: true
+      
+      - name: upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.config.vcpkg_triplet }}-${{ matrix.config.os }}
+          path: ${{ github.workspace }}/vcpkg/installed/${{ matrix.config.vcpkg_triplet }}
+          if-no-files-found: warn
+          overwrite: true
