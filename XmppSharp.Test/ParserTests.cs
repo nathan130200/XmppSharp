@@ -1,9 +1,8 @@
 ﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using XmppSharp.Dom;
+using XmppSharp.Parsers;
 
 namespace XmppSharp.Test;
 
@@ -16,7 +15,7 @@ public class ParserTests
 		stream.Write(xml.GetBytes());
 		stream.Position = 0;
 
-		using var parser = new XmppParser(stream, bufferSize: 16);
+		using var parser = new DefaultXmppParser(stream, bufferSize: 16);
 
 		var tcs = new TaskCompletionSource<Element>();
 
@@ -160,7 +159,7 @@ public class ParserTests
 		await ms.WriteAsync("<foo xmlns='bar'><baz/></foo>".GetBytes());
 		ms.Position = 0;
 
-		using var parser = new XmppParser(ms);
+		using var parser = new DefaultXmppParser(ms);
 
 		Element el = default!;
 
@@ -189,7 +188,7 @@ public class ParserTests
 		await ms.WriteAsync("<foo xmlns='bar'><baz/></foo>".GetBytes());
 		ms.Position = 0;
 
-		using var parser = new XmppParser(ms);
+		using var parser = new DefaultXmppParser(ms);
 
 		var tcs = new TaskCompletionSource<Element>();
 
@@ -233,7 +232,7 @@ public class ParserTests
 		await ms.WriteAsync("<foo xmlns='bar'><baz/></foo>".GetBytes());
 		ms.Position = 0;
 
-		using var parser = new XmppParser(() => ms);
+		using var parser = new DefaultXmppParser(() => ms);
 		var el = await parser.GetNextElementAsync();
 
 		Console.WriteLine("parser::advance(): false");
@@ -253,7 +252,7 @@ public class ParserTests
 
 		using var stream = entry.Open();
 
-		using var parser = new XmppParser(stream);
+		using var parser = new DefaultXmppParser(stream);
 		var element = await parser.GetNextElementAsync();
 
 		Assert.AreEqual("CodeSnippets", element.TagName);

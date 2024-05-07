@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\XmppSharp.Expat\XmppSharp.Expat.csproj" />
     <ProjectReference Include="..\XmppSharp\XmppSharp.csproj" />
   </ItemGroup>
 
@@ -25,6 +26,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="libexpat.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="libexpat.pdb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="zipfile.zip">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
