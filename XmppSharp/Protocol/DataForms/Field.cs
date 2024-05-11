@@ -46,10 +46,20 @@ public class Field : Element
 		}
 	}
 
-	public new string Value
+	public IEnumerable<string> Values
 	{
-		get => this.GetTag("value");
-		set => this.SetTag("value", value: value);
+		get
+		{
+			foreach (var element in this.Children("value", Namespace.DataForms))
+				yield return element.Value;
+		}
+		set
+		{
+			Children("value", Namespace.DataForms).Remove();
+
+			foreach (var str in value)
+				this.SetTag("value", Namespace.DataForms, str);
+		}
 	}
 
 	public IEnumerable<Option> Option
