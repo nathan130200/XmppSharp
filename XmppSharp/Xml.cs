@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Xml;
 using XmppSharp.Parser;
@@ -37,14 +36,14 @@ public static class Xml
 		};
 	}
 
-	public static async Task<Element> FromStringAsync(string xml, CancellationToken token = default)
+	public static async Task<Element> ParseFromStringAsync(string xml, CancellationToken token = default)
 	{
 		using (var ms = new MemoryStream(xml.GetBytes()))
 		using (var parser = new XmppStreamParser(ms))
 			return await parser.GetNextElementAsync(token);
 	}
 
-	public static async Task<Element> FromStreamAsync(Stream stream, CancellationToken token = default)
+	public static async Task<Element> ParseFromStreamAsync(Stream stream, CancellationToken token = default)
 	{
 		using (var parser = new XmppStreamParser(stream))
 			return await parser.GetNextElementAsync(token);

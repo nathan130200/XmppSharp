@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Xml;
+﻿using System.Xml;
 
 namespace XmppSharp;
 
@@ -87,7 +86,7 @@ public readonly struct XmlFormatting
 		OmitXmlDeclaration = true;
 
 		IndentSize = 0;
-		IndentChar = (char)0;
+		IndentChar = ' ';
 
 		NewLineHandling = NewLineHandling.Replace;
 		NewLineOnAttributes = false;

@@ -1,7 +1,5 @@
 ﻿using System.Globalization;
-using System.Security;
 using System.Text;
-using System.Web;
 using System.Xml;
 using XmppSharp.Factory;
 
@@ -223,7 +221,6 @@ public class Element : Node
 
 		if (includeChildren)
 		{
-
 			lock (this._childNodes)
 			{
 				foreach (var node in this._childNodes)

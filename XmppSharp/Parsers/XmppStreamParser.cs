@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Text;
-using System.Xml;
+﻿using System.Xml;
 using System.Xml.Schema;
 using XmppSharp.Exceptions;
 using XmppSharp.Factory;

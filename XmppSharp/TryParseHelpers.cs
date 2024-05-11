@@ -39,12 +39,7 @@ public static class TryParseHelpers
 	};
 
 	public static Delegate GetConverter(Type type)
-	{
-		if (_typeMap.TryGetValue(type, out var func))
-			return func;
-
-		else return null;
-	}
+		=> _typeMap.TryGetValue(type, out var func) ? func : null;
 
 	/// <summary>
 	/// Parser implementation for the <see cref="System.UInt16"/> type.
