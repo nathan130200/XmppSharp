@@ -55,16 +55,21 @@ ____
 
 *3.1.5*
 
-- Rename `XmppParser` to `DefaultXmppParser` to indicade this uses regular .NET `XmlReader` to parse xmpp packets.
 - Add basic abstraction layer to implement your own xmpp parser. Also i'm releasing a separated package `XmppSharp.Expat` to provide expat XMPP parser implementation. (Note: You must install native libraries to use expat.
 - Added `AsyncHelper` (from `AspNetCore` repo) to calling async functions in sync methods.
-
-> In **XMPP#** repository i did an github actions to automatically build expat using vcpkg with most common systems: ubuntu, macos, windows but only x64 is working at this moment). Consider using [XmppShap.Expat](https://www.nuget.org/packages/XmppSharp.Expat/) package too if you need a fast and stable parser.
 
 ____
 
 *3.1.6*
-
+____
 - Minor improvements.
 - Fixed wrong indent chars & side for default formatting options.
 - Fixed `Element.Value` returning entire inner text from all descendant nodes.
+
+*3.1.7*
+____
+- Minor improvements.
+- Renamed `DefaultXmppParser` -> `XmppStreamParser`
+- Added helper methods for fast loading XML from string and streams.
+- Improvements to help detect when parser really completed parsing.
+- Added missing TimeSpan parser in `TryParseHelpers`.

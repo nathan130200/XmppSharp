@@ -4,6 +4,7 @@
 		<TargetFrameworks>net8.0;net7.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>annotations</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -34,10 +35,6 @@
 		<PackageReadmeFile>CHANGELOG.md</PackageReadmeFile>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<PackageReference Include="expat-bindings" Version="1.0.2" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\XmppSharp\XmppSharp.csproj" />

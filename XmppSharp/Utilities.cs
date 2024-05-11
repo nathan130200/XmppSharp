@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
-using XmppSharp.Parsers;
+using XmppSharp.Parser;
 
 namespace XmppSharp;
 
@@ -32,7 +32,7 @@ public static class Utilities
 		return result.ToLowerInvariant();
 	}
 
-	public static async Task<Element> GetNextElementAsync(this DefaultXmppParser parser, CancellationToken token = default)
+	public static async Task<Element> GetNextElementAsync(this XmppStreamParser parser, CancellationToken token = default)
 	{
 		var tcs = new TaskCompletionSource<Element>();
 
@@ -74,7 +74,7 @@ public static class Utilities
 		return await tcs.Task;
 	}
 
-	public static TaskAwaiter<bool> GetAwaiter(this DefaultXmppParser parser)
+	public static TaskAwaiter<bool> GetAwaiter(this XmppStreamParser parser)
 		=> parser.AdvanceAsync().GetAwaiter();
 
 	public static byte[] FromHex(this string str)

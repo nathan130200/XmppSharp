@@ -18,22 +18,31 @@ public delegate bool TryParseDelegate<T>(ReadOnlySpan<char> s, out T result);
 /// </summary>
 public static class TryParseHelpers
 {
+
+	static readonly Dictionary<Type, Delegate> _typeMap = new()
+	{
+		[typeof(sbyte)] = Int8,
+		[typeof(byte)] = UInt8,
+		[typeof(short)] = Int16,
+		[typeof(int)] = Int32,
+		[typeof(long)] = Int64,
+		[typeof(ushort)] = UInt16,
+		[typeof(uint)] = UInt32,
+		[typeof(ulong)] = UInt64,
+		[typeof(float)] = Float,
+		[typeof(double)] = Double,
+		[typeof(bool)] = Boolean,
+		[typeof(Guid)] = Guid,
+		[typeof(DateTime)] = DateTime,
+		[typeof(DateTimeOffset)] = DateTimeOffset,
+		[typeof(TimeSpan)] = TimeSpan
+	};
+
 	public static Delegate GetConverter(Type type)
 	{
-		if (type == typeof(sbyte)) return Int8;
-		else if (type == typeof(byte)) return UInt8;
-		else if (type == typeof(short)) return Int16;
-		else if (type == typeof(int)) return Int32;
-		else if (type == typeof(long)) return Int64;
-		else if (type == typeof(ushort)) return UInt16;
-		else if (type == typeof(uint)) return UInt32;
-		else if (type == typeof(ulong)) return UInt64;
-		else if (type == typeof(float)) return Float;
-		else if (type == typeof(double)) return Double;
-		else if (type == typeof(bool)) return Boolean;
-		else if (type == typeof(Guid)) return Guid;
-		else if (type == typeof(DateTime)) return DateTime;
-		else if (type == typeof(DateTimeOffset)) return DateTimeOffset;
+		if (_typeMap.TryGetValue(type, out var func))
+			return func;
+
 		else return null;
 	}
 
@@ -97,9 +106,22 @@ public static class TryParseHelpers
 	/// </summary>
 	public static TryParseDelegate<Guid> Guid { get; } = System.Guid.TryParse;
 
+	/// <summary>
+	/// Parser implementation for the <see cref="System.DateTime"/> type.
+	/// </summary>
 	public static TryParseDelegate<DateTime> DateTime { get; } = System.DateTime.TryParse;
 
+	/// <summary>
+	/// Parser implementation for the <see cref="System.DateTimeOffset"/> type.
+	/// </summary>
 	public static TryParseDelegate<DateTimeOffset> DateTimeOffset { get; } = System.DateTimeOffset.TryParse;
+
+	/// <summary>
+	/// Parser implementation for the <see cref="System.TimeSpan"/> type.
+	/// </summary>
+	public static TryParseDelegate<TimeSpan> TimeSpan { get; } = System.TimeSpan.TryParse;
+
+	// ---------------------------------------------------------------------------------------------------------- //
 
 	static bool TryParseFloat(ReadOnlySpan<char> span, out float result)
 		=> float.TryParse(span, NumberStyles.Float, CultureInfo.InvariantCulture, out result);

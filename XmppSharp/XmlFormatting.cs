@@ -12,9 +12,14 @@ namespace XmppSharp;
 public readonly struct XmlFormatting
 {
 	/// <summary>
-	/// Determines whether to omit <c>xmlns</c> declarations in child elements.
+	/// Determines the behavior of declaring namespaces in the XML element. (Default: <see cref="NamespaceHandling.OmitDuplicates"/>)
 	/// </summary>
-	public bool OmitDuplicatedNamespaces { get; init; }
+	public NamespaceHandling NamespaceHandling { get; init; }
+
+	/// <summary>
+	/// Determines whether the XML output will omit the prologue, i.e. <c><![CDATA[<?xml version='1.0' ... ?>]]></c>. (Default: <see langword="true" />)
+	/// </summary>
+	public bool OmitXmlDeclaration { get; init; }
 
 	/// <summary>
 	/// Determines whether to escape the URI attributes. Default: <see langword="false" />.
@@ -37,14 +42,14 @@ public readonly struct XmlFormatting
 	public bool IncludeTextNodes { get; init; }
 
 	/// <summary>
-	/// Determines the indentation size of the XML. Greater than zero means the XML will be formatted.
+	/// Determines whether the XML string will be formatted. (Default: <see langword="0" />)
 	/// </summary>
 	public int IndentSize { get; init; }
 
 	/// <summary>
-	/// Sets the character used for indentation. It can be a tab character (<c>'\t'</c>) or a space (<c>' '</c>) as long as it complies with XML standards.
+	/// Sets the character used for indentation. (Default: <see cref="string.Empty" />)
 	/// </summary>
-	public string IndentChars { get; init; }
+	public char IndentChar { get; init; }
 
 	/// <summary>
 	/// Gets or sets a value that indicates whether the System.Xml.XmlWriter will add closing tags to all unclosed element tags when the <see cref="System.Xml.XmlWriter.Close"/> method is called.
@@ -52,7 +57,7 @@ public readonly struct XmlFormatting
 	public bool WriteEndDocumentOnClose { get; init; }
 
 	/// <summary>
-	/// Gets or sets a value indicating whether to normalize line breaks in the output. (Default: <see cref="NewLineHandling.Replace"/>
+	/// Gets or sets a value indicating whether to normalize line breaks in the output. (Default: <see cref="NewLineHandling.Replace"/>)
 	/// </summary>
 	public NewLineHandling NewLineHandling { get; init; }
 
@@ -76,11 +81,13 @@ public readonly struct XmlFormatting
 		IncludeTextNodes = true;
 
 		WriteEndDocumentOnClose = true;
-		OmitDuplicatedNamespaces = true;
 		DoNotEscapeUriAttributes = false;
 
+		NamespaceHandling = NamespaceHandling.OmitDuplicates;
+		OmitXmlDeclaration = true;
+
 		IndentSize = 0;
-		IndentChars = " ";
+		IndentChar = (char)0;
 
 		NewLineHandling = NewLineHandling.Replace;
 		NewLineOnAttributes = false;
@@ -98,5 +105,6 @@ public readonly struct XmlFormatting
 	public static XmlFormatting Indented { get; } = None with
 	{
 		IndentSize = 4,
+		IndentChar = ' '
 	};
 }

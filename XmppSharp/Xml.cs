@@ -2,6 +2,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Xml;
+using XmppSharp.Parser;
 
 namespace XmppSharp;
 
@@ -36,14 +37,27 @@ public static class Xml
 		};
 	}
 
+	public static async Task<Element> FromStringAsync(string xml, CancellationToken token = default)
+	{
+		using (var ms = new MemoryStream(xml.GetBytes()))
+		using (var parser = new XmppStreamParser(ms))
+			return await parser.GetNextElementAsync(token);
+	}
+
+	public static async Task<Element> FromStreamAsync(Stream stream, CancellationToken token = default)
+	{
+		using (var parser = new XmppStreamParser(stream))
+			return await parser.GetNextElementAsync(token);
+	}
+
 	internal static XmlWriter CreateWriter(StringBuilder output, XmlFormatting formatting)
 	{
 		Require.NotNull(output);
 
 		var settings = new XmlWriterSettings
 		{
-			Indent = formatting.IndentSize != 0,
-			IndentChars = formatting.IndentChars,
+			Indent = formatting.IndentSize > 0,
+			IndentChars = new string(formatting.IndentChar, formatting.IndentSize),
 			DoNotEscapeUriAttributes = formatting.DoNotEscapeUriAttributes,
 			WriteEndDocumentOnClose = formatting.WriteEndDocumentOnClose,
 			NewLineHandling = formatting.NewLineHandling,
@@ -52,8 +66,8 @@ public static class Xml
 			CloseOutput = true,
 			ConformanceLevel = ConformanceLevel.Fragment,
 			Encoding = Encoding.UTF8,
-			NamespaceHandling = NamespaceHandling.OmitDuplicates,
-			OmitXmlDeclaration = true,
+			NamespaceHandling = formatting.NamespaceHandling,
+			OmitXmlDeclaration = formatting.OmitXmlDeclaration,
 			NewLineChars = formatting.NewLineChars
 		};
 

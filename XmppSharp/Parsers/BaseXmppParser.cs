@@ -1,8 +1,11 @@
 ﻿using XmppSharp.Factory;
 using XmppSharp.Protocol.Base;
 
-namespace XmppSharp.Parsers;
+namespace XmppSharp.Parser;
 
+/// <summary>
+/// Base class to implement an XMPP parser.
+/// </summary>
 public abstract class BaseXmppParser : IDisposable
 {
 	/// <summary>
@@ -36,6 +39,9 @@ public abstract class BaseXmppParser : IDisposable
 			throw new ObjectDisposedException(GetType().FullName);
 	}
 
+	/// <summary>
+	/// Method that is called when disposing the parser.
+	/// </summary>
 	protected virtual void Disposing()
 	{
 
@@ -43,11 +49,12 @@ public abstract class BaseXmppParser : IDisposable
 
 	public void Dispose()
 	{
-		if (_disposed)
-			return;
-
-		_disposed = true;
-		Disposing();
+		if (!_disposed)
+		{
+			_disposed = true;
+			Disposing();
+			GC.SuppressFinalize(this);
+		}
 	}
 
 	protected async Task FireStreamStart(StreamStream e)

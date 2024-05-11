@@ -6,16 +6,15 @@ using XmppSharp.Exceptions;
 using XmppSharp.Factory;
 using XmppSharp.Protocol.Base;
 
-namespace XmppSharp.Parsers;
+namespace XmppSharp.Parser;
 
 
 /// <summary>
 /// An default XMPP parser implemented on top of <see cref="XmlReader"/>.
 /// </summary>
-public class DefaultXmppParser : BaseXmppParser
+public class XmppStreamParser : BaseXmppParser
 {
 	private XmlReader _reader;
-	private StreamReader _textReader;
 	private NameTable _nameTable = new();
 	private volatile bool _disposed;
 
@@ -24,25 +23,12 @@ public class DefaultXmppParser : BaseXmppParser
 	private Func<Stream> _streamFactory;
 	private Stream _baseStream;
 
-	private readonly Encoding _encoding;
-	private readonly int _bufferSize;
-
-	public const int DefaultBufferSize = 256;
-
-	DefaultXmppParser(Encoding? encoding, int bufferSize)
-	{
-		this._encoding = encoding ?? Encoding.UTF8;
-		this._bufferSize = bufferSize <= 0 ? DefaultBufferSize : bufferSize;
-	}
-
 	/// <summary>
-	/// Initializes a new instance of <see cref="DefaultXmppParser" />. Use this constructor for generic purposes, where the base type of the stream will not change (eg: loading from file).
+	/// Initializes a new instance of <see cref="XmppStreamParser" />. Use this constructor for generic purposes, where the base type of the stream will not change (eg: loading from file).
 	/// </summary>
 	/// <param name="stream">Stream that will be used to read the characters.</param>
 	/// <param name="leaveOpen">Determines whether the stream should remain open after dispose this parser.</param>
-	/// <param name="encoding">Determines which type of character encoding to be used. (Default: <see cref="Encoding.UTF8"/>)</param>
-	/// <param name="bufferSize">Buffer size in chars for the internal <see cref="StreamReader" />. (Default: <see cref="DefaultBufferSize"/>)</param>
-	public DefaultXmppParser(Stream stream, bool leaveOpen = true, Encoding? encoding = default, int bufferSize = -1) : this(encoding, bufferSize)
+	public XmppStreamParser(Stream stream, bool leaveOpen = true)
 	{
 		Require.NotNull(stream);
 
@@ -54,12 +40,11 @@ public class DefaultXmppParser : BaseXmppParser
 	}
 
 	/// <summary>
-	/// Initializes a new instance of <see cref="DefaultXmppParser" />. Use this constructor only if the stream can change according to the connection state (eg: connection upgrade from raw stream to ssl stream).
+	/// Initializes a new instance of <see cref="XmppStreamParser" />. Use this constructor only if the stream can change according to the connection state (eg: connection upgrade from raw stream to ssl stream).
 	/// </summary>
 	/// <param name="streamFactory">Factory function to get the stream when <see cref="Reset" /> is called.</param>
-	/// <param name="encoding">Determines which type of character encoding to be used. (Default: <see cref="Encoding.UTF8"/>)</param>
-	/// <param name="bufferSize">Buffer size in chars for the internal <see cref="StreamReader" />. (Default: <see cref="DefaultBufferSize"/>)</param>
-	public DefaultXmppParser(Func<Stream> streamFactory, Encoding? encoding = default, int bufferSize = -1) : this(encoding, bufferSize)
+	/// <param name="leaveOpen">Determines whether the stream should remain open after dispose this parser.</param>
+	public XmppStreamParser(Func<Stream> streamFactory, bool leaveOpen = true)
 	{
 		Require.NotNull(streamFactory);
 
@@ -76,18 +61,15 @@ public class DefaultXmppParser : BaseXmppParser
 
 		this._disposed = true;
 
-		if (this._isFromFactory)
-			this._streamFactory = null;
-		else
-		{
-			if (!this._leaveOpen)
-				this._baseStream?.Dispose();
+		if (!this._leaveOpen)
+			this._baseStream?.Dispose();
 
-			this._baseStream = null;
-		}
+		this._baseStream = null;
+		this._streamFactory = null;
 
 		this._reader?.Dispose();
-		this._textReader?.Dispose();
+		this._reader = null;
+
 		this._nameTable = null;
 	}
 
@@ -108,11 +90,10 @@ public class DefaultXmppParser : BaseXmppParser
 	/// <summary>
 	/// Restarts the state of the XML parser.
 	/// </summary>
-	/// <exception cref="ObjectDisposedException">If this instance of <see cref="DefaultXmppParser" /> has already been disposed.</exception>
+	/// <exception cref="ObjectDisposedException">If this instance of <see cref="XmppStreamParser" /> has already been disposed.</exception>
 	public virtual void Reset()
 	{
 		this._reader?.Dispose();
-		this._textReader?.Dispose();
 
 #if NET7_0_OR_GREATER
 		ObjectDisposedException.ThrowIf(this._disposed, this);
@@ -120,18 +101,21 @@ public class DefaultXmppParser : BaseXmppParser
 		if (this._disposed)
 			throw new ObjectDisposedException(GetType().FullName, "Cannot reset parser in a disposed parser.");
 #endif
-		this._textReader = new StreamReader(this._isFromFactory
-			? this._streamFactory()
-			: this._baseStream, this._encoding, false, this._bufferSize, true);
 
-		this._reader = XmlReader.Create(this._textReader, new()
+		if (this._isFromFactory)
+			this._baseStream = this._streamFactory();
+
+		this._reader = XmlReader.Create(this._baseStream, new()
 		{
 			CloseInput = false,
 			Async = true,
 			IgnoreWhitespace = true,
 			IgnoreProcessingInstructions = true,
-			ConformanceLevel = ConformanceLevel.Auto,
-			DtdProcessing = DtdProcessing.Prohibit,
+			ConformanceLevel = ConformanceLevel.Fragment,
+
+			// More info: https://en.wikipedia.org/wiki/Billion_laughs_attack
+			DtdProcessing = DtdProcessing.Ignore,
+
 #if NET7_0_OR_GREATER
 			XmlResolver = XmlResolver.ThrowingResolver,
 #else
@@ -165,7 +149,7 @@ public class DefaultXmppParser : BaseXmppParser
 	}
 
 	public virtual bool Advance()
-		=> AsyncHelper.RunSync(() => AdvanceAsync());
+		=> AsyncHelper.RunSync(AdvanceAsync);
 
 	public virtual async Task<bool> AdvanceAsync()
 	{
@@ -173,9 +157,6 @@ public class DefaultXmppParser : BaseXmppParser
 			return false;
 
 		if (this._reader == null)
-			return false;
-
-		if (this._reader.EOF)
 			return false;
 
 		bool result;
@@ -186,6 +167,9 @@ public class DefaultXmppParser : BaseXmppParser
 		}
 		catch (XmlException e)
 		{
+			if (_reader.EOF)
+				return false;
+
 			throw new JabberStreamException(StreamErrorCondition.InvalidXml, e);
 		}
 
@@ -250,7 +234,7 @@ public class DefaultXmppParser : BaseXmppParser
 					else
 					{
 						if (this._rootElem == null)
-							throw new JabberStreamException(StreamErrorCondition.InvalidXml, "The element in the current scope was not expected to be null.");
+							throw new JabberStreamException(StreamErrorCondition.InvalidXml, "Unexcepted end tag.");
 
 						var parent = this._rootElem.Parent;
 
