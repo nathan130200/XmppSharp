@@ -14,6 +14,7 @@
 		<Description>XMPP# expat parser implementation.</Description>
 		<PackageProjectUrl>https://github.com/nathan130200/XmppSharp</PackageProjectUrl>
 		<PackageTags>xml, jabber, xmpp, xmpp-client, xmpp-server, xmpp-component</PackageTags>
+		<PackageOutputPath>$(SolutionDir)/_Build/</PackageOutputPath>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
@@ -27,7 +28,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.0.2</Version>
+		<Version>1.1</Version>
 		<DebugSymbols>true</DebugSymbols>
 		<Copyright>nathan130200</Copyright>
 		<RepositoryType>git</RepositoryType>
