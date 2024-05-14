@@ -6,7 +6,6 @@ using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Parser;
 
-
 /// <summary>
 /// An default XMPP parser implemented on top of <see cref="XmlReader"/>.
 /// </summary>
@@ -71,20 +70,6 @@ public class XmppStreamParser : BaseXmppParser
 		this._nameTable = null;
 	}
 
-#if !NET7_0_OR_GREATER
-
-	internal class ThrowingResolver : XmlResolver
-	{
-		public static ThrowingResolver Shared { get; } = new();
-
-		public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
-		{
-			throw new NotSupportedException($"Unable to resolve XML entity: {absoluteUri} ({role})");
-		}
-	}
-
-#endif
-
 	/// <summary>
 	/// Restarts the state of the XML parser.
 	/// </summary>
@@ -93,12 +78,7 @@ public class XmppStreamParser : BaseXmppParser
 	{
 		this._reader?.Dispose();
 
-#if NET7_0_OR_GREATER
-		ObjectDisposedException.ThrowIf(this._disposed, this);
-#else
-		if (this._disposed)
-			throw new ObjectDisposedException(GetType().FullName, "Cannot reset parser in a disposed parser.");
-#endif
+		ThrowIfDisposed();
 
 		if (this._isFromFactory)
 			this._baseStream = this._streamFactory();
@@ -113,12 +93,7 @@ public class XmppStreamParser : BaseXmppParser
 
 			// More info: https://en.wikipedia.org/wiki/Billion_laughs_attack
 			DtdProcessing = DtdProcessing.Ignore,
-
-#if NET7_0_OR_GREATER
 			XmlResolver = XmlResolver.ThrowingResolver,
-#else
-			XmlResolver = ThrowingResolver.Shared,
-#endif
 			ValidationFlags = XmlSchemaValidationFlags.AllowXmlAttributes,
 			NameTable = this._nameTable
 		});

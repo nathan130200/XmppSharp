@@ -34,10 +34,7 @@ public abstract class BaseXmppParser : IDisposable
 	}
 
 	protected void ThrowIfDisposed()
-	{
-		if (_disposed)
-			throw new ObjectDisposedException(GetType().FullName);
-	}
+		=> ObjectDisposedException.ThrowIf(_disposed, this);
 
 	/// <summary>
 	/// Method that is called when disposing the parser.

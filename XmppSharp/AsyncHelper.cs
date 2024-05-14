@@ -7,7 +7,7 @@ namespace XmppSharp;
 
 public static class AsyncHelper
 {
-	private static readonly TaskFactory _myTaskFactory = new TaskFactory(CancellationToken.None,
+	private static readonly TaskFactory _taskFactory = new(CancellationToken.None,
 		TaskCreationOptions.None, TaskContinuationOptions.None, TaskScheduler.Default);
 
 	public static TResult RunSync<TResult>(Func<Task<TResult>> func)
@@ -15,7 +15,7 @@ public static class AsyncHelper
 		var cultureUi = CultureInfo.CurrentUICulture;
 		var culture = CultureInfo.CurrentCulture;
 
-		return _myTaskFactory.StartNew(() =>
+		return _taskFactory.StartNew(() =>
 		{
 			Thread.CurrentThread.CurrentCulture = culture;
 			Thread.CurrentThread.CurrentUICulture = cultureUi;
@@ -28,7 +28,7 @@ public static class AsyncHelper
 		var cultureUi = CultureInfo.CurrentUICulture;
 		var culture = CultureInfo.CurrentCulture;
 
-		_myTaskFactory.StartNew(() =>
+		_taskFactory.StartNew(() =>
 		{
 			Thread.CurrentThread.CurrentCulture = culture;
 			Thread.CurrentThread.CurrentUICulture = cultureUi;

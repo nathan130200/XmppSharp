@@ -1,53 +1,49 @@
 ﻿using System.Text.RegularExpressions;
 using System.Xml;
-using Expat;
-using Expat.Native;
 using XmppSharp.Dom;
 using XmppSharp.Exceptions;
+using XmppSharp.Expat;
+using XmppSharp.Expat.Native;
 using XmppSharp.Factory;
 using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Parser;
 
-/// <summary>
-/// An enhanced XMPP parser built using Expat library.
-/// </summary>
-public partial class ExpatXmppParser : BaseXmppParser
+public partial class ExpatXmppParser : IDisposable
 {
 	private ExpatParser _parser;
 	private Element _currentElem;
-	private XmlNamespaceManager _namespaces;
-	private NameTable _xmlNameTable;
+	private XmlNamespaceManager _nsStack;
+	private NameTable _nameTable;
 
-	void AddNamespacesToScope(IReadOnlyDictionary<string, string> attrs)
-	{
-		foreach (var (key, value) in attrs)
-		{
-			if (key == "xmlns")
-				this._namespaces.AddNamespace(string.Empty, value);
-			else if (key.StartsWith("xmlns:"))
-			{
-				var prefix = key[(key.IndexOf(':') + 1)..];
-				this._namespaces.AddNamespace(prefix, value);
-			}
-		}
-	}
+	public event Action<StreamStream> OnStreamStart;
+	public event Action<Element> OnStreamElement;
+	public event Action OnStreamEnd;
 
 	public ExpatXmppParser(EncodingType encoding = EncodingType.UTF8)
 	{
-		this._namespaces = new(this._xmlNameTable = new NameTable());
+		this._nsStack = new(this._nameTable = new NameTable());
 
 		this._parser = new ExpatParser(encoding);
 
 		this._parser.OnElementStart += (name, attributes) =>
 		{
-			this._namespaces.PushScope();
+			this._nsStack.PushScope();
 
-			AddNamespacesToScope(attributes);
+			foreach (var (key, value) in attributes)
+			{
+				if (key == "xmlns")
+					this._nsStack.AddNamespace(string.Empty, value);
+				else if (key.StartsWith("xmlns:"))
+				{
+					var prefix = key[(key.IndexOf(':') + 1)..];
+					this._nsStack.AddNamespace(prefix, value);
+				}
+			}
 
 			var qname = Xml.ExtractQualifiedName(name);
 
-			var ns = this._namespaces.LookupNamespace(qname.HasPrefix ? qname.Prefix : string.Empty);
+			var ns = this._nsStack.LookupNamespace(qname.HasPrefix ? qname.Prefix : string.Empty);
 
 			if (name is "iq" or "message" or "presence") // work-around
 				ns ??= Namespaces.Client;
@@ -58,7 +54,7 @@ public partial class ExpatXmppParser : BaseXmppParser
 				element.SetAttribute(key, value);
 
 			if (name == "stream:stream")
-				AsyncHelper.RunSync(() => FireStreamStart(element as StreamStream));
+				OnStreamStart?.Invoke(element as StreamStream);
 			else
 			{
 				_currentElem?.AddChild(element);
@@ -68,16 +64,16 @@ public partial class ExpatXmppParser : BaseXmppParser
 
 		this._parser.OnElementEnd += (name) =>
 		{
-			this._namespaces.PopScope();
+			this._nsStack.PopScope();
 
 			if (name == "stream:stream")
-				AsyncHelper.RunSync(() => FireStreamEnd());
+				OnStreamEnd?.Invoke();
 			else
 			{
 				var parent = _currentElem.Parent;
 
 				if (parent == null)
-					AsyncHelper.RunSync(() => FireStreamElement(_currentElem));
+					this.OnStreamElement?.Invoke(_currentElem);
 				else
 				{
 					if (name != _currentElem.TagName)
@@ -95,7 +91,10 @@ public partial class ExpatXmppParser : BaseXmppParser
 
 		this._parser.OnText += (text) =>
 		{
-			var trimWhitespace = !(_currentElem.GetAttribute("xml:space") == "preserve");
+			if (_currentElem == null)
+				return;
+
+			var trimWhitespace = _currentElem.GetAttribute("xml:space") != "preserve";
 
 			if (trimWhitespace)
 				text = TrimAllWhitespace(text);
@@ -140,7 +139,7 @@ public partial class ExpatXmppParser : BaseXmppParser
 	{
 		this.ThrowIfDisposed();
 
-		this._namespaces = new(this._xmlNameTable);
+		this._nsStack = new(this._nameTable);
 		this._parser.Reset();
 	}
 
@@ -150,15 +149,32 @@ public partial class ExpatXmppParser : BaseXmppParser
 		this._parser.Write(buffer, count, isFinal);
 	}
 
-	protected override void Release()
+	public void WriteInplace(byte[] buffer, int count, bool isFinal = false)
 	{
-		this._xmlNameTable = null;
+		this.ThrowIfDisposed();
+		this._parser.WriteInplace(buffer, count, isFinal);
+	}
 
-		while (this._namespaces.PopScope())
+	protected volatile bool _disposed;
+
+	protected void ThrowIfDisposed()
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+	}
+
+	public void Dispose()
+	{
+		if (_disposed)
+			return;
+
+		_disposed = true;
+
+		this._nsStack = null;
+
+		while (this._nsStack.PopScope())
 			;
 
-		this._namespaces = null;
-
+		this._nameTable = null;
 		this._parser?.Dispose();
 		this._parser = null;
 	}

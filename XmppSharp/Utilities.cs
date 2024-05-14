@@ -67,7 +67,7 @@ public static class Utilities
 				// ensure we always unbind the handler.
 				parser.OnStreamElement -= handler;
 			}
-		});
+		}, token);
 
 		parser.OnStreamElement += handler;
 
