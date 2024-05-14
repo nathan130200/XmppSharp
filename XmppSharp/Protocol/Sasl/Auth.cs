@@ -2,10 +2,10 @@
 
 namespace XmppSharp.Protocol.Sasl;
 
-[XmppTag("auth", Namespace.Sasl)]
+[XmppTag("auth", Namespaces.Sasl)]
 public sealed class Auth : Element
 {
-	public Auth() : base("auth", Namespace.Sasl)
+	public Auth() : base("auth", Namespaces.Sasl)
 	{
 
 	}

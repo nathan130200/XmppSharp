@@ -2,10 +2,10 @@
 
 namespace XmppSharp.Protocol.Client;
 
-[XmppTag("bind", Namespace.Bind)]
+[XmppTag("bind", Namespaces.Bind)]
 public class Bind : Element
 {
-	public Bind() : base("bind", Namespace.Bind)
+	public Bind() : base("bind", Namespaces.Bind)
 	{
 
 	}

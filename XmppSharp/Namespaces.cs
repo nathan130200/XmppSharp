@@ -1,6 +1,6 @@
 ﻿namespace XmppSharp;
 
-public static class Namespace
+public static class Namespaces
 {
 	/// <summary>
 	/// <a href="http://www.w3.org/XML/1998/namespace">W3C: Xml Namespace</a> — <c>http://www.w3.org/XML/1998/namespace</c>

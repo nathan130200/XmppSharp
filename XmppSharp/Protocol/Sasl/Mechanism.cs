@@ -5,7 +5,7 @@ namespace XmppSharp.Protocol.Sasl;
 [XmppTag("mechanism", "urn:ietf:params:xml:ns:xmpp-sasl")]
 public class Mechanism : Element
 {
-	public Mechanism() : base("mechanism", Namespace.Sasl)
+	public Mechanism() : base("mechanism", Namespaces.Sasl)
 	{
 		this.MechanismType = MechanismType.Plain;
 	}

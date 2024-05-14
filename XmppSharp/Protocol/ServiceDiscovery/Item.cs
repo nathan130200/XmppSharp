@@ -2,10 +2,10 @@
 
 namespace XmppSharp.Protocol.ServiceDiscovery;
 
-[XmppTag("item", Namespace.DiscoItems)]
+[XmppTag("item", Namespaces.DiscoItems)]
 public class Item : Element
 {
-	public Item() : base("item", Namespace.DiscoItems)
+	public Item() : base("item", Namespaces.DiscoItems)
 	{
 
 	}

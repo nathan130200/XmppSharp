@@ -37,7 +37,7 @@ public abstract class Stanza : DirectionalElement
 		set
 		{
 			if (value == null)
-				this.RemoveTag("error", Namespace.Stanzas);
+				this.RemoveTag("error", Namespaces.Stanzas);
 			else
 				this.AddChild(value);
 		}

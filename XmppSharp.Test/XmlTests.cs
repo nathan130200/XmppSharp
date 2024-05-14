@@ -39,24 +39,24 @@ public class XmlTests
 	}
 
 	[TestMethod]
-	[DataRow("stream:stream", Namespace.Stream, typeof(StreamStream))]
-	[DataRow("stream:features", Namespace.Stream, typeof(StreamFeatures))]
-	[DataRow("stream:error", Namespace.Stream, typeof(StreamError))]
+	[DataRow("stream:stream", Namespaces.Stream, typeof(StreamStream))]
+	[DataRow("stream:features", Namespaces.Stream, typeof(StreamFeatures))]
+	[DataRow("stream:error", Namespaces.Stream, typeof(StreamError))]
 
-	[DataRow("iq", Namespace.Client, typeof(Iq))]
-	[DataRow("iq", Namespace.Server, typeof(Iq))]
-	[DataRow("iq", Namespace.Accept, typeof(Iq))]
-	[DataRow("iq", Namespace.Connect, typeof(Iq))]
+	[DataRow("iq", Namespaces.Client, typeof(Iq))]
+	[DataRow("iq", Namespaces.Server, typeof(Iq))]
+	[DataRow("iq", Namespaces.Accept, typeof(Iq))]
+	[DataRow("iq", Namespaces.Connect, typeof(Iq))]
 
-	[DataRow("message", Namespace.Client, typeof(Message))]
-	[DataRow("message", Namespace.Server, typeof(Message))]
-	[DataRow("message", Namespace.Accept, typeof(Message))]
-	[DataRow("message", Namespace.Connect, typeof(Message))]
+	[DataRow("message", Namespaces.Client, typeof(Message))]
+	[DataRow("message", Namespaces.Server, typeof(Message))]
+	[DataRow("message", Namespaces.Accept, typeof(Message))]
+	[DataRow("message", Namespaces.Connect, typeof(Message))]
 
-	[DataRow("presence", Namespace.Client, typeof(Presence))]
-	[DataRow("presence", Namespace.Server, typeof(Presence))]
-	[DataRow("presence", Namespace.Accept, typeof(Presence))]
-	[DataRow("presence", Namespace.Connect, typeof(Presence))]
+	[DataRow("presence", Namespaces.Client, typeof(Presence))]
+	[DataRow("presence", Namespaces.Server, typeof(Presence))]
+	[DataRow("presence", Namespaces.Accept, typeof(Presence))]
+	[DataRow("presence", Namespaces.Connect, typeof(Presence))]
 
 	[DataRow("iq", "foobar", typeof(Element))]
 	[DataRow("message", "foobar", typeof(Element))]
@@ -75,14 +75,14 @@ public class XmlTests
 	}
 
 	[TestMethod]
-	[DataRow("<stream:stream xmlns='jabber:client' to='localhost' version='1.0' xmlns:stream='" + Namespace.Stream + "' />", typeof(StreamStream))]
+	[DataRow("<stream:stream xmlns='jabber:client' to='localhost' version='1.0' xmlns:stream='" + Namespaces.Stream + "' />", typeof(StreamStream))]
 	[DataRow("<iq xmlns='jabber:client' />", typeof(Iq))]
 	[DataRow("<message xmlns='jabber:component:accept' />", typeof(Message))]
 	[DataRow("<presence xmlns='jabber:server' />", typeof(Presence))]
 	[DataRow("<iq />", typeof(Iq))]
 	[DataRow("<message />", typeof(Message))]
 	[DataRow("<presence />", typeof(Presence))]
-	[DataRow("<auth xmlns='" + Namespace.Sasl + "' mechanism='PLAIN' />", typeof(Auth))]
+	[DataRow("<auth xmlns='" + Namespaces.Sasl + "' mechanism='PLAIN' />", typeof(Auth))]
 	public async Task CreateElementFromParser(string xml, Type expectedType)
 	{
 		var elem = await ParserTests.ParseFromBuffer(xml);
@@ -144,9 +144,9 @@ public class XmlTests
 	public void StartTagTest()
 	{
 		var el = new StreamStream();
-		el.SetNamespace(Namespace.Client);
+		el.SetNamespace(Namespaces.Client);
 		var xml = el.StartTag();
-		Assert.AreEqual(xml, "<stream:stream xmlns=\"" + Namespace.Client + "\" xmlns:stream=\"" + Namespace.Stream + "\">");
+		Assert.AreEqual(xml, "<stream:stream xmlns=\"" + Namespaces.Client + "\" xmlns:stream=\"" + Namespaces.Stream + "\">");
 		Console.WriteLine("START_TAG:\n" + xml);
 
 		xml = el.EndTag();

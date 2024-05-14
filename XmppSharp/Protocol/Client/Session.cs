@@ -2,10 +2,10 @@
 
 namespace XmppSharp.Protocol.Client;
 
-[XmppTag("session", Namespace.Session)]
+[XmppTag("session", Namespaces.Session)]
 public class Session : Element
 {
-	public Session() : base("session", Namespace.Session)
+	public Session() : base("session", Namespaces.Session)
 	{
 
 	}

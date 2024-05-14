@@ -3,11 +3,11 @@ using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Component;
 
-[XmppTag("handshake", Namespace.Accept)]
-[XmppTag("handshake", Namespace.Connect)]
+[XmppTag("handshake", Namespaces.Accept)]
+[XmppTag("handshake", Namespaces.Connect)]
 public class Handshake : Element
 {
-	public Handshake() : base("handshake", Namespace.Accept)
+	public Handshake() : base("handshake", Namespaces.Accept)
 	{
 
 	}

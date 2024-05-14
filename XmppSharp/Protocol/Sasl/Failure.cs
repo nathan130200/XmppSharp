@@ -5,7 +5,7 @@ namespace XmppSharp.Protocol.Sasl;
 [XmppTag("failure", "urn:ietf:params:xml:ns:xmpp-sasl")]
 public class Failure : Element
 {
-	public Failure() : base("failure", Namespace.Sasl)
+	public Failure() : base("failure", Namespaces.Sasl)
 	{
 
 	}
@@ -24,7 +24,7 @@ public class Failure : Element
 		{
 			foreach (var (key, value) in XmppEnum.GetValues<FailureCondition>())
 			{
-				if (this.HasTag(key, Namespace.Sasl))
+				if (this.HasTag(key, Namespaces.Sasl))
 					return value;
 			}
 
@@ -35,10 +35,10 @@ public class Failure : Element
 			var other = Condition;
 
 			if (other != FailureCondition.Unspecified)
-				this.RemoveTag(other.ToXmppName(), Namespace.Sasl);
+				this.RemoveTag(other.ToXmppName(), Namespaces.Sasl);
 
 			if (value != FailureCondition.Unspecified)
-				this.SetTag(value.ToXmppName(), Namespace.Sasl);
+				this.SetTag(value.ToXmppName(), Namespaces.Sasl);
 		}
 	}
 

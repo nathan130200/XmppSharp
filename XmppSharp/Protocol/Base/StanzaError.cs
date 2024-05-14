@@ -2,13 +2,13 @@
 
 namespace XmppSharp.Protocol.Base;
 
-[XmppTag("error", Namespace.Client)]
-[XmppTag("error", Namespace.Server)]
-[XmppTag("error", Namespace.Accept)]
-[XmppTag("error", Namespace.Connect)]
+[XmppTag("error", Namespaces.Client)]
+[XmppTag("error", Namespaces.Server)]
+[XmppTag("error", Namespaces.Accept)]
+[XmppTag("error", Namespaces.Connect)]
 public class StanzaError : Element
 {
-	public StanzaError() : base("error", Namespace.Client)
+	public StanzaError() : base("error", Namespaces.Client)
 	{
 
 	}
@@ -31,7 +31,7 @@ public class StanzaError : Element
 		{
 			foreach (var (name, value) in XmppEnum.GetValues<StanzaErrorCondition>())
 			{
-				if (this.HasTag(name, Namespace.Stanzas))
+				if (this.HasTag(name, Namespaces.Stanzas))
 					return value;
 			}
 
@@ -40,22 +40,22 @@ public class StanzaError : Element
 		set
 		{
 			XmppEnum.GetNames<StanzaErrorCondition>()
-				.ForEach(name => this.RemoveTag(name, Namespace.Stanzas));
+				.ForEach(name => this.RemoveTag(name, Namespaces.Stanzas));
 
 			if (value.TryGetValue(out var result))
-				this.SetTag(result.ToXmppName(), Namespace.Stanzas);
+				this.SetTag(result.ToXmppName(), Namespaces.Stanzas);
 		}
 	}
 
 	public string Text
 	{
-		get => this.GetTag("text", Namespace.Stanzas);
+		get => this.GetTag("text", Namespaces.Stanzas);
 		set
 		{
 			if (value == null)
-				this.RemoveTag("text", Namespace.Stanzas);
+				this.RemoveTag("text", Namespaces.Stanzas);
 			else
-				this.SetTag("text", Namespace.Stanzas, value);
+				this.SetTag("text", Namespaces.Stanzas, value);
 		}
 	}
 }

@@ -2,10 +2,10 @@
 
 namespace XmppSharp.Protocol.DataForms;
 
-[XmppTag("reported", Namespace.DataForms)]
+[XmppTag("reported", Namespaces.DataForms)]
 public class Reported : Element
 {
-	public Reported() : base("reported", Namespace.DataForms)
+	public Reported() : base("reported", Namespaces.DataForms)
 	{
 
 	}

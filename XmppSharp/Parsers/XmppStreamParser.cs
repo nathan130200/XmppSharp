@@ -52,7 +52,7 @@ public class XmppStreamParser : BaseXmppParser
 		Reset();
 	}
 
-	protected override void Disposing()
+	protected override void Release()
 	{
 		if (this._disposed)
 			return;
@@ -202,7 +202,7 @@ public class XmppStreamParser : BaseXmppParser
 
 					if (this._reader.Name == "stream:stream")
 					{
-						if (this._reader.NamespaceURI != Namespace.Stream)
+						if (this._reader.NamespaceURI != Namespaces.Stream)
 							throw new JabberStreamException(StreamErrorCondition.InvalidNamespace);
 
 						await FireStreamStart((StreamStream)currentElem);

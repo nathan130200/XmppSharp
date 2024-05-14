@@ -3,13 +3,13 @@ using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Protocol;
 
-[XmppTag("presence", Namespace.Client)]
-[XmppTag("presence", Namespace.Server)]
-[XmppTag("presence", Namespace.Accept)]
-[XmppTag("presence", Namespace.Connect)]
+[XmppTag("presence", Namespaces.Client)]
+[XmppTag("presence", Namespaces.Server)]
+[XmppTag("presence", Namespaces.Accept)]
+[XmppTag("presence", Namespaces.Connect)]
 public class Presence : Stanza
 {
-	public Presence() : base("presence", Namespace.Client)
+	public Presence() : base("presence", Namespaces.Client)
 	{
 
 	}

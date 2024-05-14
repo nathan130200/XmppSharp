@@ -256,7 +256,7 @@ public class ParserTests
 		var element = await parser.GetNextElementAsync();
 
 		Assert.AreEqual("CodeSnippets", element.TagName);
-		Assert.AreEqual("http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet", element.DefaultNamespace);
+		Assert.AreEqual("http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet", element.Namespace);
 		Assert.AreEqual("CodeSnippet", element.FirstChild.TagName);
 	}
 }

@@ -2,10 +2,10 @@
 
 namespace XmppSharp.Protocol.Tls;
 
-[XmppTag("proceed", Namespace.Tls)]
+[XmppTag("proceed", Namespaces.Tls)]
 public sealed class Proceed : Element
 {
-	public Proceed() : base("proceed", Namespace.Tls)
+	public Proceed() : base("proceed", Namespaces.Tls)
 	{
 
 	}

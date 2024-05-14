@@ -3,10 +3,10 @@ using XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 
 namespace XmppSharp.Protocol.ServiceDiscovery;
 
-[XmppTag("identity", Namespace.DiscoInfo)]
+[XmppTag("identity", Namespaces.DiscoInfo)]
 public class Identity : Element
 {
-	public Identity() : base("identity", Namespace.DiscoInfo)
+	public Identity() : base("identity", Namespaces.DiscoInfo)
 	{
 
 	}

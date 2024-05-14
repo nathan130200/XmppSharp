@@ -3,13 +3,13 @@ using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Protocol;
 
-[XmppTag("message", Namespace.Client)]
-[XmppTag("message", Namespace.Server)]
-[XmppTag("message", Namespace.Accept)]
-[XmppTag("message", Namespace.Connect)]
+[XmppTag("message", Namespaces.Client)]
+[XmppTag("message", Namespaces.Server)]
+[XmppTag("message", Namespaces.Accept)]
+[XmppTag("message", Namespaces.Connect)]
 public class Message : Stanza
 {
-	public Message() : base("message", Namespace.Client)
+	public Message() : base("message", Namespaces.Client)
 	{
 
 	}
@@ -42,7 +42,7 @@ public class Message : Stanza
 	}
 
 	public bool IsXHtml
-		=> this.HasTag("body", Namespace.XHtml);
+		=> this.HasTag("body", Namespaces.XHtml);
 
 	public string Subject
 	{

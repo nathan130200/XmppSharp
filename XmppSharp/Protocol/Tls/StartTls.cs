@@ -2,10 +2,10 @@
 
 namespace XmppSharp.Protocol.Tls;
 
-[XmppTag("starttls", Namespace.Tls)]
+[XmppTag("starttls", Namespaces.Tls)]
 public sealed class StartTls : Element
 {
-	public StartTls() : base("starttls", Namespace.Tls)
+	public StartTls() : base("starttls", Namespaces.Tls)
 	{
 
 	}

@@ -2,10 +2,10 @@
 
 namespace XmppSharp.Protocol.DataForms;
 
-[XmppTag("option", Namespace.DataForms)]
+[XmppTag("option", Namespaces.DataForms)]
 public class Option : Element
 {
-	public Option() : base("option", Namespace.DataForms)
+	public Option() : base("option", Namespaces.DataForms)
 	{
 
 	}

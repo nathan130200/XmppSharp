@@ -1,7 +1,8 @@
 ﻿using System.Text.RegularExpressions;
 using System.Xml;
+using Expat;
+using Expat.Native;
 using XmppSharp.Dom;
-using XmppSharp.Expat;
 using XmppSharp.Exceptions;
 using XmppSharp.Factory;
 using XmppSharp.Protocol.Base;
@@ -15,49 +16,43 @@ public partial class ExpatXmppParser : BaseXmppParser
 {
 	private ExpatParser _parser;
 	private Element _currentElem;
-	private XmlNamespaceManager _nsStack;
-	private NameTable _xmlNames;
+	private XmlNamespaceManager _namespaces;
+	private NameTable _xmlNameTable;
 
 	void AddNamespacesToScope(IReadOnlyDictionary<string, string> attrs)
 	{
 		foreach (var (key, value) in attrs)
 		{
 			if (key == "xmlns")
-				this._nsStack.AddNamespace(string.Empty, value);
+				this._namespaces.AddNamespace(string.Empty, value);
 			else if (key.StartsWith("xmlns:"))
 			{
 				var prefix = key[(key.IndexOf(':') + 1)..];
-				this._nsStack.AddNamespace(prefix, value);
+				this._namespaces.AddNamespace(prefix, value);
 			}
 		}
 	}
 
 	public ExpatXmppParser(EncodingType encoding = EncodingType.UTF8)
 	{
-		this._nsStack = new(this._xmlNames = new NameTable());
+		this._namespaces = new(this._xmlNameTable = new NameTable());
 
 		this._parser = new ExpatParser(encoding);
 
 		this._parser.OnElementStart += (name, attributes) =>
 		{
-			this._nsStack.PushScope();
+			this._namespaces.PushScope();
 
 			AddNamespacesToScope(attributes);
 
 			var qname = Xml.ExtractQualifiedName(name);
 
-			var ns = this._nsStack.LookupNamespace(qname.HasPrefix ? qname.Prefix : string.Empty);
+			var ns = this._namespaces.LookupNamespace(qname.HasPrefix ? qname.Prefix : string.Empty);
 
 			if (name is "iq" or "message" or "presence") // work-around
-				ns ??= Namespace.Client;
+				ns ??= Namespaces.Client;
 
 			var element = ElementFactory.Create(name, ns);
-
-			//foreach (var (key, value) in _nsStack.GetNamespacesInScope(XmlNamespaceScope.Local))
-			//{
-			//	var att = string.IsNullOrWhiteSpace(key) ? "xmlns" : $"xmlns:{key}";
-			//	element.SetAttribute(att, value);
-			//}
 
 			foreach (var (key, value) in attributes)
 				element.SetAttribute(key, value);
@@ -73,7 +68,7 @@ public partial class ExpatXmppParser : BaseXmppParser
 
 		this._parser.OnElementEnd += (name) =>
 		{
-			this._nsStack.PopScope();
+			this._namespaces.PopScope();
 
 			if (name == "stream:stream")
 				AsyncHelper.RunSync(() => FireStreamEnd());
@@ -98,34 +93,27 @@ public partial class ExpatXmppParser : BaseXmppParser
 			}
 		};
 
-		this._parser.OnText += (type, text) =>
+		this._parser.OnText += (text) =>
 		{
-			if (_currentElem == null)
-				return;
+			var trimWhitespace = !(_currentElem.GetAttribute("xml:space") == "preserve");
 
-			if (type == ContentNodeType.Text)
-			{
-				var trimWhitespace = _currentElem.GetAttribute("xml:space") != "preserve";
+			if (trimWhitespace)
+				text = TrimAllWhitespace(text);
 
-				if (trimWhitespace && text.All(XmlConvert.IsWhitespaceChar))
-					return;
+			if (_currentElem.LastNode is Text node)
+				node.Value += text;
+			else
+				_currentElem.AddChild(new Text(text));
+		};
 
-				if (trimWhitespace) // same for trailing whitespace
-					text = TrimWhitespace(text);
+		this._parser.OnCdata += value =>
+		{
+			this._currentElem?.AddChild(new Cdata(value));
+		};
 
-				if (_currentElem.LastNode is Text node)
-					node.Value += text;
-				else
-					_currentElem.AddChild(new Text(text));
-			}
-			else if (type == ContentNodeType.Cdata)
-			{
-				this._currentElem.AddChild(new Cdata(text));
-			}
-			else if (type == ContentNodeType.Comment)
-			{
-				this._currentElem.AddChild(new Comment(text));
-			}
+		this._parser.OnComment += value =>
+		{
+			this._currentElem?.AddChild(new Comment(value));
 		};
 	}
 
@@ -135,7 +123,7 @@ public partial class ExpatXmppParser : BaseXmppParser
 	[GeneratedRegex(@"\s+")]
 	protected static partial Regex ContiguousSpaceRegex();
 
-	static string TrimWhitespace(string str)
+	static string TrimAllWhitespace(string str)
 	{
 		if (string.IsNullOrEmpty(str))
 			return string.Empty;
@@ -150,32 +138,26 @@ public partial class ExpatXmppParser : BaseXmppParser
 
 	public void Reset()
 	{
-		this.EnsureNotDisposed();
+		this.ThrowIfDisposed();
 
-		while (this._nsStack.PopScope())
-			;
-
-		// reset namespace stack.
-		this._nsStack = new(this._xmlNames);
-
-		// reset the parser
+		this._namespaces = new(this._xmlNameTable);
 		this._parser.Reset();
 	}
 
-	public void Write(byte[] buffer, int length, bool isFinalBlock = false)
+	public void Write(byte[] buffer, int count, bool isFinal = false)
 	{
-		this.EnsureNotDisposed();
-		//this._parser.WriteBuffer(buffer, length, isFinalBlock);
+		this.ThrowIfDisposed();
+		this._parser.Write(buffer, count, isFinal);
 	}
 
-	protected override void Disposing()
+	protected override void Release()
 	{
-		this._xmlNames = null;
+		this._xmlNameTable = null;
 
-		while (this._nsStack.PopScope())
+		while (this._namespaces.PopScope())
 			;
 
-		this._nsStack = null;
+		this._namespaces = null;
 
 		this._parser?.Dispose();
 		this._parser = null;

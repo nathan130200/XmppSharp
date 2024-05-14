@@ -33,7 +33,7 @@ public abstract class BaseXmppParser : IDisposable
 		set => _disposed = value;
 	}
 
-	protected void EnsureNotDisposed()
+	protected void ThrowIfDisposed()
 	{
 		if (_disposed)
 			throw new ObjectDisposedException(GetType().FullName);
@@ -42,7 +42,7 @@ public abstract class BaseXmppParser : IDisposable
 	/// <summary>
 	/// Method that is called when disposing the parser.
 	/// </summary>
-	protected virtual void Disposing()
+	protected virtual void Release()
 	{
 
 	}
@@ -52,7 +52,7 @@ public abstract class BaseXmppParser : IDisposable
 		if (!_disposed)
 		{
 			_disposed = true;
-			Disposing();
+			Release();
 			GC.SuppressFinalize(this);
 		}
 	}

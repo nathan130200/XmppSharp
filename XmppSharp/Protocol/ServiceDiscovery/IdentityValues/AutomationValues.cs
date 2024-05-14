@@ -9,7 +9,7 @@ namespace XmppSharp.Protocol.ServiceDiscovery.IdentityValues;
 public enum AutomationValues
 {
 	/// <summary>
-	/// The node for a list of commands; valid only for the node <see cref="Namespace.AdHoc"/>.
+	/// The node for a list of commands; valid only for the node <see cref="Namespaces.AdHoc"/>.
 	/// </summary>
 	[XmppMember("command-list")]
 	CommandList,

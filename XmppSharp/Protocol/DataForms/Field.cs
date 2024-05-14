@@ -2,10 +2,10 @@
 
 namespace XmppSharp.Protocol.DataForms;
 
-[XmppTag("field", Namespace.DataForms)]
+[XmppTag("field", Namespaces.DataForms)]
 public class Field : Element
 {
-	public Field() : base("field", Namespace.DataForms)
+	public Field() : base("field", Namespaces.DataForms)
 	{
 
 	}
@@ -50,15 +50,15 @@ public class Field : Element
 	{
 		get
 		{
-			foreach (var element in this.Children("value", Namespace.DataForms))
+			foreach (var element in this.Children("value", Namespaces.DataForms))
 				yield return element.Value;
 		}
 		set
 		{
-			Children("value", Namespace.DataForms).Remove();
+			Children("value", Namespaces.DataForms).Remove();
 
 			foreach (var str in value)
-				this.SetTag("value", Namespace.DataForms, str);
+				this.SetTag("value", Namespaces.DataForms, str);
 		}
 	}
 

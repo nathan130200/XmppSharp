@@ -2,10 +2,10 @@
 
 namespace XmppSharp.Protocol.Sasl;
 
-[XmppTag("mechanisms", Namespace.Sasl)]
+[XmppTag("mechanisms", Namespaces.Sasl)]
 public class Mechanisms : Element
 {
-	public Mechanisms() : base("mechanisms", Namespace.Sasl)
+	public Mechanisms() : base("mechanisms", Namespaces.Sasl)
 	{
 
 	}
@@ -33,7 +33,7 @@ public class Mechanisms : Element
 	public void AddMechanism(string name)
 	{
 		Require.NotNullOrWhiteSpace(name);
-		this.AddChild(new Element("mechanism", Namespace.Sasl));
+		this.AddChild(new Element("mechanism", Namespaces.Sasl));
 	}
 
 	public bool IsMechanismSupported(string name)

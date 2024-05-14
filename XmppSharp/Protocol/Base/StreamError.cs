@@ -5,7 +5,7 @@ namespace XmppSharp.Protocol.Base;
 [XmppTag("stream:error", "http://etherx.jabber.org/streams")]
 public class StreamError : Element
 {
-	public StreamError() : base("stream:error", Namespace.Stream)
+	public StreamError() : base("stream:error", Namespaces.Stream)
 	{
 
 	}
@@ -24,7 +24,7 @@ public class StreamError : Element
 		{
 			foreach (var (name, value) in XmppEnum.GetValues<StreamErrorCondition>())
 			{
-				if (this.HasTag(name, Namespace.Streams))
+				if (this.HasTag(name, Namespaces.Streams))
 					return value;
 			}
 
@@ -32,22 +32,22 @@ public class StreamError : Element
 		}
 		set
 		{
-			this.RemoveTag(this.Condition.ToXmppName(), Namespace.Streams);
+			this.RemoveTag(this.Condition.ToXmppName(), Namespaces.Streams);
 
 			if (XmppEnum.IsDefined(value))
-				this.SetTag(value.ToXmppName(), Namespace.Streams);
+				this.SetTag(value.ToXmppName(), Namespaces.Streams);
 		}
 	}
 
 	public string? Text
 	{
-		get => this.GetTag("text", Namespace.Streams);
+		get => this.GetTag("text", Namespaces.Streams);
 		set
 		{
 			if (value == null)
-				this.RemoveTag("text", Namespace.Streams);
+				this.RemoveTag("text", Namespaces.Streams);
 			else
-				this.SetTag("text", Namespace.Streams, value);
+				this.SetTag("text", Namespaces.Streams, value);
 		}
 	}
 }

@@ -134,7 +134,7 @@ public class Element : Node
 		return sb.ToString();
 	}
 
-	public string? DefaultNamespace
+	public string? Namespace
 	{
 		get => this.GetNamespace();
 		set => this.SetNamespace(value);
@@ -212,8 +212,8 @@ public class Element : Node
 				else
 					writer.WriteAttributeString(info.LocalName, info.Prefix switch
 					{
-						"xml" => Namespace.Xml,
-						"xmlns" => Namespace.Xmlns,
+						"xml" => Namespaces.Xml,
+						"xmlns" => Namespaces.Xmlns,
 						_ => this.GetNamespace(info.Prefix) ?? string.Empty
 					}, value);
 			}
