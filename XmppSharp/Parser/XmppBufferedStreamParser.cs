@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿// Copyright (c) 2003-2008 by AG-Software
+
+using System.Text;
 using System.Xml;
 using XmppSharp.Exceptions;
 using XmppSharp.Factory;
@@ -65,12 +67,12 @@ public class XmppBufferedStreamParser : XmppParser
 		if (count <= 0)
 			return;
 
-		var temp = new byte[count];
-		Array.ConstrainedCopy(buf, 0, temp, 0, count);
-		_buf.Write(temp);
-
 		lock (this)
 		{
+			var temp = new byte[count];
+			Array.ConstrainedCopy(buf, 0, temp, 0, count);
+			_buf.Write(temp);
+
 			WriteInternal();
 		}
 	}
@@ -175,7 +177,7 @@ public class XmppBufferedStreamParser : XmppParser
 			return null;
 
 		string val = null;
-		BufferAggregate buffer = new BufferAggregate();
+		using var buffer = new BufferAggregate();
 
 		byte[] copy = new byte[length];
 		Buffer.BlockCopy(buf, offset, copy, 0, length);
