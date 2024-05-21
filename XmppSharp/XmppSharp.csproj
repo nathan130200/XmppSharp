@@ -27,7 +27,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>4.0</Version>
+		<Version>4.0.1</Version>
 		<DebugSymbols>true</DebugSymbols>
 		<Copyright>nathan130200</Copyright>
 		<RepositoryType>git</RepositoryType>

@@ -40,13 +40,19 @@ public static class Xml
 	{
 		using (var ms = new MemoryStream(xml.GetBytes()))
 		using (var parser = new XmppStreamParser(ms))
+		{
+			parser.Reset();
 			return await parser.GetNextElementAsync(token);
+		}
 	}
 
 	public static async Task<Element> ParseFromStreamAsync(Stream stream, CancellationToken token = default)
 	{
 		using (var parser = new XmppStreamParser(stream))
+		{
+			parser.Reset();
 			return await parser.GetNextElementAsync(token);
+		}
 	}
 
 	internal static XmlWriter CreateWriter(StringBuilder output, XmlFormatting formatting)
