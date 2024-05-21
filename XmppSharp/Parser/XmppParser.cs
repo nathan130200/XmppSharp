@@ -6,7 +6,7 @@ namespace XmppSharp.Parser;
 /// <summary>
 /// Base class to implement an XMPP parser.
 /// </summary>
-public abstract class BaseXmppParser : IDisposable
+public abstract class XmppParser : IDisposable
 {
 	/// <summary>
 	/// The event is triggered when the XMPP open tag is found <c>&lt;stream:stream&gt;</c>

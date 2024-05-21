@@ -9,7 +9,7 @@ namespace XmppSharp.Parser;
 /// <summary>
 /// An default XMPP parser implemented on top of <see cref="XmlReader"/>.
 /// </summary>
-public class XmppStreamParser : BaseXmppParser
+public class XmppStreamParser : XmppParser
 {
 	private XmlReader _reader;
 	private NameTable _nameTable = new();
@@ -32,8 +32,6 @@ public class XmppStreamParser : BaseXmppParser
 		this._isFromFactory = false;
 		this._leaveOpen = leaveOpen;
 		this._baseStream = stream;
-
-		Reset();
 	}
 
 	/// <summary>
@@ -47,8 +45,6 @@ public class XmppStreamParser : BaseXmppParser
 
 		this._isFromFactory = true;
 		this._streamFactory = streamFactory;
-
-		Reset();
 	}
 
 	protected override void Release()

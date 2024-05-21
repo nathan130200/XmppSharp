@@ -2,74 +2,35 @@
 
 [![github](https://img.shields.io/badge/XMPP%23_%20Core-ffe000?style=flat-square&logo=github&label=Github)](https://github.com/nathan130200/XmppSharp)
 
-A manipulation library and utility with the main objective to reduce the level of unnecessary verbosity for constructing XML tags for XMPP protocol, supporting `net6.0`, `net7.0` and `net8.0`.
-
-### Version History
-
-*3.0.0*
-
-- Most big change! Bring back own XML implementation supporting nodes:
-	- `Element`
-	- `Text`
-	- `Comment`
-	- `Cdata`
-
-____
-
-*3.1.0*
-- Add enhanced utilities & helper methods to interact with element and nodes.
-
-____
-
-*3.1.1*
-
-- Minor fixes.
-- Fixed wrong sub classing around some elements.
-- Added full control about XML formatting.
-- In .Net6 use `TryParseHelper` helper methods to parse attribute values. While in .Net7 or higher use `IParsable<T>` abstract static interfaces feature, for parsing attribute values.
-
-____
-
-*3.1.2*
-
-- Added missing `StartTag` and `EndTag` in elements. Both strings will contains well-formed XML string.
-- Ability to make a shallow copy of element instead a full copy with `Element.Clone(deep)` overload.
-- More formatting options in `XmlFormatting` structure.
-
-____
-
-*3.1.3*
-
-- Enhance XMPP parser with different ctors provide an Stream or an factory function to create an stream. `XmppParser::Reset()` no longer needs an stream as argument.
-- Renamed `XmppParser::Advance` to `XmppParser::AdvanceAsync` for async version and leave `XmppParser::Advance` for sync method version.
-- Added `GetAwaiter` in XMPP parser for simple calling `await myParser;` have same behaviour and return same result as calling `await myParser.AdvanceAsync()`
-
-____
+A manipulation library and utility with the main objective to reduce the level of unnecessary verbosity for constructing XML tags for XMPP protocol, supporting .NET 7.0+
 
 
-*3.1.4*
+## Common Used Types
+- `XmppSharp.Jid`
+- `XmppSharp.Namespaces`
+- `XmppSharp.XmppEnum`
+- `XmppSharp.Dom.Element`
+- `XmppSharp.Factory.ElementFactory`
+- `XmppSharp.Parser.XmppParser`
+- `XmppSharp.Parser.XmppParser`
+- `XmppSharp.Parser.XmppStreamParser`
+- `XmppSharp.Parser.XmppBufferedStreamParser`
+- `XmppSharp.Protocol.Base.StreamStream`
+- `XmppSharp.Protocol.Base.StreamFeatures`
+- `XmppSharp.Protocol.Base.StreamError`
+- `XmppSharp.Protocol.Base.StanzaError`
+- `XmppSharp.Protocol.Iq`
+- `XmppSharp.Protocol.IqType`
+- `XmppSharp.Protocol.Message`
+- `XmppSharp.Protocol.MessageType`
+- `XmppSharp.Protocol.Presence`
+- `XmppSharp.Protocol.PresenceType`
+- `XmppSharp.Protocol.PresenceShow`
 
-- Minor fixes around `XmppParser` and added helper method to advance and get next element.
+## Parsers implementations
+- There are two internal parsers implemented:
+	- `XmppStreamParser` based on `XmlReader`
+	- `XmppBufferedStreamParser` based on [agsXMPP](https://www.ag-software.net/agsxmpp-sdk/) parser.
 
-____
-
-*3.1.5*
-
-- Add basic abstraction layer to implement your own xmpp parser. Also i'm releasing a separated package `XmppSharp.Expat` to provide expat XMPP parser implementation. (Note: You must install native libraries to use expat.
-- Added `AsyncHelper` (from `AspNetCore` repo) to calling async functions in sync methods.
-
-____
-
-*3.1.6*
-____
-- Minor improvements.
-- Fixed wrong indent chars & side for default formatting options.
-- Fixed `Element.Value` returning entire inner text from all descendant nodes.
-
-*3.1.7*
-____
-- Minor improvements.
-- Renamed `DefaultXmppParser` -> `XmppStreamParser`
-- Added helper methods for fast loading XML from string and streams.
-- Improvements to help detect when parser really completed parsing.
-- Added missing TimeSpan parser in `TryParseHelpers`.
+- Alternative Official XMPP Parsers:
+	- `XmppSharp.Expat` provide an implementation of __XMPP#__ parsing wrapper using [libexpat](https://github.com/libexpat/libexpat). Available on [NuGet](https://www.nuget.org/packages/XmppSharp.Expat/).

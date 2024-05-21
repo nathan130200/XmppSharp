@@ -85,9 +85,9 @@ public class XmlTests
 	[DataRow("<auth xmlns='" + Namespaces.Sasl + "' mechanism='PLAIN' />", typeof(Auth))]
 	public async Task CreateElementFromParser(string xml, Type expectedType)
 	{
-		var elem = await ParserTests.ParseFromBuffer(xml);
+		var elem = await XmlReaderParserTests.ParseFromBuffer(xml);
 		Assert.IsInstanceOfType(elem, expectedType);
-		ParserTests.PrintResult(elem);
+		XmlReaderParserTests.PrintResult(elem);
 	}
 
 	[TestMethod]
@@ -130,7 +130,7 @@ public class XmlTests
 	.Replace("\t", "")
 		;
 
-		var elem = await ParserTests.ParseFromBuffer(inXml);
+		var elem = await XmlReaderParserTests.ParseFromBuffer(inXml);
 
 		var cloned = elem.Clone();
 		Assert.AreNotSame(elem, cloned);

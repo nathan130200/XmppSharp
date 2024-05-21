@@ -7,7 +7,7 @@ using XmppSharp.Parser;
 namespace XmppSharp.Test;
 
 [TestClass]
-public class ParserTests
+public class XmlReaderParserTests
 {
 	internal static async Task<Element> ParseFromBuffer(string xml, [CallerMemberName] string callerName = default!)
 	{
@@ -16,6 +16,7 @@ public class ParserTests
 		stream.Position = 0;
 
 		using var parser = new XmppStreamParser(stream);
+		parser.Reset();
 
 		var tcs = new TaskCompletionSource<Element>();
 
@@ -160,6 +161,7 @@ public class ParserTests
 		ms.Position = 0;
 
 		using var parser = new XmppStreamParser(ms);
+		parser.Reset();
 
 		Element el = default!;
 
@@ -189,6 +191,7 @@ public class ParserTests
 		ms.Position = 0;
 
 		using var parser = new XmppStreamParser(ms);
+		parser.Reset();
 
 		var tcs = new TaskCompletionSource<Element>();
 
@@ -233,6 +236,8 @@ public class ParserTests
 		ms.Position = 0;
 
 		using var parser = new XmppStreamParser(() => ms);
+		parser.Reset();
+
 		var el = await parser.GetNextElementAsync();
 
 		Console.WriteLine("parser::advance(): false");
@@ -253,6 +258,7 @@ public class ParserTests
 		using var stream = entry.Open();
 
 		using var parser = new XmppStreamParser(stream);
+		parser.Reset();
 		var element = await parser.GetNextElementAsync();
 
 		Assert.AreEqual("CodeSnippets", element.TagName);

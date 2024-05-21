@@ -47,7 +47,7 @@ public class AttributeHelperTests
 		Assert.AreEqual(value, actual);
 
 		Debug.WriteLine($"  {typeof(T).Name}.{actual}: parsed? {value.Equals(actual)}");
-		ParserTests.PrintResult(element);
+		XmlReaderParserTests.PrintResult(element);
 		Debug.WriteLine(" ---------------------------------\n");
 	}
 
@@ -100,7 +100,7 @@ public class AttributeHelperTests
 
 		Debug.WriteLine($"  {typeName}.{actual}: parsed? {isParsed}\n");
 
-		ParserTests.PrintResult(element);
+		XmlReaderParserTests.PrintResult(element);
 
 		Debug.WriteLine("\n---------------------------------\n");
 
