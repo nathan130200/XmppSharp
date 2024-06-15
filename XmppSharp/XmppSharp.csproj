@@ -18,17 +18,18 @@
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<DebugSymbols>true</DebugSymbols>
 		<DebugType>full</DebugType>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<DebugType>embedded</DebugType>
+		<DebugSymbols>false</DebugSymbols>
+		<DebugType>none</DebugType>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>4.0.1</Version>
-		<DebugSymbols>true</DebugSymbols>
+		<Version>4.1</Version>
 		<Copyright>nathan130200</Copyright>
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
