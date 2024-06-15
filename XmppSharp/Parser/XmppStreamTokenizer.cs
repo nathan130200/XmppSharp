@@ -181,10 +181,10 @@ public class XmppStreamTokenizer : IDisposable
 						break;
 
 					case TOK.XML_DECL:
+					case TOK.PI:
 						break;
 
 					case TOK.ENTITY_REF:
-					case TOK.PI:
 						throw new JabberStreamException(StreamErrorCondition.NotWellFormed);
 				}
 

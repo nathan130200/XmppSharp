@@ -148,11 +148,11 @@ public class XmppBufferedStreamParser : XmppParser
 
 						break;
 
+					case TOK.PI:
 					case TOK.XML_DECL:
 						break;
 
 					case TOK.ENTITY_REF:
-					case TOK.PI:
 						throw new JabberStreamException(StreamErrorCondition.NotWellFormed);
 				}
 
