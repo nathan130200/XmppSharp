@@ -1,39 +1,68 @@
-﻿// Copyright (c) 2003-2008 by AG-Software
-
+﻿using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 using XmppSharp.Exceptions;
-using XmppSharp.Factory;
 using XmppSharp.Protocol.Base;
 using XmppSharp.XpNet;
 using TOK = XmppSharp.XpNet.TokenType;
 
 namespace XmppSharp.Parser;
 
-/// <summary>XMPP parser implemented based on original agsXMPP parser (that uses JavaXP port to .NET)</summary>
-public class XmppTokenizer : XmppParser
+public class XmppTokenizer : IDisposable
 {
-	static readonly UTF8Encoding s_UTF8 = new(false, true);
-	private XmlEncoding _enc = new UTF8XmlEncoding();
-	private XmlNamespaceManager _namespaceMgr;
+
+	// --------------------------------------------------------------------------------------- //
+
+	public delegate void StartElementDelegate(string localName, string? prefix, IReadOnlyDictionary<string, string> attrs);
+	public delegate void EndElementDelegate(string localName, string? prefix);
+	public delegate void ContentDelegate(string value);
+
+	// --------------------------------------------------------------------------------------- //
+
+	private volatile bool _disposed;
+
+	static readonly UTF8Encoding s_UTF8 = new(false, false);
+	static readonly UTF8XmlEncoding s_xUTF8 = new();
 
 	private NameTable _stringPool = new();
 	private BufferAggregate _buf;
 	private bool _isCdata = false;
+	private XmlNamespaceManager _namespaceMgr;
 	private StringBuilder _cdata = new();
-	private Element _current;
 
-	public XmppTokenizer()
+	public event StartElementDelegate OnElementStart;
+	public event EndElementDelegate OnElementEnd;
+	public event ContentDelegate OnText;
+	public event ContentDelegate OnCdata;
+	public event ContentDelegate OnComment;
+
+	private XmppTokenizer()
 	{
 		_namespaceMgr = new XmlNamespaceManager(_stringPool);
-		Reset();
+		_buf = new BufferAggregate();
 	}
 
-	protected override void Release()
+	protected virtual void Disposing()
 	{
+
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void ThrowIfDisposed()
+		=> ObjectDisposedException.ThrowIf(_disposed, this);
+
+	public void Dispose()
+	{
+		if (_disposed)
+			return;
+
+		_disposed = true;
+
+		Disposing();
+
 		_cdata.Clear();
 		_cdata = null;
-		_stringPool = null;
+
 		_buf?.Dispose();
 		_buf = null;
 
@@ -41,16 +70,16 @@ public class XmppTokenizer : XmppParser
 			;
 
 		_namespaceMgr = null;
-		_enc = null;
 
-		_current = null;
+		_stringPool = null;
+
+		GC.SuppressFinalize(this);
 	}
 
 	public void Reset()
 	{
 		ThrowIfDisposed();
 
-		_current = null;
 		_isCdata = false;
 		_cdata.Clear();
 		_buf?.Dispose();
@@ -90,9 +119,9 @@ public class XmppTokenizer : XmppParser
 			while (off < b.Length)
 			{
 				if (_isCdata)
-					tok = _enc.TokenizeCdataSection(b, off, b.Length, ct);
+					tok = s_xUTF8.TokenizeCdataSection(b, off, b.Length, ct);
 				else
-					tok = _enc.TokenizeContent(b, off, b.Length, ct);
+					tok = s_xUTF8.TokenizeContent(b, off, b.Length, ct);
 
 				switch (tok)
 				{
@@ -121,15 +150,15 @@ public class XmppTokenizer : XmppParser
 															ct.RefChar2}));
 						break;
 					case TOK.COMMENT:
-						if (_current != null)
 						{
 							// <!-- 4
 							//  --> 3
-							int start = off + 4 * _enc.MinBytesPerChar;
+							int start = off + 4 * s_xUTF8.MinBytesPerChar;
 							int end = ct.TokenEnd - off -
-								7 * _enc.MinBytesPerChar;
+								7 * s_xUTF8.MinBytesPerChar;
 							string text = s_UTF8.GetString(b, start, end);
-							_current.AddChild(new Comment(text));
+
+							OnComment?.Invoke(text);
 						}
 						break;
 					case TOK.CDATA_SECT_OPEN:
@@ -141,15 +170,16 @@ public class XmppTokenizer : XmppParser
 						if (_cdata.Length > 0)
 						{
 							var content = _cdata.ToString();
-							_current?.AddChild(new Cdata(content));
+							_cdata.Clear();
+							OnCdata?.Invoke(content);
 						}
 						_isCdata = false;
 						_cdata.Clear();
 
 						break;
 
-					case TOK.PI:
 					case TOK.XML_DECL:
+					case TOK.PI:
 						break;
 
 					case TOK.ENTITY_REF:
@@ -192,7 +222,7 @@ public class XmppTokenizer : XmppParser
 		{
 			while (off < b.Length)
 			{
-				tok = _enc.TokenizeAttributeValue(b, off, b.Length, ct);
+				tok = s_xUTF8.TokenizeAttributeValue(b, off, b.Length, ct);
 
 				switch (tok)
 				{
@@ -229,12 +259,19 @@ public class XmppTokenizer : XmppParser
 		return val;
 	}
 
+	public string? LookupNamespace(string? prefix = default)
+		=> _namespaceMgr.LookupNamespace(prefix ?? string.Empty);
+
+	public string? LookupPrefix(string namespaceURI)
+		=> _namespaceMgr.LookupPrefix(namespaceURI);
+
 	void StartTag(byte[] buf, int offset, ContentToken ct, TOK tok)
 	{
 		int colon;
 		string name;
-		string prefix;
-		var ht = new Dictionary<string, string>();
+		string? prefix = default;
+
+		var attributes = new Dictionary<string, string>();
 
 		_namespaceMgr.PushScope();
 
@@ -261,30 +298,33 @@ public class XmppTokenizer : XmppParser
 					colon = name.IndexOf(':');
 					prefix = name.Substring(colon + 1);
 					_namespaceMgr.AddNamespace(prefix, val);
-					ht[name] = _stringPool.Add(val);
+					attributes[name] = _stringPool.Add(val);
 				}
 				else if (name == "xmlns")
 				{
 					_namespaceMgr.AddNamespace(string.Empty, val);
-					ht[name] = _stringPool.Add(val);
+					attributes[name] = _stringPool.Add(val);
 				}
 				else
 				{
-					ht[name] = val;
+					attributes[name] = val;
 				}
 			}
 		}
 
 		name = _stringPool.Add(s_UTF8.GetString(buf,
-			offset + _enc.MinBytesPerChar,
-			ct.NameEnd - offset - _enc.MinBytesPerChar));
+			offset + s_xUTF8.MinBytesPerChar,
+			ct.NameEnd - offset - s_xUTF8.MinBytesPerChar));
 
 		colon = name.IndexOf(':');
 		string ns;
 
-		if (colon > 0)
+		string localName = name;
+
+		if (colon != -1)
 		{
 			prefix = name.Substring(0, colon);
+			localName = name[(colon + 1)..];
 			ns = _namespaceMgr.LookupNamespace(prefix);
 		}
 		else
@@ -292,74 +332,48 @@ public class XmppTokenizer : XmppParser
 			ns = _namespaceMgr.DefaultNamespace;
 		}
 
-		// eg: When session sends a stanza without namespace. Fallback to `jabber:client` instead.
-
-		if (name is "iq" or "message" or "presence" && string.IsNullOrEmpty(ns))
-			ns = Namespaces.Client;
-
-		Element newElement = ElementFactory.Create(name, ns);
-
-		foreach (var (key, val) in ht)
-			newElement.SetAttribute(key, val);
-
-		if (name == "stream:stream")
-			AsyncHelper.RunSync(() => this.FireStreamStart(newElement as StreamStream));
-		else
-		{
-			_current?.AddChild(newElement);
-			_current = newElement;
-		}
+		OnElementStart?.Invoke(localName, prefix, attributes);
 	}
 
 	protected virtual void EndTag(byte[] buf, int offset, ContentToken ct, TOK tok)
 	{
 		_namespaceMgr.PopScope();
 
-		string name = null;
+		string name;
 
 		if ((tok == TOK.EMPTY_ELEMENT_WITH_ATTS) ||
 			(tok == TOK.EMPTY_ELEMENT_NO_ATTS))
 			name = s_UTF8.GetString(buf,
-				offset + _enc.MinBytesPerChar,
+				offset + s_xUTF8.MinBytesPerChar,
 				ct.NameEnd - offset -
-				_enc.MinBytesPerChar);
+				s_xUTF8.MinBytesPerChar);
 		else
 			name = s_UTF8.GetString(buf,
-				offset + _enc.MinBytesPerChar * 2,
+				offset + s_xUTF8.MinBytesPerChar * 2,
 				ct.NameEnd - offset -
-				_enc.MinBytesPerChar * 2);
+				s_xUTF8.MinBytesPerChar * 2);
 
 		name = _stringPool.Add(name);
 
-		if (name == "stream:stream")
-			AsyncHelper.RunSync(FireStreamEnd);
-		else
+		int colon = name.IndexOf(':');
+
+		string localName = name;
+		string? prefix = default;
+
+		if (colon != -1)
 		{
-			if (_current == null)
-				throw new JabberStreamException(StreamErrorCondition.InternalServerError, "Unexcepted null child element.");
-
-			var parent = _current.Parent;
-
-			if (parent == null)
-				AsyncHelper.RunSync(() => FireStreamElement(_current));
-
-			_current = parent;
+			prefix = name[0..colon];
+			localName = name[(colon + 1)..];
 		}
+
+		OnElementEnd?.Invoke(localName, prefix);
 	}
 
 	protected virtual void AddText(string text)
 	{
-		if (_current == null)
-			return;
-
 		if (_isCdata)
 			_cdata.Append(text);
 		else
-		{
-			if (_current.LastNode is Text t)
-				t.Value += text;
-			else
-				_current.AddChild(new Text(text));
-		}
+			OnText?.Invoke(text);
 	}
 }

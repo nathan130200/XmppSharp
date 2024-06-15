@@ -1,242 +1,365 @@
-﻿using System.Xml;
-using System.Xml.Schema;
+﻿// Copyright (c) 2003-2008 by AG-Software
+
+using System.Text;
+using System.Xml;
 using XmppSharp.Exceptions;
 using XmppSharp.Factory;
 using XmppSharp.Protocol.Base;
+using XmppSharp.XpNet;
+using TOK = XmppSharp.XpNet.TokenType;
 
 namespace XmppSharp.Parser;
 
-/// <summary>
-/// An default XMPP parser implemented on top of <see cref="XmlReader"/>.
-/// </summary>
+/// <summary>XMPP parser implemented based on original agsXMPP parser (that uses JavaXP port to .NET)</summary>
 public class XmppStreamParser : XmppParser
 {
-	private XmlReader _reader;
-	private NameTable _nameTable = new();
-	private volatile bool _disposed;
+	static readonly UTF8Encoding s_UTF8 = new(false, true);
+	private XmlEncoding _enc = new UTF8XmlEncoding();
+	private XmlNamespaceManager _namespaceMgr;
 
-	private readonly bool _leaveOpen;
-	private readonly bool _isFromFactory;
-	private Func<Stream> _streamFactory;
-	private Stream _baseStream;
+	private NameTable _stringPool = new();
+	private BufferAggregate _buf;
+	private bool _isCdata = false;
+	private StringBuilder _cdata = new();
+	private Element _current;
 
-	/// <summary>
-	/// Initializes a new instance of <see cref="XmppStreamParser" />. Use this constructor for generic purposes, where the base type of the stream will not change (eg: loading from file).
-	/// </summary>
-	/// <param name="stream">Stream that will be used to read the characters.</param>
-	/// <param name="leaveOpen">Determines whether the stream should remain open after dispose this parser.</param>
-	public XmppStreamParser(Stream stream, bool leaveOpen = true)
+	public XmppStreamParser()
 	{
-		Require.NotNull(stream);
-
-		this._isFromFactory = false;
-		this._leaveOpen = leaveOpen;
-		this._baseStream = stream;
-	}
-
-	/// <summary>
-	/// Initializes a new instance of <see cref="XmppStreamParser" />. Use this constructor only if the stream can change according to the connection state (eg: connection upgrade from raw stream to ssl stream).
-	/// </summary>
-	/// <param name="streamFactory">Factory function to get the stream when <see cref="Reset" /> is called.</param>
-	/// <param name="leaveOpen">Determines whether the stream should remain open after dispose this parser.</param>
-	public XmppStreamParser(Func<Stream> streamFactory, bool leaveOpen = true)
-	{
-		Require.NotNull(streamFactory);
-
-		this._isFromFactory = true;
-		this._streamFactory = streamFactory;
+		_namespaceMgr = new XmlNamespaceManager(_stringPool);
+		Reset();
 	}
 
 	protected override void Release()
 	{
-		if (this._disposed)
-			return;
+		_cdata.Clear();
+		_cdata = null;
+		_stringPool = null;
+		_buf?.Dispose();
+		_buf = null;
 
-		this._disposed = true;
+		while (_namespaceMgr.PopScope())
+			;
 
-		if (!this._leaveOpen)
-			this._baseStream?.Dispose();
+		_namespaceMgr = null;
+		_enc = null;
 
-		this._baseStream = null;
-		this._streamFactory = null;
-
-		this._reader?.Dispose();
-		this._reader = null;
-
-		this._nameTable = null;
+		_current = null;
 	}
 
-	/// <summary>
-	/// Restarts the state of the XML parser.
-	/// </summary>
-	/// <exception cref="ObjectDisposedException">If this instance of <see cref="XmppStreamParser" /> has already been disposed.</exception>
-	public virtual void Reset()
+	public void Reset()
 	{
-		this._reader?.Dispose();
-
 		ThrowIfDisposed();
 
-		if (this._isFromFactory)
-			this._baseStream = this._streamFactory();
-
-		this._reader = XmlReader.Create(this._baseStream, new()
-		{
-			CloseInput = false,
-			Async = true,
-			IgnoreWhitespace = true,
-			IgnoreProcessingInstructions = true,
-			ConformanceLevel = ConformanceLevel.Fragment,
-
-			// More info: https://en.wikipedia.org/wiki/Billion_laughs_attack
-			DtdProcessing = DtdProcessing.Ignore,
-			XmlResolver = XmlResolver.ThrowingResolver,
-			ValidationFlags = XmlSchemaValidationFlags.AllowXmlAttributes,
-			NameTable = this._nameTable
-		});
+		_current = null;
+		_isCdata = false;
+		_cdata.Clear();
+		_buf?.Dispose();
+		_buf = new();
 	}
 
-	private Element _rootElem;
+	public void Write(byte[] buf)
+		=> Write(buf, buf.Length);
 
-	/// <summary>
-	/// Gets the XML element in current scope.
-	/// </summary>
-	public Element? CurrentElement
-		=> this._rootElem;
-
-	/// <summary>
-	/// Gets the XML depth in the parser tree.
-	/// </summary>
-	public int Depth
+	public void Write(byte[] buf, int count)
 	{
-		get
-		{
-			if (this._disposed)
-				return 0;
+		ThrowIfDisposed();
 
-			return this._reader?.Depth ?? 0;
+		if (count <= 0)
+			return;
+
+		lock (this)
+		{
+			var temp = new byte[count];
+			Array.ConstrainedCopy(buf, 0, temp, 0, count);
+			_buf.Write(temp);
+
+			Parse();
 		}
 	}
 
-	public virtual bool Advance()
-		=> AsyncHelper.RunSync(AdvanceAsync);
-
-	public virtual async Task<bool> AdvanceAsync()
+	void Parse()
 	{
-		if (this._disposed)
-			return false;
+		var b = _buf.GetBuffer();
+		int off = 0;
 
-		if (this._reader == null)
-			return false;
-
-		bool result;
+		var tok = TOK.END_TAG;
+		ContentToken ct = new();
 
 		try
 		{
-			result = await this._reader.ReadAsync();
-		}
-		catch (XmlException e)
-		{
-			if (_reader.EOF)
-				return false;
+			while (off < b.Length)
+			{
+				if (_isCdata)
+					tok = _enc.TokenizeCdataSection(b, off, b.Length, ct);
+				else
+					tok = _enc.TokenizeContent(b, off, b.Length, ct);
 
-			throw new JabberStreamException(StreamErrorCondition.InvalidXml, e);
-		}
-
-		if (!result)
-			return false;
-
-		switch (this._reader.NodeType)
-		{
-			case XmlNodeType.Element:
+				switch (tok)
 				{
-					Element currentElem;
-
-					if (this._reader.Name != "stream:stream")
-					{
-						var ns = this._reader.NamespaceURI;
-
-						if (string.IsNullOrEmpty(ns) && this._reader.LocalName is "iq" or "message" or "presence")
-							ns = "jabber:client";
-
-						currentElem = ElementFactory.Create(this._reader.Name, ns);
-					}
-					else
-						currentElem = new StreamStream();
-
-					if (this._reader.HasAttributes)
-					{
-						while (this._reader.MoveToNextAttribute())
-							currentElem.SetAttribute(this._reader.Name, this._reader.Value);
-
-						this._reader.MoveToElement();
-					}
-
-					if (this._reader.Name == "stream:stream")
-					{
-						if (this._reader.NamespaceURI != Namespaces.Stream)
-							throw new JabberStreamException(StreamErrorCondition.InvalidNamespace);
-
-						await FireStreamStart((StreamStream)currentElem);
-					}
-					else
-					{
-						if (this._reader.IsEmptyElement)
+					case TOK.EMPTY_ELEMENT_NO_ATTS:
+					case TOK.EMPTY_ELEMENT_WITH_ATTS:
+						StartTag(b, off, ct, tok);
+						EndTag(b, off, ct, tok);
+						break;
+					case TOK.START_TAG_NO_ATTS:
+					case TOK.START_TAG_WITH_ATTS:
+						StartTag(b, off, ct, tok);
+						break;
+					case TOK.END_TAG:
+						EndTag(b, off, ct, tok);
+						break;
+					case TOK.DATA_CHARS:
+					case TOK.DATA_NEWLINE:
+						AddText(s_UTF8.GetString(b, off, ct.TokenEnd - off));
+						break;
+					case TOK.CHAR_REF:
+					case TOK.MAGIC_ENTITY_REF:
+						AddText(new string(new char[] { ct.RefChar1 }));
+						break;
+					case TOK.CHAR_PAIR_REF:
+						AddText(new string(new char[] {ct.RefChar1,
+															ct.RefChar2}));
+						break;
+					case TOK.COMMENT:
+						if (_current != null)
 						{
-							if (this._rootElem != null)
-								this._rootElem.AddChild(currentElem);
-							else
-								await FireStreamElement(currentElem);
+							// <!-- 4
+							//  --> 3
+							int start = off + 4 * _enc.MinBytesPerChar;
+							int end = ct.TokenEnd - off -
+								7 * _enc.MinBytesPerChar;
+							string text = s_UTF8.GetString(b, start, end);
+							_current.AddChild(new Comment(text));
 						}
-						else
+						break;
+					case TOK.CDATA_SECT_OPEN:
+						_isCdata = true;
+						_cdata.Clear();
+						break;
+					case TOK.CDATA_SECT_CLOSE:
+
+						if (_cdata.Length > 0)
 						{
-							this._rootElem?.AddChild(currentElem);
-							this._rootElem = currentElem;
+							var content = _cdata.ToString();
+							_current?.AddChild(new Cdata(content));
 						}
-					}
-				}
-				break;
+						_isCdata = false;
+						_cdata.Clear();
 
-			case XmlNodeType.EndElement:
+						break;
+
+					case TOK.PI:
+					case TOK.XML_DECL:
+						break;
+
+					case TOK.ENTITY_REF:
+						throw new JabberStreamException(StreamErrorCondition.NotWellFormed);
+				}
+
+				off = ct.TokenEnd;
+			}
+		}
+		catch (PartialTokenException) { }
+		catch (ExtensibleTokenException) { }
+		catch (Exception)
+		{
+			throw;
+		}
+		finally
+		{
+			_buf.Clear(off);
+		}
+	}
+
+	string NormalizeAttributeValue(byte[] buf, int offset, int length)
+	{
+		if (length == 0)
+			return null;
+
+		string val = null;
+		using var buffer = new BufferAggregate();
+
+		byte[] copy = new byte[length];
+		Buffer.BlockCopy(buf, offset, copy, 0, length);
+		buffer.Write(copy);
+
+		byte[] b = buffer.GetBuffer();
+		int off = 0;
+
+		var tok = TOK.END_TAG;
+		var ct = new ContentToken();
+		try
+		{
+			while (off < b.Length)
+			{
+				tok = _enc.TokenizeAttributeValue(b, off, b.Length, ct);
+
+				switch (tok)
 				{
-					if (this._reader.Name == "stream:stream")
-						await FireStreamEnd();
-					else
-					{
-						if (this._rootElem == null)
-							throw new JabberStreamException(StreamErrorCondition.InvalidXml, "Unexcepted end tag.");
-
-						var parent = this._rootElem.Parent;
-
-						if (parent == null)
-							await FireStreamElement(this._rootElem);
-
-						this._rootElem = parent;
-					}
+					case TOK.ATTRIBUTE_VALUE_S:
+					case TOK.DATA_CHARS:
+					case TOK.DATA_NEWLINE:
+						val += (s_UTF8.GetString(b, off, ct.TokenEnd - off));
+						break;
+					case TOK.CHAR_REF:
+					case TOK.MAGIC_ENTITY_REF:
+						val += new string(new char[] { ct.RefChar1 });
+						break;
+					case TOK.CHAR_PAIR_REF:
+						val += new string(new char[] { ct.RefChar1, ct.RefChar2 });
+						break;
+					case TOK.ENTITY_REF:
+						throw new JabberStreamException(StreamErrorCondition.NotWellFormed);
 				}
-				break;
 
-			case XmlNodeType.SignificantWhitespace:
-			case XmlNodeType.Text:
-				{
-					if (this._rootElem != null)
-					{
-						if (this._rootElem.LastNode is Text text)
-							text.Value += this._reader.Value;
-						else
-							this._rootElem.AddChild(new Text(this._reader.Value));
-					}
-				}
-				break;
-
-			case XmlNodeType.Comment:
-				this._rootElem?.AddChild(new Comment(this._reader.Value));
-				break;
-
-			case XmlNodeType.CDATA:
-				this._rootElem?.AddChild(new Cdata(this._reader.Value));
-				break;
+				off = ct.TokenEnd;
+			}
+		}
+		catch (PartialTokenException) { }
+		catch (ExtensibleTokenException) { }
+		catch (Exception)
+		{
+			throw;
+		}
+		finally
+		{
+			buffer.Clear(off);
 		}
 
-		return result;
+		return val;
+	}
+
+	void StartTag(byte[] buf, int offset, ContentToken ct, TOK tok)
+	{
+		int colon;
+		string name;
+		string prefix;
+		var ht = new Dictionary<string, string>();
+
+		_namespaceMgr.PushScope();
+
+		if (tok == TOK.START_TAG_WITH_ATTS || tok == TOK.EMPTY_ELEMENT_WITH_ATTS)
+		{
+			int start;
+			int end;
+			string val;
+
+			for (int i = 0; i < ct.GetAttributeSpecifiedCount(); i++)
+			{
+				start = ct.GetAttributeNameStart(i);
+				end = ct.GetAttributeNameEnd(i);
+				name = _stringPool.Add(s_UTF8.GetString(buf, start, end - start));
+
+				start = ct.GetAttributeValueStart(i);
+				end = ct.GetAttributeValueEnd(i);
+				//val = utf.GetString(buf, start, end - start);
+
+				val = NormalizeAttributeValue(buf, start, end - start);
+
+				if (name.StartsWith("xmlns:"))
+				{
+					colon = name.IndexOf(':');
+					prefix = name.Substring(colon + 1);
+					_namespaceMgr.AddNamespace(prefix, val);
+					ht[name] = _stringPool.Add(val);
+				}
+				else if (name == "xmlns")
+				{
+					_namespaceMgr.AddNamespace(string.Empty, val);
+					ht[name] = _stringPool.Add(val);
+				}
+				else
+				{
+					ht[name] = val;
+				}
+			}
+		}
+
+		name = _stringPool.Add(s_UTF8.GetString(buf,
+			offset + _enc.MinBytesPerChar,
+			ct.NameEnd - offset - _enc.MinBytesPerChar));
+
+		colon = name.IndexOf(':');
+		string ns;
+
+		if (colon > 0)
+		{
+			prefix = name.Substring(0, colon);
+			ns = _namespaceMgr.LookupNamespace(prefix);
+		}
+		else
+		{
+			ns = _namespaceMgr.DefaultNamespace;
+		}
+
+		// eg: When session sends a stanza without namespace. Fallback to `jabber:client` instead.
+
+		if (name is "iq" or "message" or "presence" && string.IsNullOrEmpty(ns))
+			ns = Namespaces.Client;
+
+		Element newElement = ElementFactory.Create(name, ns);
+
+		foreach (var (key, val) in ht)
+			newElement.SetAttribute(key, val);
+
+		if (name == "stream:stream")
+			AsyncHelper.RunSync(() => this.FireStreamStart(newElement as StreamStream));
+		else
+		{
+			_current?.AddChild(newElement);
+			_current = newElement;
+		}
+	}
+
+	protected virtual void EndTag(byte[] buf, int offset, ContentToken ct, TOK tok)
+	{
+		_namespaceMgr.PopScope();
+
+		string name = null;
+
+		if ((tok == TOK.EMPTY_ELEMENT_WITH_ATTS) ||
+			(tok == TOK.EMPTY_ELEMENT_NO_ATTS))
+			name = s_UTF8.GetString(buf,
+				offset + _enc.MinBytesPerChar,
+				ct.NameEnd - offset -
+				_enc.MinBytesPerChar);
+		else
+			name = s_UTF8.GetString(buf,
+				offset + _enc.MinBytesPerChar * 2,
+				ct.NameEnd - offset -
+				_enc.MinBytesPerChar * 2);
+
+		name = _stringPool.Add(name);
+
+		if (name == "stream:stream")
+			AsyncHelper.RunSync(FireStreamEnd);
+		else
+		{
+			if (_current == null)
+				throw new JabberStreamException(StreamErrorCondition.InternalServerError, "Unexcepted null child element.");
+
+			var parent = _current.Parent;
+
+			if (parent == null)
+				AsyncHelper.RunSync(() => FireStreamElement(_current));
+
+			_current = parent;
+		}
+	}
+
+	protected virtual void AddText(string text)
+	{
+		if (_current == null)
+			return;
+
+		if (_isCdata)
+			_cdata.Append(text);
+		else
+		{
+			if (_current.LastNode is Text t)
+				t.Value += text;
+			else
+				_current.AddChild(new Text(text));
+		}
 	}
 }

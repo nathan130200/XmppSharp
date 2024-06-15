@@ -26,7 +26,7 @@ public class XpNetParserTests
 
 	internal static async Task<Element> ParseFromStream(Stream stream, [CallerMemberName] string callerName = default!)
 	{
-		using var parser = new XmppTokenizer();
+		using var parser = new XmppStreamParser();
 
 		var tcs = new TaskCompletionSource<Element>();
 
@@ -206,7 +206,7 @@ public class XpNetParserTests
 		var buf = new byte[4];
 		int len;
 
-		using var parser = new XmppTokenizer();
+		using var parser = new XmppStreamParser();
 		bool isAuth = false;
 
 		parser.OnStreamStart += async e =>

@@ -15,7 +15,7 @@ public class XmlReaderParserTests
 		stream.Write(xml.GetBytes());
 		stream.Position = 0;
 
-		using var parser = new XmppStreamParser(stream);
+		using var parser = new XmppStreamReader(stream);
 		parser.Reset();
 
 		var tcs = new TaskCompletionSource<Element>();
@@ -160,7 +160,7 @@ public class XmlReaderParserTests
 		await ms.WriteAsync("<foo xmlns='bar'><baz/></foo>".GetBytes());
 		ms.Position = 0;
 
-		using var parser = new XmppStreamParser(ms);
+		using var parser = new XmppStreamReader(ms);
 		parser.Reset();
 
 		Element el = default!;
@@ -190,7 +190,7 @@ public class XmlReaderParserTests
 		await ms.WriteAsync("<foo xmlns='bar'><baz/></foo>".GetBytes());
 		ms.Position = 0;
 
-		using var parser = new XmppStreamParser(ms);
+		using var parser = new XmppStreamReader(ms);
 		parser.Reset();
 
 		var tcs = new TaskCompletionSource<Element>();
@@ -235,7 +235,7 @@ public class XmlReaderParserTests
 		await ms.WriteAsync("<foo xmlns='bar'><baz/></foo>".GetBytes());
 		ms.Position = 0;
 
-		using var parser = new XmppStreamParser(() => ms);
+		using var parser = new XmppStreamReader(() => ms);
 		parser.Reset();
 
 		var el = await parser.GetNextElementAsync();
@@ -257,7 +257,7 @@ public class XmlReaderParserTests
 
 		using var stream = entry.Open();
 
-		using var parser = new XmppStreamParser(stream);
+		using var parser = new XmppStreamReader(stream);
 		parser.Reset();
 		var element = await parser.GetNextElementAsync();
 

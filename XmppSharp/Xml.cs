@@ -39,7 +39,7 @@ public static class Xml
 	public static async Task<Element> ParseFromStringAsync(string xml, CancellationToken token = default)
 	{
 		using (var ms = new MemoryStream(xml.GetBytes()))
-		using (var parser = new XmppStreamParser(ms))
+		using (var parser = new XmppStreamReader(ms))
 		{
 			parser.Reset();
 			return await parser.GetNextElementAsync(token);
@@ -48,7 +48,7 @@ public static class Xml
 
 	public static async Task<Element> ParseFromStreamAsync(Stream stream, CancellationToken token = default)
 	{
-		using (var parser = new XmppStreamParser(stream))
+		using (var parser = new XmppStreamReader(stream))
 		{
 			parser.Reset();
 			return await parser.GetNextElementAsync(token);
