@@ -11,7 +11,7 @@ using TOK = XmppSharp.XpNet.TokenType;
 namespace XmppSharp.Parser;
 
 /// <summary>XMPP parser implemented based on original agsXMPP parser (that uses JavaXP port to .NET)</summary>
-public class XmppBufferedStreamParser : XmppParser
+public class XmppTokenizer : XmppParser
 {
 	static readonly UTF8Encoding s_UTF8 = new(false, true);
 	private XmlEncoding _enc = new UTF8XmlEncoding();
@@ -23,7 +23,7 @@ public class XmppBufferedStreamParser : XmppParser
 	private StringBuilder _cdata = new();
 	private Element _current;
 
-	public XmppBufferedStreamParser()
+	public XmppTokenizer()
 	{
 		_namespaceMgr = new XmlNamespaceManager(_stringPool);
 		Reset();
