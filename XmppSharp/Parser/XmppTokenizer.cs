@@ -298,17 +298,11 @@ public class XmppTokenizer : IDisposable
 					colon = name.IndexOf(':');
 					prefix = name.Substring(colon + 1);
 					_namespaceMgr.AddNamespace(prefix, val);
-					attributes[name] = _stringPool.Add(val);
 				}
 				else if (name == "xmlns")
-				{
 					_namespaceMgr.AddNamespace(string.Empty, val);
-					attributes[name] = _stringPool.Add(val);
-				}
-				else
-				{
-					attributes[name] = val;
-				}
+
+				attributes[name] = val;
 			}
 		}
 
