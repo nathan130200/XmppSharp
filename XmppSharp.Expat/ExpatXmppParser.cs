@@ -97,7 +97,7 @@ public partial class ExpatXmppParser : IDisposable
 			var trimWhitespace = _currentElem.GetAttribute("xml:space") != "preserve";
 
 			if (trimWhitespace)
-				text = TrimAllWhitespace(text);
+				text = text.TrimAllWhitespace();
 
 			if (_currentElem.LastNode is Text node)
 				node.Value += text;
@@ -114,25 +114,6 @@ public partial class ExpatXmppParser : IDisposable
 		{
 			this._currentElem?.AddChild(new Comment(value));
 		};
-	}
-
-	[GeneratedRegex("\n")]
-	protected static partial Regex NewLineRegex();
-
-	[GeneratedRegex(@"\s+")]
-	protected static partial Regex ContiguousSpaceRegex();
-
-	static string TrimAllWhitespace(string str)
-	{
-		if (string.IsNullOrEmpty(str))
-			return string.Empty;
-
-		str = NewLineRegex().Replace(str, string.Empty);
-		str = str.Replace("\t", " ");
-		str = str.Trim();
-		str = ContiguousSpaceRegex().Replace(str, " ");
-
-		return str;
 	}
 
 	public void Reset()

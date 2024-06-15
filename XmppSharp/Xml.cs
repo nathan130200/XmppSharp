@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml;
 using XmppSharp.Parser;
 
@@ -12,7 +13,7 @@ public readonly record struct XmlQualifiedName
 	public string? Prefix { get; init; }
 }
 
-public static class Xml
+public static partial class Xml
 {
 	public const string XmppStreamEnd = "</stream:stream>";
 
@@ -34,6 +35,25 @@ public static class Xml
 			LocalName = localName,
 			Prefix = prefix
 		};
+	}
+
+	[GeneratedRegex("\n")]
+	public static partial Regex NewLineRegex();
+
+	[GeneratedRegex(@"\s+")]
+	public static partial Regex ContiguousSpaceRegex();
+
+	public static string TrimAllWhitespace(this string str)
+	{
+		if (string.IsNullOrEmpty(str))
+			return string.Empty;
+
+		str = NewLineRegex().Replace(str, string.Empty);
+		str = str.Replace("\t", " ");
+		str = str.Trim();
+		str = ContiguousSpaceRegex().Replace(str, " ");
+
+		return str;
 	}
 
 	public static async Task<Element> ParseFromStringAsync(string xml, CancellationToken token = default)

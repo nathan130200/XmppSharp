@@ -190,6 +190,8 @@ public class XpNetParserTests
 		Assert.IsNull(result);
 	}
 
+#if ENABLE_TCP_COMMS_TEST
+
 	[TestMethod]
 	public async Task ParseSampleJabberComms()
 	{
@@ -310,6 +312,7 @@ public class XpNetParserTests
 			}
 		}
 	}
+#endif
 
 	[TestMethod]
 	public async Task ParseWithCommentAndCdataAndText()

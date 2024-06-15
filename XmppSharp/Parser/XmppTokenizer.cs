@@ -36,10 +36,10 @@ public class XmppTokenizer : IDisposable
 	public event ContentDelegate OnCdata;
 	public event ContentDelegate OnComment;
 
-	private XmppTokenizer()
+	public XmppTokenizer()
 	{
 		_namespaceMgr = new XmlNamespaceManager(_stringPool);
-		_buf = new BufferAggregate();
+		Reset();
 	}
 
 	protected virtual void Disposing()
