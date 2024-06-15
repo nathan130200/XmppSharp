@@ -89,7 +89,7 @@ public class XmppTokenizer : IDisposable
 	public void Write(byte[] buf)
 		=> Write(buf, buf.Length);
 
-	public void Write(byte[] buf, int count)
+	public virtual void Write(byte[] buf, int count)
 	{
 		ThrowIfDisposed();
 
@@ -101,12 +101,12 @@ public class XmppTokenizer : IDisposable
 			var temp = new byte[count];
 			Array.ConstrainedCopy(buf, 0, temp, 0, count);
 			_buf.Write(temp);
-
 			Parse();
 		}
 	}
 
-	void Parse()
+	// Maybe someone need override this method?
+	protected virtual void Parse()
 	{
 		var b = _buf.GetBuffer();
 		int off = 0;
@@ -201,7 +201,7 @@ public class XmppTokenizer : IDisposable
 		}
 	}
 
-	string NormalizeAttributeValue(byte[] buf, int offset, int length)
+	protected virtual string NormalizeAttributeValue(byte[] buf, int offset, int length)
 	{
 		if (length == 0)
 			return null;
@@ -259,13 +259,13 @@ public class XmppTokenizer : IDisposable
 		return val;
 	}
 
-	public string? LookupNamespace(string? prefix = default)
+	public virtual string? LookupNamespace(string? prefix = default)
 		=> _namespaceMgr.LookupNamespace(prefix ?? string.Empty);
 
-	public string? LookupPrefix(string namespaceURI)
+	public virtual string? LookupPrefix(string namespaceURI)
 		=> _namespaceMgr.LookupPrefix(namespaceURI);
 
-	void StartTag(byte[] buf, int offset, ContentToken ct, TOK tok)
+	protected virtual void StartTag(byte[] buf, int offset, ContentToken ct, TOK tok)
 	{
 		int colon;
 		string name;
@@ -289,7 +289,6 @@ public class XmppTokenizer : IDisposable
 
 				start = ct.GetAttributeValueStart(i);
 				end = ct.GetAttributeValueEnd(i);
-				//val = utf.GetString(buf, start, end - start);
 
 				val = NormalizeAttributeValue(buf, start, end - start);
 
@@ -336,11 +335,21 @@ public class XmppTokenizer : IDisposable
 		OnElementEnd?.Invoke(name);
 	}
 
+	protected virtual string NormalizeCdataContent(string text)
+	{
+		return text;
+	}
+
+	protected virtual string NormalizeTextContent(string text)
+	{
+		return text;
+	}
+
 	protected virtual void AddText(string text)
 	{
 		if (_isCdata)
-			_cdata.Append(text);
+			_cdata.Append(NormalizeCdataContent(text));
 		else
-			OnText?.Invoke(text);
+			OnText?.Invoke(NormalizeTextContent(text));
 	}
 }
