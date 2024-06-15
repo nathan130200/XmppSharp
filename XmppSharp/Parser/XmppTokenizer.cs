@@ -13,8 +13,8 @@ public class XmppTokenizer : IDisposable
 
 	// --------------------------------------------------------------------------------------- //
 
-	public delegate void StartElementDelegate(string localName, string? prefix, IReadOnlyDictionary<string, string> attrs);
-	public delegate void EndElementDelegate(string localName, string? prefix);
+	public delegate void StartElementDelegate(string name, IReadOnlyDictionary<string, string> attrs);
+	public delegate void EndElementDelegate(string name);
 	public delegate void ContentDelegate(string value);
 
 	// --------------------------------------------------------------------------------------- //
@@ -316,23 +316,7 @@ public class XmppTokenizer : IDisposable
 			offset + s_xUTF8.MinBytesPerChar,
 			ct.NameEnd - offset - s_xUTF8.MinBytesPerChar));
 
-		colon = name.IndexOf(':');
-		string ns;
-
-		string localName = name;
-
-		if (colon != -1)
-		{
-			prefix = name.Substring(0, colon);
-			localName = name[(colon + 1)..];
-			ns = _namespaceMgr.LookupNamespace(prefix);
-		}
-		else
-		{
-			ns = _namespaceMgr.DefaultNamespace;
-		}
-
-		OnElementStart?.Invoke(localName, prefix, attributes);
+		OnElementStart?.Invoke(name, attributes);
 	}
 
 	protected virtual void EndTag(byte[] buf, int offset, ContentToken ct, TOK tok)
@@ -355,18 +339,7 @@ public class XmppTokenizer : IDisposable
 
 		name = _stringPool.Add(name);
 
-		int colon = name.IndexOf(':');
-
-		string localName = name;
-		string? prefix = default;
-
-		if (colon != -1)
-		{
-			prefix = name[0..colon];
-			localName = name[(colon + 1)..];
-		}
-
-		OnElementEnd?.Invoke(localName, prefix);
+		OnElementEnd?.Invoke(name);
 	}
 
 	protected virtual void AddText(string text)
