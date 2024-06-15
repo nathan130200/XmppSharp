@@ -29,8 +29,8 @@ A manipulation library and utility with the main objective to reduce the level o
 
 ## Parsers implementations
 - There are two internal parsers implemented:
-	- `XmppStreamParser` based on `XmlReader`
-	- `XmppBufferedStreamParser` based on [agsXMPP](https://www.ag-software.net/agsxmpp-sdk/) parser.
+	- `XmppStreamReader` based on `XmlReader`
+	- `XmppStreamParser` based on [agsXMPP](https://www.ag-software.net/agsxmpp-sdk/) parser.
 
 - Alternative Official XMPP Parsers:
 	- `XmppSharp.Expat` provide an implementation of __XMPP#__ parsing wrapper using [libexpat](https://github.com/libexpat/libexpat). Available on [NuGet](https://www.nuget.org/packages/XmppSharp.Expat/).
