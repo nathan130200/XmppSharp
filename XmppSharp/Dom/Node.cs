@@ -1,9 +1,11 @@
-﻿using System.Xml;
+﻿using System.Diagnostics;
+using System.Xml;
 
 namespace XmppSharp.Dom;
 
 public abstract class Node : ICloneable
 {
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	internal Element _parent;
 
 	public Element Parent

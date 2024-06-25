@@ -1,14 +1,22 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 using XmppSharp.Factory;
 
 namespace XmppSharp.Dom;
 
+[DebuggerDisplay("{" + nameof(StartTag) + "(),nq}")]
 public class Element : Node
 {
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	private string _localName, _prefix;
+
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	private readonly Dictionary<string, string> _attributes = new();
+
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	private readonly List<Node> _childNodes = new();
 
 	Element()
@@ -94,7 +102,9 @@ public class Element : Node
 
 	public override string Value
 	{
-		get => string.Concat(this.Nodes().OfType<Text>().Select(x => x.Value));
+		get => string.Concat(this.Nodes()
+			.OfType<Text>()
+			.Select(x => x.Value));
 		set
 		{
 			this.Nodes().Remove();
@@ -188,21 +198,21 @@ public class Element : Node
 
 	internal void WriteToInternal(XmlWriter writer, in XmlFormatting formatting, bool includeChildren = true, bool writeEndTag = true)
 	{
-		string skipAttribute = "xmlns";
+		string skipAttrName = "xmlns";
 
 		if (this._prefix == null)
 			writer.WriteStartElement(this._localName, this.GetNamespace(this._prefix));
 		else
 		{
 			writer.WriteStartElement(this._prefix, this._localName, this.GetNamespace(this._prefix));
-			skipAttribute = $"xmlns:{this._prefix}";
+			skipAttrName = $"xmlns:{this._prefix}";
 		}
 
 		lock (this._attributes)
 		{
 			foreach (var (name, value) in this._attributes)
 			{
-				if (skipAttribute == name)
+				if (skipAttrName == name)
 					continue;
 
 				var info = Xml.ExtractQualifiedName(name);
@@ -470,19 +480,28 @@ public class Element : Node
 			}
 		}
 
-		return result.AsEnumerable();
+		return result;
 	}
 
 	public IEnumerable<T> Children<T>()
 		=> this.Children().OfType<T>();
 
-	public IEnumerable<Element> Children(string? tagName, string? namespaceURI = default)
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	internal static bool SelectElementPredicate(Element e, string tagName, string? namespaceURI)
+	{
+		var @namespace = !string.IsNullOrWhiteSpace(e.Prefix)
+			? e.GetNamespace(e.Prefix)
+			: e.Namespace;
+
+		return tagName == e.TagName && (
+			namespaceURI == null || @namespace == namespaceURI
+		);
+	}
+
+	public IEnumerable<Element> Children(string tagName, string? namespaceURI = default)
 	{
 		Require.NotNull(tagName);
-
-		return this.Children(x => x.TagName == tagName && namespaceURI == null || (x.Prefix == null
-				? x.GetNamespace() == namespaceURI
-				: x.GetNamespace(x.Prefix) == namespaceURI));
+		return this.Children(e => SelectElementPredicate(e, tagName, namespaceURI));
 	}
 
 	public IEnumerable<Element> Children(Func<Element, bool> predicate)
@@ -491,14 +510,10 @@ public class Element : Node
 		return Children().Where(predicate);
 	}
 
-	public Element Child(string tagName, string? namespaceURI = default)
+	public Element? Child(string tagName, string? namespaceURI = default)
 	{
 		Require.NotNull(tagName);
-
-		return this.Children(x => x.TagName == tagName && namespaceURI == null || (x.Prefix == null
-			? x.GetNamespace() == namespaceURI
-			: x.GetNamespace(x.Prefix) == namespaceURI))
-				.FirstOrDefault();
+		return Children(tagName, namespaceURI).FirstOrDefault();
 	}
 
 	public T Child<T>() where T : Element
