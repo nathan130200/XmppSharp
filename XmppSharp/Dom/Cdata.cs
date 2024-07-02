@@ -4,7 +4,7 @@ using System.Xml;
 namespace XmppSharp.Dom;
 
 [DebuggerDisplay("{Value,nq}")]
-public class Cdata : Node
+public class Cdata : ContentNode
 {
 	public Cdata(string value) => this.Value = value;
 	public Cdata(Cdata other) => this.Value = other.Value;

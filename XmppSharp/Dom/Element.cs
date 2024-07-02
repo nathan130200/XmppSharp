@@ -8,7 +8,7 @@ using XmppSharp.Factory;
 namespace XmppSharp.Dom;
 
 [DebuggerDisplay("{" + nameof(StartTag) + "(),nq}")]
-public class Element : Node
+public partial class Element : Node
 {
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	private string _localName, _prefix;

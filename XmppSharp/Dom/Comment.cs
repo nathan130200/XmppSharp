@@ -4,7 +4,7 @@ using System.Xml;
 namespace XmppSharp.Dom;
 
 [DebuggerDisplay("{Value,nq}")]
-public class Comment : Node
+public class Comment : ContentNode
 {
 	public Comment(string value) => this.Value = value;
 	public Comment(Comment other) => this.Value = other.Value;

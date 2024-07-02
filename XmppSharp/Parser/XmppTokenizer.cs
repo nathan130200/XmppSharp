@@ -13,8 +13,8 @@ public class XmppTokenizer : IDisposable
 
 	// --------------------------------------------------------------------------------------- //
 
-	public delegate void StartElementDelegate(string name, IReadOnlyDictionary<string, string> attrs);
-	public delegate void EndElementDelegate(string name);
+	public delegate void StartElementDelegate(XmlNameInfo name, IReadOnlyDictionary<XmlNameInfo, string> attrs);
+	public delegate void EndElementDelegate(XmlNameInfo name);
 	public delegate void ContentDelegate(string value);
 
 	// --------------------------------------------------------------------------------------- //
@@ -271,7 +271,7 @@ public class XmppTokenizer : IDisposable
 		string name;
 		string? prefix = default;
 
-		var attributes = new Dictionary<string, string>();
+		var attributes = new Dictionary<XmlNameInfo, string>();
 
 		_namespaceMgr.PushScope();
 

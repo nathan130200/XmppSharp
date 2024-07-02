@@ -28,9 +28,10 @@ A manipulation library and utility with the main objective to reduce the level o
 - `XmppSharp.Protocol.PresenceShow`
 
 ## Parsers implementations
-- There are two internal parsers implemented:
+- There are built-in parsers implemented:
 	- `XmppStreamReader` based on `XmlReader`
 	- `XmppStreamParser` based on [agsXMPP](https://www.ag-software.net/agsxmpp-sdk/) parser.
+	- `XmppTokenizer` based on `XmppStreamParser` and provides an expat like parsing events (`OnStartTag`, `OnEndTag`, `OnText`, `OnCdata`, `OnComment`).
 
 - Alternative Official XMPP Parsers:
 	- `XmppSharp.Expat` provide an implementation of __XMPP#__ parsing wrapper using [libexpat](https://github.com/libexpat/libexpat). Available on [NuGet](https://www.nuget.org/packages/XmppSharp.Expat/).

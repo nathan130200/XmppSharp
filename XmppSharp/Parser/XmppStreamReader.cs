@@ -44,6 +44,7 @@ public class XmppStreamReader : XmppParser
 		Require.NotNull(streamFactory);
 
 		this._isFromFactory = true;
+		this._leaveOpen = leaveOpen;
 		this._streamFactory = streamFactory;
 	}
 
@@ -67,7 +68,7 @@ public class XmppStreamReader : XmppParser
 	}
 
 	/// <summary>
-	/// Restarts the state of the XML parser.
+	/// Restarts (or initialize) the state of the XML parser.
 	/// </summary>
 	/// <exception cref="ObjectDisposedException">If this instance of <see cref="XmppStreamReader" /> has already been disposed.</exception>
 	public virtual void Reset()

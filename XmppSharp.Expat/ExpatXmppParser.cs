@@ -97,7 +97,7 @@ public partial class ExpatXmppParser : IDisposable
 			var trimWhitespace = _currentElem.GetAttribute("xml:space") != "preserve";
 
 			if (trimWhitespace)
-				text = text.TrimAllWhitespace();
+				text = text.TrimWhitespaces();
 
 			if (_currentElem.LastNode is Text node)
 				node.Value += text;

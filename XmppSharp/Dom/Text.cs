@@ -3,8 +3,7 @@ using System.Xml;
 
 namespace XmppSharp.Dom;
 
-[DebuggerDisplay("{Value,nq}")]
-public class Text : Node
+public class Text : ContentNode
 {
 	public Text(string value) => this.Value = value;
 	public Text(Text other) => this.Value = other.Value;
