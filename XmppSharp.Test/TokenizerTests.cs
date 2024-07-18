@@ -202,15 +202,7 @@ public class TokenizerTests
 
 		tokenizer.OnElementStart += (name, attrs) =>
 		{
-			var colon = name.IndexOf(':');
-
-			string? localName = name, prefix = default;
-
-			if (colon > 0)
-			{
-				prefix = name[0..colon];
-				localName = name[(colon + 1)..];
-			}
+			var (localName, prefix) = name;
 
 			var uri = tokenizer.LookupNamespace(prefix) ?? XNamespace.None;
 
@@ -221,20 +213,18 @@ public class TokenizerTests
 
 			foreach (var (key, value) in attrs)
 			{
-				var info = Xml.ExtractQualifiedName(key);
-
-				if (!info.HasPrefix)
-					element.SetAttributeValue(key, value);
+				if (!key.HasPrefix)
+					element.SetAttributeValue(key.LocalName, value);
 				else
 				{
-					XNamespace ns = info.Prefix switch
+					XNamespace ns = key.Prefix switch
 					{
 						"xml" => XNamespace.Xml,
 						"xmlns" => XNamespace.Xmlns,
-						_ => tokenizer.LookupNamespace(info.Prefix) ?? string.Empty
+						_ => tokenizer.LookupNamespace(key.Prefix) ?? string.Empty
 					};
 
-					element.SetAttributeValue(ns + info.LocalName, value);
+					element.SetAttributeValue(ns + key.LocalName, value);
 				}
 			}
 
@@ -252,7 +242,7 @@ public class TokenizerTests
 
 		tokenizer.OnText += text =>
 		{
-			var value = text.TrimAllWhitespace();
+			var value = text.TrimWhitespaces();
 
 			if (root != null)
 			{
