@@ -11,6 +11,8 @@
 		<PackageTags>xmpp, parser, tokenizer</PackageTags>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<PackageOutputPath>$(SolutionDir)\_Build</PackageOutputPath>
+		<PackageVersion>1.0.1</PackageVersion>
+		<Description>XMPP# tokenizer package.</Description>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
