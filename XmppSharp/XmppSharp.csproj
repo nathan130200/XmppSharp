@@ -10,7 +10,7 @@
 	<PropertyGroup>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>XmppSharp</Title>
-		<Company>FRNathan13</Company>
+		<Company>nathan130200</Company>
 		<Description>Lightweight xmpp library inspired on classic xmpp library agsXMPP.</Description>
 		<PackageProjectUrl>https://github.com/nathan130200/XmppSharp</PackageProjectUrl>
 		<PackageTags>xml, jabber, xmpp, xmpp-client, xmpp-server, xmpp-component</PackageTags>
@@ -25,8 +25,10 @@
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<DebugSymbols>false</DebugSymbols>
-		<DebugType>none</DebugType>
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>embedded</DebugType>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>false</EmbedUntrackedSources>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -40,9 +42,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="Dynamic\**" />
-	  <EmbeddedResource Remove="Dynamic\**" />
-	  <None Remove="Dynamic\**" />
+		<Compile Remove="Dynamic\**" />
+		<EmbeddedResource Remove="Dynamic\**" />
+		<None Remove="Dynamic\**" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -62,7 +64,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\XmppSharp.Tokenizer\XmppSharp.Tokenizer.csproj" />
+	  <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
+	    <PrivateAssets>all</PrivateAssets>
+	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	  </PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\XmppSharp.Tokenizer\XmppSharp.Tokenizer.csproj" />
 	</ItemGroup>
 
 </Project>
