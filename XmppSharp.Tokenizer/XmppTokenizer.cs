@@ -104,7 +104,10 @@ public class XmppTokenizer : IDisposable
 		var b = _buf.GetBuffer();
 		int off = 0;
 
-		TOK tok;
+#pragma warning disable
+		TOK tok = TOK.END_TAG;
+#pragma warning restore
+
 		ContentToken ct = new();
 
 		try

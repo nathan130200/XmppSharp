@@ -31,49 +31,7 @@ public static class Utilities
 
 		return result.ToLowerInvariant();
 	}
-
-	public static async Task<Element> GetNextElementAsync(this XmppStreamReader parser, CancellationToken token = default)
-	{
-		var tcs = new TaskCompletionSource<Element>();
-
-		using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
-
-		AsyncAction<Element> handler = default!;
-
-		handler = element =>
-		{
-			cts.Cancel();
-			tcs.TrySetResult(element);
-			parser.OnStreamElement -= handler;
-			return Task.CompletedTask;
-		};
-
-		_ = Task.Run(async () =>
-		{
-			try
-			{
-				while (!cts.IsCancellationRequested)
-				{
-					if (!await parser)
-						throw new XmlException("Unexcepted end of stream.");
-				}
-			}
-			catch (Exception e)
-			{
-				tcs.TrySetException(e);
-			}
-			finally
-			{
-				// ensure we always unbind the handler.
-				parser.OnStreamElement -= handler;
-			}
-		}, token);
-
-		parser.OnStreamElement += handler;
-
-		return await tcs.Task;
-	}
-
+	
 	public static TaskAwaiter<bool> GetAwaiter(this XmppStreamReader parser)
 		=> parser.AdvanceAsync().GetAwaiter();
 

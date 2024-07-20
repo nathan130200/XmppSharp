@@ -65,9 +65,6 @@ public class XmppStreamParser : XmppParser
 	{
 		ThrowIfDisposed();
 
-		if (count <= 0)
-			return;
-
 		lock (this)
 		{
 			var temp = new byte[count];
@@ -83,7 +80,11 @@ public class XmppStreamParser : XmppParser
 		var b = _buf!.GetBuffer();
 		int off = 0;
 
-		TOK tok;
+#pragma warning disable
+
+		TOK tok = TOK.END_TAG;
+
+#pragma warning restore
 
 		ContentToken ct = new();
 

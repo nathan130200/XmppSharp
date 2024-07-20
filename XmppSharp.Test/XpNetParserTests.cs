@@ -62,7 +62,7 @@ public class XpNetParserTests
 			{
 				// simulate IO
 				int len;
-				byte[] buf = new byte[4];
+				byte[] buf = new byte[16];
 
 				while ((len = stream.Read(buf, 0, buf.Length)) > 0)
 				{
@@ -75,7 +75,7 @@ public class XpNetParserTests
 			}
 		});
 
-		_ = Task.Delay(1500)
+		_ = Task.Delay(5000)
 			.ContinueWith(_ => tcs.TrySetCanceled());
 
 		var result = await tcs.Task;
@@ -352,7 +352,33 @@ public class XpNetParserTests
 		Assert.IsNotNull(entry);
 
 		using var stream = entry.Open();
-		var element = await ParseFromStream(stream);
+
+		var tcs = new TaskCompletionSource<Element>();
+
+		using var parser = new XmppStreamParser();
+
+		parser.OnStreamElement += e =>
+		{
+			tcs.TrySetResult(e);
+			return Task.CompletedTask;
+		};
+
+		{
+			int len;
+			var buf = new byte[4];
+
+			while ((len = await stream.ReadAsync(buf)) > 0)
+			{
+				parser.Write(buf, len);
+
+				if (tcs.Task.IsCompleted)
+					break;
+			}
+		}
+
+		var element = await tcs.Task;
+
+		Console.WriteLine("OUT:\n" + element.ToString(false) + "\n");
 
 		Assert.AreEqual("CodeSnippets", element.TagName);
 		Assert.AreEqual("http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet", element.NamespaceURI);

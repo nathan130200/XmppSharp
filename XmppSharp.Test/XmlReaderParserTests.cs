@@ -235,10 +235,7 @@ public class XmlReaderParserTests
 		await ms.WriteAsync("<foo xmlns='bar'><baz/></foo>".GetBytes());
 		ms.Position = 0;
 
-		using var parser = new XmppStreamReader(() => ms);
-		parser.Reset();
-
-		var el = await parser.GetNextElementAsync();
+		var el = await Xml.ParseAsync(ms);
 
 		Console.WriteLine("parser::advance(): false");
 		Console.WriteLine(el);
@@ -256,10 +253,7 @@ public class XmlReaderParserTests
 		Assert.IsNotNull(entry);
 
 		using var stream = entry.Open();
-
-		using var parser = new XmppStreamReader(stream);
-		parser.Reset();
-		var element = await parser.GetNextElementAsync();
+		var element = await Xml.ParseAsync(stream);
 
 		Assert.AreEqual("CodeSnippets", element.TagName);
 		Assert.AreEqual("http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet", element.NamespaceURI);

@@ -324,7 +324,15 @@ public partial class Element : Node
 		get
 		{
 			lock (this._childNodes)
-				return _childNodes.FirstOrDefault(x => x is Element) as Element;
+			{
+				for (int i = 0; i < _childNodes.Count; i++)
+				{
+					if (_childNodes[i] is Element e)
+						return e;
+				}
+
+				return default;
+			}
 		}
 	}
 
@@ -333,7 +341,15 @@ public partial class Element : Node
 		get
 		{
 			lock (this._childNodes)
-				return _childNodes.LastOrDefault(x => x is Element) as Element;
+			{
+				for (var i = _childNodes.Count - 1; i >= 0; i--)
+				{
+					if (_childNodes[i] is Element e)
+						return e;
+				}
+
+				return null;
+			}
 		}
 	}
 
@@ -342,7 +358,8 @@ public partial class Element : Node
 		if (n == null)
 			return;
 
-		n = n.Clone();
+		if (n._parent != null)
+			n = n.Clone();
 
 		lock (this._childNodes)
 			this._childNodes.Add(n);
