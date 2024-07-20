@@ -27,7 +27,7 @@ public class Mechanisms : Element
 		if (type == MechanismType.Unspecified || !Enum.IsDefined(type))
 			return;
 
-		this.AddMechanism(type.ToXmppName());
+		this.AddMechanism(type.ToXmppName()!);
 	}
 
 	public void AddMechanism(string name)
@@ -40,5 +40,6 @@ public class Mechanisms : Element
 		=> this.SupportedMechanisms?.Any(x => x.MechanismName == name) == true;
 
 	public bool IsMechanismSupported(MechanismType type)
-		=> type != MechanismType.Unspecified && this.IsMechanismSupported(type.ToXmppName());
+		=> type != MechanismType.Unspecified
+			&& this.IsMechanismSupported(type.ToXmppName()!);
 }

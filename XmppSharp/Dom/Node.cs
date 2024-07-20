@@ -1,24 +1,20 @@
-﻿using System.Buffers;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Xml;
-using XmppSharp.Parser;
-using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Dom;
 
 public abstract class Node : ICloneable
 {
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-	internal Element _parent;
+	internal Element? _parent;
 
-	public Element Parent
+	public Element? Parent
 	{
 		get => this._parent;
 		set
 		{
 			this._parent?.RemoveChild(this);
 			value?.AddChild(this);
-			_parent = value;
 		}
 	}
 
@@ -28,13 +24,13 @@ public abstract class Node : ICloneable
 		this._parent = null;
 	}
 
-	public virtual string Value
+	public virtual string? Value
 	{
 		get;
 		set;
 	}
 
-	public abstract void WriteTo(XmlWriter writer, in XmlFormatting formatting);
+	public abstract void WriteTo(XmlWriter writer, XmlFormatting formatting);
 	public abstract Node Clone();
 
 	object ICloneable.Clone() => this.Clone();

@@ -27,11 +27,11 @@ public sealed class StartTls : Element
 		}
 		set
 		{
-			this.RemoveTag("optional");
-			this.RemoveTag("required");
+			this.RemoveTag("optional", Namespaces.Tls);
+			this.RemoveTag("required", Namespaces.Tls);
 
 			if (value.TryGetValue(out var policy))
-				this.SetTag(policy.ToXmppName());
+				this.SetTag(policy.ToXmppName()!, Namespaces.Tls);
 		}
 	}
 }

@@ -8,7 +8,7 @@ namespace XmppSharp;
 /// <remarks>
 /// As it is an immutable struct, you can use the <see langword="with" /> operator to extend an existing configuration.
 /// </remarks>
-public readonly struct XmlFormatting
+public record class XmlFormatting
 {
 	/// <summary>
 	/// Determines the behavior of declaring namespaces in the XML element. (Default: <see cref="NamespaceHandling.OmitDuplicates"/>)

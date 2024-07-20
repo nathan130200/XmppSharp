@@ -1,4 +1,6 @@
-﻿namespace XmppSharp.XpNet;
+﻿#pragma warning disable
+
+namespace XmppSharp.XpNet;
 
 public class UTF8XmlEncoding : XmlEncoding
 {
@@ -38,7 +40,7 @@ public class UTF8XmlEncoding : XmlEncoding
         /* 0xFC */ BT_NONXML, BT_NONXML, BT_MALFORM, BT_MALFORM
 	};
 
-	private static int[] utf8TypeTable = new int[256];
+	static readonly int[] utf8TypeTable = new int[256];
 
 	static UTF8XmlEncoding()
 	{

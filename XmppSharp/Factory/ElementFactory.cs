@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using XmppSharp.Attributes;
@@ -52,7 +53,7 @@ public static class ElementFactory
 	public static void RegisterElement(string localName, string ns, Type type)
 		=> ElementTypes[new(localName, ns)] = type;
 
-	static bool GetElementType(string localName, string ns, out Type type)
+	static bool GetElementType(string localName, string ns, [NotNullWhen(true)] out Type? type)
 	{
 		type = default;
 
@@ -72,8 +73,12 @@ public static class ElementFactory
 	{
 		Element elem;
 
+		// will ALWAYS work unless:
+		// - parameterless ctor is not implemented;
+		// - parameterless ctor throws any exception;
+
 		if (GetElementType(qualifiedName, ns, out var type))
-			elem = Activator.CreateInstance(type) as Element;
+			elem = (Activator.CreateInstance(type) as Element)!; 
 		else
 			elem = new Element(qualifiedName);
 

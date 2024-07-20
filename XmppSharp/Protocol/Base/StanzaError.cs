@@ -43,11 +43,26 @@ public class StanzaError : Element
 				.ForEach(name => this.RemoveTag(name, Namespaces.Stanzas));
 
 			if (value.TryGetValue(out var result))
-				this.SetTag(result.ToXmppName(), Namespaces.Stanzas);
+				this.SetTag(result.ToXmppName()!, Namespaces.Stanzas);
 		}
 	}
 
-	public string Text
+
+	// Legacy code API.
+	public int? Code
+	{
+		get => this.attrs.code;
+		set => this.attrs.code = value;
+	}
+
+	// Legacy code API.
+	public int? CustomCode
+	{
+		get => this.attrs.custom_code;
+		set => this.attrs.custom_code = value;
+	}
+
+	public string? Text
 	{
 		get => this.GetTag("text", Namespaces.Stanzas);
 		set

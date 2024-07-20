@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace XmppSharp;
 
@@ -92,7 +93,7 @@ public static class AsyncUtilities
 			Debug.WriteLine(ex);
 		}
 
-		return default;
+		return default!;
 	}
 
 	/// <summary>
@@ -118,6 +119,6 @@ public static class AsyncUtilities
 			Debug.WriteLine(ex);
 		}
 
-		return default;
+		return default!;
 	}
 }

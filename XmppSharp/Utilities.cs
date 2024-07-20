@@ -38,7 +38,7 @@ public static class Utilities
 
 		using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
 
-		AsyncAction<Element> handler = default;
+		AsyncAction<Element> handler = default!;
 
 		handler = element =>
 		{
@@ -91,13 +91,13 @@ public static class Utilities
 		return source;
 	}
 
-	public static bool TryGetChild(this Element e, string tagName, string? namespaceURI, out Element result)
+	public static bool TryGetChild(this Element e, string tagName, string? namespaceURI, out Element? result)
 	{
 		result = e.Child(tagName, namespaceURI);
 		return result != null;
 	}
 
-	public static bool TryGetChild(this Element e, string tagName, out Element result)
+	public static bool TryGetChild(this Element e, string tagName, out Element? result)
 	{
 		result = e.Child(tagName);
 		return result != null;

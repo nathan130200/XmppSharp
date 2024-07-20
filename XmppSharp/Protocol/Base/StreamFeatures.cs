@@ -12,7 +12,7 @@ public class StreamFeatures : Element
 
 	}
 
-	public Mechanisms Mechanisms
+	public Mechanisms? Mechanisms
 	{
 		get => this.Child<Mechanisms>();
 		set
@@ -24,7 +24,7 @@ public class StreamFeatures : Element
 		}
 	}
 
-	public StartTls StartTls
+	public StartTls? StartTls
 	{
 		get => this.Child<StartTls>();
 		set

@@ -2,7 +2,7 @@
 
 namespace XmppSharp.XpNet;
 
-public class BufferAggregate : IDisposable
+public sealed class BufferAggregate : IDisposable
 {
 	private Node _head, _tail;
 

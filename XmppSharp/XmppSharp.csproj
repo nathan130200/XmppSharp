@@ -2,8 +2,9 @@
 
 	<PropertyGroup>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>annotations</Nullable>
+		<Nullable>enable</Nullable>
 		<TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+		<NoWarn>$(NoWarn);CS1591</NoWarn>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -29,7 +30,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>4.3.1</Version>
+		<Version>4.4</Version>
 		<Copyright>nathan130200</Copyright>
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
@@ -37,6 +38,12 @@
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Dynamic\**" />
+	  <EmbeddedResource Remove="Dynamic\**" />
+	  <None Remove="Dynamic\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<Using Include="XmppSharp" />

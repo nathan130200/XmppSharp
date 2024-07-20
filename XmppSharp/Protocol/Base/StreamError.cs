@@ -10,7 +10,7 @@ public class StreamError : Element
 
 	}
 
-	public StreamError(StreamErrorCondition condition, string text = default) : this()
+	public StreamError(StreamErrorCondition condition, string? text = default) : this()
 	{
 		this.Condition = condition;
 
@@ -32,10 +32,10 @@ public class StreamError : Element
 		}
 		set
 		{
-			this.RemoveTag(this.Condition.ToXmppName(), Namespaces.Streams);
+			this.RemoveTag(this.Condition.ToXmppName()!, Namespaces.Streams);
 
 			if (XmppEnum.IsDefined(value))
-				this.SetTag(value.ToXmppName(), Namespaces.Streams);
+				this.SetTag(value.ToXmppName()!, Namespaces.Streams);
 		}
 	}
 
@@ -44,9 +44,9 @@ public class StreamError : Element
 		get => this.GetTag("text", Namespaces.Streams);
 		set
 		{
-			if (value == null)
-				this.RemoveTag("text", Namespaces.Streams);
-			else
+			this.RemoveTag("text", Namespaces.Streams);
+
+			if (value != null)
 				this.SetTag("text", Namespaces.Streams, value);
 		}
 	}

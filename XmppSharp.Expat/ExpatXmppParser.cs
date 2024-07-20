@@ -158,5 +158,7 @@ public partial class ExpatXmppParser : IDisposable
 		this._nameTable = null;
 		this._parser?.Dispose();
 		this._parser = null;
+
+		GC.SuppressFinalize(this);
 	}
 }

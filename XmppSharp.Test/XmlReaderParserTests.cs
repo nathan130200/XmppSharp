@@ -262,7 +262,7 @@ public class XmlReaderParserTests
 		var element = await parser.GetNextElementAsync();
 
 		Assert.AreEqual("CodeSnippets", element.TagName);
-		Assert.AreEqual("http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet", element.Namespace);
-		Assert.AreEqual("CodeSnippet", element.FirstChild.TagName);
+		Assert.AreEqual("http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet", element.NamespaceURI);
+		Assert.AreEqual("CodeSnippet", element.FirstChild?.TagName);
 	}
 }

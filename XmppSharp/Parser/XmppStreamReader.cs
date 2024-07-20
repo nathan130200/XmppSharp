@@ -11,14 +11,15 @@ namespace XmppSharp.Parser;
 /// </summary>
 public class XmppStreamReader : XmppParser
 {
-	private XmlReader _reader;
-	private NameTable _nameTable = new();
+	private NameTable? _nameTable = new();
+	private XmlReader? _reader;
 	private volatile bool _disposed;
 
+	private Element? _currentElement;
 	private readonly bool _leaveOpen;
 	private readonly bool _isFromFactory;
-	private Func<Stream> _streamFactory;
-	private Stream _baseStream;
+	private Func<Stream>? _streamFactory;
+	private Stream? _baseStream;
 
 	/// <summary>
 	/// Initializes a new instance of <see cref="XmppStreamReader" />. Use this constructor for generic purposes, where the base type of the stream will not change (eg: loading from file).
@@ -78,9 +79,9 @@ public class XmppStreamReader : XmppParser
 		ThrowIfDisposed();
 
 		if (this._isFromFactory)
-			this._baseStream = this._streamFactory();
+			this._baseStream = this._streamFactory!();
 
-		this._reader = XmlReader.Create(this._baseStream, new()
+		this._reader = XmlReader.Create(this._baseStream!, new()
 		{
 			CloseInput = false,
 			Async = true,
@@ -96,13 +97,11 @@ public class XmppStreamReader : XmppParser
 		});
 	}
 
-	private Element _rootElem;
-
 	/// <summary>
 	/// Gets the XML element in current scope.
 	/// </summary>
 	public Element? CurrentElement
-		=> this._rootElem;
+		=> this._currentElement;
 
 	/// <summary>
 	/// Gets the XML depth in the parser tree.
@@ -183,15 +182,15 @@ public class XmppStreamReader : XmppParser
 					{
 						if (this._reader.IsEmptyElement)
 						{
-							if (this._rootElem != null)
-								this._rootElem.AddChild(currentElem);
+							if (this._currentElement != null)
+								this._currentElement.AddChild(currentElem);
 							else
 								await FireStreamElement(currentElem);
 						}
 						else
 						{
-							this._rootElem?.AddChild(currentElem);
-							this._rootElem = currentElem;
+							this._currentElement?.AddChild(currentElem);
+							this._currentElement = currentElem;
 						}
 					}
 				}
@@ -203,15 +202,15 @@ public class XmppStreamReader : XmppParser
 						await FireStreamEnd();
 					else
 					{
-						if (this._rootElem == null)
+						if (this._currentElement == null)
 							throw new JabberStreamException(StreamErrorCondition.InvalidXml, "Unexcepted end tag.");
 
-						var parent = this._rootElem.Parent;
+						var parent = this._currentElement.Parent;
 
 						if (parent == null)
-							await FireStreamElement(this._rootElem);
+							await FireStreamElement(this._currentElement);
 
-						this._rootElem = parent;
+						this._currentElement = parent;
 					}
 				}
 				break;
@@ -219,22 +218,22 @@ public class XmppStreamReader : XmppParser
 			case XmlNodeType.SignificantWhitespace:
 			case XmlNodeType.Text:
 				{
-					if (this._rootElem != null)
+					if (this._currentElement != null)
 					{
-						if (this._rootElem.LastNode is Text text)
+						if (this._currentElement.LastNode is Text text)
 							text.Value += this._reader.Value;
 						else
-							this._rootElem.AddChild(new Text(this._reader.Value));
+							this._currentElement.AddChild(new Text(this._reader.Value));
 					}
 				}
 				break;
 
 			case XmlNodeType.Comment:
-				this._rootElem?.AddChild(new Comment(this._reader.Value));
+				this._currentElement?.AddChild(new Comment(this._reader.Value));
 				break;
 
 			case XmlNodeType.CDATA:
-				this._rootElem?.AddChild(new Cdata(this._reader.Value));
+				this._currentElement?.AddChild(new Cdata(this._reader.Value));
 				break;
 		}
 

@@ -28,7 +28,7 @@ public sealed class Auth : Element
 		}
 	}
 
-	public string MechanismName
+	public string? MechanismName
 	{
 		get => this.GetAttribute("mechanism");
 		set => this.SetAttribute("mechanism", value);

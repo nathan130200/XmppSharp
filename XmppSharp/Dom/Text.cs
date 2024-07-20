@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Xml;
+﻿using System.Xml;
 
 namespace XmppSharp.Dom;
 
@@ -11,7 +10,7 @@ public class Text : ContentNode
 	public override Node Clone()
 		=> new Text(this);
 
-	public override void WriteTo(XmlWriter writer, in XmlFormatting formatting)
+	public override void WriteTo(XmlWriter writer, XmlFormatting formatting)
 	{
 		if (formatting.IncludeTextNodes)
 			writer.WriteString(this.Value);

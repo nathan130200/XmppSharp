@@ -51,7 +51,7 @@ public class Field : Element
 		get
 		{
 			foreach (var element in this.Children("value", Namespaces.DataForms))
-				yield return element.Value;
+				yield return element.Value!;
 		}
 		set
 		{

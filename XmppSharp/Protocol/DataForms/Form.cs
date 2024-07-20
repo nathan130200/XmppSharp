@@ -10,6 +10,11 @@ public class Form : Element
 
 	}
 
+	public Form(FormType type) : this()
+	{
+		Type = type;
+	}
+
 	public FormType Type
 	{
 		get => XmppEnum.ParseOrDefault(this.GetAttribute("type"), FormType.Form);

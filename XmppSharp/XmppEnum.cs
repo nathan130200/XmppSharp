@@ -101,7 +101,7 @@ public static class XmppEnum
 	public static bool TryParse<T>(string? value, out T result) where T : struct, Enum
 	{
 		var temp = Parse<T>(value);
-		result = temp.Value;
+		result = temp!.Value;
 		return temp.HasValue;
 	}
 
@@ -175,14 +175,14 @@ internal class XmppEnum<T>
 
 		foreach (var member in Enum.GetNames<T>())
 		{
-			var field = baseType.GetField(member);
+			var field = baseType.GetField(member)!;
 
 			var name = field.GetCustomAttribute<XmppMemberAttribute>()?.Name;
 
 			if (name == null)
 				continue;
 
-			values[name] = (T)field.GetValue(null);
+			values[name] = (T)field.GetValue(null)!;
 		}
 
 		Values = values;

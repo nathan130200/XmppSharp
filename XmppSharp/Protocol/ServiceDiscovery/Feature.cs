@@ -15,7 +15,7 @@ public class Feature : Element
 		this.Name = featureName;
 	}
 
-	public string Name
+	public string? Name
 	{
 		get => this.GetAttribute("var");
 		set => this.SetAttribute("var", value);

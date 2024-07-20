@@ -1,4 +1,6 @@
-﻿using XmppSharp.Attributes;
+﻿#pragma warning disable IDE0018
+
+using XmppSharp.Attributes;
 using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Protocol;
@@ -19,20 +21,23 @@ public class Iq : Stanza
 
 	public new IqType Type
 	{
-		get => XmppEnum.ParseOrThrow<IqType>(base.Type);
+		get => XmppEnum.ParseOrThrow<IqType>(base.Type!);
 		set => base.Type = value.ToXmppName();
 	}
 
-	public Element Query
+	public Element? Query
 	{
 		get
 		{
-			_ = this.TryGetChild("query", Namespaces.CryOnline, out Element result)
+			Element? result;
+
+			_ = this.TryGetChild("query", Namespaces.CryOnline, out result)
 				|| this.TryGetChild("bind", Namespaces.Bind, out result)
 				|| this.TryGetChild("session", Namespaces.Session, out result)
 				|| this.TryGetChild("query", Namespaces.DiscoInfo, out result)
 				|| this.TryGetChild("query", Namespaces.DiscoItems, out result)
-				|| this.TryGetChild("ping", Namespaces.Ping, out result);
+				|| this.TryGetChild("ping", Namespaces.Ping, out result)
+				|| this.TryGetChild("vCard", Namespaces.vCard, out result);
 
 			return result;
 		}

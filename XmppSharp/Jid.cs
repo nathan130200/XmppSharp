@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -12,14 +13,14 @@ public sealed record Jid : IEquatable<Jid>, IParsable<Jid>
 {
 	/// <inheritdoc />
 	public static bool TryParse(string? s, IFormatProvider? provider, out Jid result)
-		=> TryParse(s, out result);
+		=> TryParse(s, out result!);
 
 	/// <inheritdoc />
 	public static Jid Parse(string s, IFormatProvider? provider)
 		=> Parse(s);
 
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-	internal string _local, _domain, _resource;
+	internal string? _local, _domain, _resource;
 
 	/// <summary>
 	/// Gets or sets the local part of the jid. <para>Generally contains the username.</para>
@@ -38,13 +39,13 @@ public sealed record Jid : IEquatable<Jid>, IParsable<Jid>
 	/// </summary>
 	public string Domain
 	{
-		get => this._domain;
+		get => this._domain!;
 		set
 		{
 			if (string.IsNullOrWhiteSpace(value))
 				throw new InvalidOperationException("Domain part cannot be null or empty.");
 
-			this._domain = EnsureByteSize(value);
+			this._domain = EnsureByteSize(value)!;
 		}
 	}
 
@@ -61,7 +62,7 @@ public sealed record Jid : IEquatable<Jid>, IParsable<Jid>
 		set => this._resource = EnsureByteSize(value);
 	}
 
-	static string EnsureByteSize(string? s, [CallerMemberName] string memberName = null)
+	static string? EnsureByteSize(string? s, [CallerMemberName] string memberName = null!)
 	{
 		if (string.IsNullOrEmpty(s))
 			return s;
@@ -79,7 +80,7 @@ public sealed record Jid : IEquatable<Jid>, IParsable<Jid>
 	/// </summary>
 	public Jid()
 	{
-
+		_domain = default!;
 	}
 
 	/// <summary>
@@ -103,8 +104,12 @@ public sealed record Jid : IEquatable<Jid>, IParsable<Jid>
 	/// <param name="local">Initial value for the local part.</param>
 	/// <param name="domain">Initial value for the domain part.</param>
 	/// <param name="resource">Initial value for the resource part.</param>
-	public Jid(string? local, string domain, string? resource)
-		=> (this.Local, this.Domain, this.Resource) = (local, domain, resource);
+	public Jid(string? local, string domain, string? resource = default)
+	{
+		_local = local;
+		_domain = domain;
+		_resource = resource;
+	}
 
 	/// <summary>
 	/// Try parsing or throw an exception if you encounter a problem.
@@ -125,9 +130,11 @@ public sealed record Jid : IEquatable<Jid>, IParsable<Jid>
 	internal const char LocalPart = '@';
 	internal const char ResourcePart = '/';
 
-	static bool TryParseComponents(string input, out string local, out string domain, out string resource)
+	static bool TryParseComponents(string? input, out string? local, out string domain, out string? resource)
 	{
-		local = default; domain = default; resource = default;
+		local = default;
+		domain = default!;
+		resource = default;
 
 		if (string.IsNullOrWhiteSpace(input))
 			return false;
@@ -167,7 +174,7 @@ public sealed record Jid : IEquatable<Jid>, IParsable<Jid>
 	/// <param name="input">String that will attempt to be validated to be valid JID</param>
 	/// <param name="result">JID that was successfully parsed or <see langword="null" /> if it is invalid.</param>
 	/// <returns><see langword="true" /> if the JID was successfully parsed, <see langword="false"/> otherwise.</returns>
-	public static bool TryParse(string input, out Jid result)
+	public static bool TryParse(string? input, [NotNullWhen(true)] out Jid? result)
 	{
 		result = default;
 
@@ -219,12 +226,14 @@ public sealed record Jid : IEquatable<Jid>, IParsable<Jid>
 		_resource = null
 	};
 
-	public override int GetHashCode() => HashCode.Combine(
+	public override int GetHashCode() => HashCode.Combine
+	(
 		this._local?.GetHashCode() ?? 0,
 		this._domain?.GetHashCode() ?? 0,
-		this._resource?.GetHashCode() ?? 0);
+		this._resource?.GetHashCode() ?? 0
+	);
 
-	public bool Equals(Jid other)
+	public bool Equals(Jid? other)
 	{
 		if (ReferenceEquals(other, null))
 			return false;
@@ -232,8 +241,15 @@ public sealed record Jid : IEquatable<Jid>, IParsable<Jid>
 		if (ReferenceEquals(other, this))
 			return true;
 
-		return this.IsBare ? IsBareEquals(this, other)
-			: IsFullEqual(this, other);
+		if(IsBare && other.IsBare)
+		{
+			return _local?.Equals(other._local, StringComparison.Ordinal) == true
+				&& _domain?.Equals(other._domain, StringComparison.Ordinal) == true;
+		}
+
+		return _local?.Equals(other._local, StringComparison.Ordinal) == true
+			&& _domain?.Equals(other._domain, StringComparison.Ordinal) == true
+			&& _resource?.Equals(other._resource, StringComparison.Ordinal) == true;
 	}
 
 	/// <summary>
@@ -273,7 +289,7 @@ public sealed record Jid : IEquatable<Jid>, IParsable<Jid>
 	/// <summary>
 	/// Implicit convert string to JID.
 	/// </summary>
-	public static implicit operator Jid(string s)
+	public static implicit operator Jid?(string? s)
 	{
 		if (string.IsNullOrWhiteSpace(s))
 			return null;

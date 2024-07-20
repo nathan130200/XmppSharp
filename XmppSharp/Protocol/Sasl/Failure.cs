@@ -10,7 +10,7 @@ public class Failure : Element
 
 	}
 
-	public Failure(FailureCondition condition, string text = default) : this()
+	public Failure(FailureCondition condition, string? text = default) : this()
 	{
 		this.Condition = condition;
 
@@ -35,10 +35,10 @@ public class Failure : Element
 			var other = Condition;
 
 			if (other != FailureCondition.Unspecified)
-				this.RemoveTag(other.ToXmppName(), Namespaces.Sasl);
+				this.RemoveTag(other.ToXmppName()!, Namespaces.Sasl);
 
 			if (value != FailureCondition.Unspecified)
-				this.SetTag(value.ToXmppName(), Namespaces.Sasl);
+				this.SetTag(value.ToXmppName()!, Namespaces.Sasl);
 		}
 	}
 

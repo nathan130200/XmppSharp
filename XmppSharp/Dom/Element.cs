@@ -1,8 +1,11 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Security;
 using System.Text;
 using System.Xml;
+using XmppSharp.Binder;
 using XmppSharp.Factory;
 
 namespace XmppSharp.Dom;
@@ -11,7 +14,10 @@ namespace XmppSharp.Dom;
 public partial class Element : Node
 {
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-	private string _localName, _prefix;
+	private string _localName = default!;
+
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+	private string? _prefix;
 
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	private readonly Dictionary<string, string> _attributes = new();
@@ -21,18 +27,23 @@ public partial class Element : Node
 
 	Element()
 	{
-
+		attrs = new DynamicXmlAttributeBinder(this);
 	}
 
-	public Element(string qualifiedName)
+#pragma warning disable
+
+	[EditorBrowsable(EditorBrowsableState.Always)]
+	public dynamic attrs { get; }
+
+#pragma warning restore
+
+	public Element(string qualifiedName, string? namespaceURI = default, string? value = default) : this()
 	{
 		var info = Xml.ExtractQualifiedName(qualifiedName);
+
 		this._localName = info.LocalName;
 		this._prefix = info.HasPrefix ? info.Prefix : null;
-	}
 
-	public Element(string qualifiedName, string namespaceURI) : this(qualifiedName)
-	{
 		if (namespaceURI != null)
 		{
 			if (this._prefix != null)
@@ -51,60 +62,67 @@ public partial class Element : Node
 			return this._childNodes.ToArray();
 	}
 
-	static void GetDescendantNodes(Element parent, List<Node> result)
+	static void DescendantNodesCore(Element parent, List<Node> result)
 	{
 		foreach (var node in parent.Nodes())
 		{
 			result.Add(node);
 
 			if (node is Element e)
-				GetDescendantNodes(e, result);
+				DescendantNodesCore(e, result);
 		}
 	}
 
-	static void GetDescendantElements(Element parent, List<Element> result)
+	static void DescendantElementsCore(Element parent, List<Element> result)
 	{
 		foreach (var element in parent.Children())
 		{
 			result.Add(element);
-
-			GetDescendantElements(element, result);
+			DescendantElementsCore(element, result);
 		}
 	}
 
 	public IEnumerable<Node> DescendantNodes()
 	{
 		var result = new List<Node>();
-		GetDescendantNodes(this, result);
+		DescendantNodesCore(this, result);
 		return result;
 	}
 
 	public IEnumerable<Node> DescendantNodesAndSelf()
 	{
 		var result = new List<Node> { this };
-		GetDescendantNodes(this, result);
+		DescendantNodesCore(this, result);
 		return result;
 	}
 
 	public IEnumerable<Element> Descendants()
 	{
 		var result = new List<Element>();
-		GetDescendantElements(this, result);
+		DescendantElementsCore(this, result);
 		return result;
 	}
 
 	public IEnumerable<Element> DescendantsAndSelf()
 	{
 		var result = new List<Element> { this };
-		GetDescendantElements(this, result);
+		DescendantElementsCore(this, result);
 		return result;
 	}
 
-	public override string Value
+	public override string? Value
 	{
-		get => string.Concat(this.Nodes()
-			.OfType<Text>()
-			.Select(x => x.Value));
+		get
+		{
+			var nodes = this.Nodes()
+				.OfType<Text>()
+				.Select(x => x.Value);
+
+			if (!nodes.Any())
+				return string.Empty;
+
+			return string.Concat(nodes);
+		}
 		set
 		{
 			this.Nodes().Remove();
@@ -144,15 +162,15 @@ public partial class Element : Node
 		return sb.ToString();
 	}
 
-	public string? Namespace
+	public string? NamespaceURI
 	{
 		get => this.GetNamespace();
 		set => this.SetNamespace(value);
 	}
 
-	public Element Clone(bool deep)
+	public Element Clone(bool recursive)
 	{
-		var elem = ElementFactory.Create(this.TagName, this.GetNamespace(this.Prefix));
+		var elem = ElementFactory.Create(this.TagName, this.GetNamespace(this.Prefix)!);
 		elem._localName = this._localName;
 		elem._prefix = this._prefix;
 
@@ -162,7 +180,7 @@ public partial class Element : Node
 				elem._attributes[key] = value;
 		}
 
-		if (deep)
+		if (recursive)
 		{
 			lock (this._childNodes)
 			{
@@ -185,34 +203,34 @@ public partial class Element : Node
 
 	public string StartTag()
 	{
-		var sb = new StringBuilder();
+		var sb = new StringBuilder($"<{XmlConvert.EncodeName(TagName)}");
 
-		using (var writer = Xml.CreateWriter(sb, s_StartTagFormatting))
-			WriteToInternal(writer, s_StartTagFormatting, false, false);
+		lock (_attributes)
+		{
+			foreach (var (key, value) in _attributes)
+				sb.AppendFormat(" {0}=\"{1}\"", XmlConvert.EncodeName(key), SecurityElement.Escape(value));
+		}
 
-		return sb.ToString();
+		return sb.Append('>').ToString();
 	}
 
 	public string EndTag()
 		=> string.Concat("</", XmlConvert.EncodeName(TagName), '>');
 
-	internal void WriteToInternal(XmlWriter writer, in XmlFormatting formatting, bool includeChildren = true, bool writeEndTag = true)
+	internal void WriteToInternal(XmlWriter writer, XmlFormatting formatting, bool includeChildren = true, bool writeEndTag = true)
 	{
-		string skipAttrName = "xmlns";
+		string skipAttribute = this._prefix == null ? "xmlns" : $"xmlns:{this._prefix}";
 
 		if (this._prefix == null)
 			writer.WriteStartElement(this._localName, this.GetNamespace(this._prefix));
 		else
-		{
 			writer.WriteStartElement(this._prefix, this._localName, this.GetNamespace(this._prefix));
-			skipAttrName = $"xmlns:{this._prefix}";
-		}
 
 		lock (this._attributes)
 		{
 			foreach (var (name, value) in this._attributes)
 			{
-				if (skipAttrName == name)
+				if (skipAttribute == name)
 					continue;
 
 				var info = Xml.ExtractQualifiedName(name);
@@ -242,7 +260,7 @@ public partial class Element : Node
 			writer.WriteEndElement();
 	}
 
-	public override void WriteTo(XmlWriter writer, in XmlFormatting formatting)
+	public override void WriteTo(XmlWriter writer, XmlFormatting formatting)
 		=> WriteToInternal(writer, formatting);
 
 	public string LocalName
@@ -255,16 +273,35 @@ public partial class Element : Node
 		}
 	}
 
-	public string Prefix
+	public string? Prefix
 	{
 		get => this._prefix;
 		set => this._prefix = string.IsNullOrWhiteSpace(value) ? null : value;
 	}
 
 	public string TagName
-		=> this._prefix == null ? this._localName : string.Concat(this._prefix, ':', this._localName);
+	{
+		get
+		{
+			if (this._prefix != null)
+				return string.Concat(_prefix, ':', _localName);
 
-	public Node FirstNode
+			return _localName;
+		}
+		set
+		{
+			ArgumentException.ThrowIfNullOrEmpty(value);
+
+			var info = Xml.ExtractQualifiedName(value);
+
+			if (info.HasPrefix)
+				_prefix = info.Prefix;
+
+			_localName = info.LocalName;
+		}
+	}
+
+	public Node? FirstNode
 	{
 		get
 		{
@@ -273,7 +310,7 @@ public partial class Element : Node
 		}
 	}
 
-	public Node LastNode
+	public Node? LastNode
 	{
 		get
 		{
@@ -282,47 +319,30 @@ public partial class Element : Node
 		}
 	}
 
-	public Element FirstChild
+	public Element? FirstChild
 	{
 		get
 		{
 			lock (this._childNodes)
-			{
-				for (int i = 0; i < this._childNodes.Count; i++)
-				{
-					if (this._childNodes[i] is Element e)
-						return e;
-				}
-			}
-
-			return null;
+				return _childNodes.FirstOrDefault(x => x is Element) as Element;
 		}
 	}
 
-	public Element LastChild
+	public Element? LastChild
 	{
 		get
 		{
 			lock (this._childNodes)
-			{
-				for (int i = this._childNodes.Count - 1; i >= 0; i--)
-				{
-					if (this._childNodes[i] is Element e)
-						return e;
-				}
-			}
-
-			return null;
+				return _childNodes.LastOrDefault(x => x is Element) as Element;
 		}
 	}
 
-	public virtual void AddChild(Node n)
+	public virtual void AddChild(Node? n)
 	{
 		if (n == null)
 			return;
 
-		if (n.Parent != null)
-			n = n.Clone();
+		n = n.Clone();
 
 		lock (this._childNodes)
 			this._childNodes.Add(n);
@@ -353,9 +373,9 @@ public partial class Element : Node
 		}
 	}
 
-	public string GetNamespace(string? prefix = default)
+	public string? GetNamespace(string? prefix = default)
 	{
-		string result;
+		string? result;
 
 		if (string.IsNullOrWhiteSpace(prefix))
 			result = this.GetAttribute("xmlns");
@@ -368,10 +388,10 @@ public partial class Element : Node
 		return this._parent?.GetNamespace(prefix);
 	}
 
-	public void SetNamespace(string uri)
+	public void SetNamespace(string? uri)
 		=> this.SetAttribute("xmlns", uri);
 
-	public void SetNamespace(string prefix, string uri)
+	public void SetNamespace(string prefix, string? uri)
 	{
 		Require.NotNullOrWhiteSpace(prefix);
 		this.SetAttribute($"xmlns:{prefix}", uri);
@@ -381,7 +401,7 @@ public partial class Element : Node
 	{
 		Require.NotNullOrWhiteSpace(name);
 
-		string value;
+		string? value;
 
 		lock (this._attributes)
 			this._attributes.TryGetValue(name, out value);
@@ -408,7 +428,12 @@ public partial class Element : Node
 			if (value == null)
 				this._attributes.Remove(name);
 			else
-				this._attributes[name] = Convert.ToString(value, CultureInfo.InvariantCulture);
+			{
+				var str = Convert.ToString(value, CultureInfo.InvariantCulture);
+
+				if (str != null)
+					this._attributes[name] = str;
+			}
 		}
 
 		return this;
@@ -491,7 +516,7 @@ public partial class Element : Node
 	{
 		var @namespace = !string.IsNullOrWhiteSpace(e.Prefix)
 			? e.GetNamespace(e.Prefix)
-			: e.Namespace;
+			: e.NamespaceURI;
 
 		return tagName == e.TagName && (
 			namespaceURI == null || @namespace == namespaceURI
@@ -516,10 +541,10 @@ public partial class Element : Node
 		return Children(tagName, namespaceURI).FirstOrDefault();
 	}
 
-	public T Child<T>() where T : Element
+	public T? Child<T>() where T : Element
 		=> this.Children().OfType<T>().FirstOrDefault();
 
-	public Element Child(Func<Element, bool> predicate)
+	public Element? Child(Func<Element, bool> predicate)
 	{
 		Require.NotNull(predicate);
 
@@ -551,7 +576,7 @@ public partial class Element : Node
 		var elem = new Element(tagName, namespaceURI);
 
 		if (value != null)
-			elem.Value = Convert.ToString(value, CultureInfo.InvariantCulture);
+			elem.Value = Convert.ToString(value, CultureInfo.InvariantCulture)!;
 
 		this.AddChild(elem);
 	}

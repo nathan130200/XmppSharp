@@ -173,7 +173,7 @@ public class XpNetParserTests
 			Id = streamId,
 			From = "localhost",
 			Version = "1.0",
-			Namespace = Namespaces.Client
+			NamespaceURI = Namespaces.Client
 		}.StartTag();
 
 		var result = await ParseFromBuffer(el);
@@ -355,7 +355,7 @@ public class XpNetParserTests
 		var element = await ParseFromStream(stream);
 
 		Assert.AreEqual("CodeSnippets", element.TagName);
-		Assert.AreEqual("http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet", element.Namespace);
-		Assert.AreEqual("CodeSnippet", element.FirstChild.TagName);
+		Assert.AreEqual("http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet", element.NamespaceURI);
+		Assert.AreEqual("CodeSnippet", element.FirstChild?.TagName);
 	}
 }

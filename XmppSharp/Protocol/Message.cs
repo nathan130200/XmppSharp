@@ -29,41 +29,38 @@ public class Message : Stanza
 		}
 	}
 
-	public string Body
+	public string? Body
 	{
 		get => this.GetTag("body");
 		set
 		{
-			if (string.IsNullOrEmpty(value))
-				this.RemoveTag("body");
-			else
+			this.RemoveTag("body");
+
+			if (value != null)
 				this.SetTag("body", value: value);
 		}
 	}
 
-	public bool IsXHtml
-		=> this.HasTag("body", Namespaces.XHtml);
-
-	public string Subject
+	public string? Subject
 	{
 		get => this.GetTag("subject");
 		set
 		{
-			if (string.IsNullOrEmpty(value))
-				this.RemoveTag("subject");
-			else
+			this.RemoveTag("subject");
+
+			if (value != null)
 				this.SetTag("subject", value: value);
 		}
 	}
 
-	public string Thread
+	public string? Thread
 	{
 		get => this.GetTag("thread");
 		set
 		{
-			if (string.IsNullOrEmpty(value))
-				this.RemoveTag("thread");
-			else
+			this.RemoveTag("thread");
+
+			if (value != null)
 				this.SetTag("thread", value: value);
 		}
 	}

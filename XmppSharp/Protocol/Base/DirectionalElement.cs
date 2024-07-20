@@ -10,7 +10,7 @@ public abstract class DirectionalElement : Element
 	{
 	}
 
-	public Jid From
+	public Jid? From
 	{
 		get
 		{
@@ -24,7 +24,7 @@ public abstract class DirectionalElement : Element
 		set => this.SetAttribute("from", value?.ToString());
 	}
 
-	public Jid To
+	public Jid? To
 	{
 		get
 		{
@@ -35,9 +35,14 @@ public abstract class DirectionalElement : Element
 
 			return null;
 		}
-		set => this.SetAttribute("to", value?.ToString());
+		set => this.SetAttribute("to", value);
 	}
 
 	public void SwitchDirection()
-		=> (this.From, this.To) = (this.To, this.From);
+	{
+		var from = From;
+		var to = To;
+		From = to;
+		To = from;
+	}
 }

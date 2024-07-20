@@ -14,7 +14,7 @@ public class DiscoInfo : Element
 		this.Node = node;
 	}
 
-	public DiscoInfo(string? node, IEnumerable<Identity>? identities, IEnumerable<Feature>? features) : this(node)
+	public DiscoInfo(string? node, IEnumerable<Identity> identities, IEnumerable<Feature> features) : this(node)
 	{
 		this.Identities = identities;
 		this.Features = features;

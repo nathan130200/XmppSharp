@@ -14,34 +14,35 @@ namespace XmppSharp.Parser;
 public class XmppStreamParser : XmppParser
 {
 	static readonly UTF8Encoding s_UTF8 = new(false, true);
-	private XmlEncoding _enc = new UTF8XmlEncoding();
-	private XmlNamespaceManager _namespaceMgr;
+	private XmlEncoding? _encoding = new UTF8XmlEncoding();
+	private XmlNamespaceManager? _namespaces;
 
-	private NameTable _stringPool = new();
-	private BufferAggregate _buf;
+	private NameTable? _stringPool = new();
+	private BufferAggregate? _buf;
 	private bool _isCdata = false;
-	private StringBuilder _cdata = new();
-	private Element _current;
+	private StringBuilder? _cdata = new();
+	private Element? _current;
 
 	public XmppStreamParser()
 	{
-		_namespaceMgr = new XmlNamespaceManager(_stringPool);
+		_namespaces = new XmlNamespaceManager(_stringPool);
 		Reset();
 	}
 
 	protected override void Release()
 	{
-		_cdata.Clear();
+		_cdata?.Clear();
 		_cdata = null;
+
 		_stringPool = null;
 		_buf?.Dispose();
 		_buf = null;
 
-		while (_namespaceMgr.PopScope())
+		while (_namespaces?.PopScope() == true)
 			;
 
-		_namespaceMgr = null;
-		_enc = null;
+		_namespaces = null;
+		_encoding = null;
 
 		_current = null;
 	}
@@ -52,7 +53,7 @@ public class XmppStreamParser : XmppParser
 
 		_current = null;
 		_isCdata = false;
-		_cdata.Clear();
+		_cdata?.Clear();
 		_buf?.Dispose();
 		_buf = new();
 	}
@@ -71,18 +72,19 @@ public class XmppStreamParser : XmppParser
 		{
 			var temp = new byte[count];
 			Array.ConstrainedCopy(buf, 0, temp, 0, count);
-			_buf.Write(temp);
+			_buf?.Write(temp);
 
-			Parse();
+			TryParseInternal();
 		}
 	}
 
-	void Parse()
+	void TryParseInternal()
 	{
-		var b = _buf.GetBuffer();
+		var b = _buf!.GetBuffer();
 		int off = 0;
 
-		var tok = TOK.END_TAG;
+		TOK tok;
+
 		ContentToken ct = new();
 
 		try
@@ -90,9 +92,9 @@ public class XmppStreamParser : XmppParser
 			while (off < b.Length)
 			{
 				if (_isCdata)
-					tok = _enc.TokenizeCdataSection(b, off, b.Length, ct);
+					tok = _encoding!.TokenizeCdataSection(b, off, b.Length, ct);
 				else
-					tok = _enc.TokenizeContent(b, off, b.Length, ct);
+					tok = _encoding!.TokenizeContent(b, off, b.Length, ct);
 
 				switch (tok)
 				{
@@ -125,27 +127,32 @@ public class XmppStreamParser : XmppParser
 						{
 							// <!-- 4
 							//  --> 3
-							int start = off + 4 * _enc.MinBytesPerChar;
+							int start = off + 4 * _encoding.MinBytesPerChar;
 							int end = ct.TokenEnd - off -
-								7 * _enc.MinBytesPerChar;
+								7 * _encoding.MinBytesPerChar;
 							string text = s_UTF8.GetString(b, start, end);
 							_current.AddChild(new Comment(text));
 						}
 						break;
+
 					case TOK.CDATA_SECT_OPEN:
-						_isCdata = true;
-						_cdata.Clear();
-						break;
-					case TOK.CDATA_SECT_CLOSE:
-
-						if (_cdata.Length > 0)
 						{
-							var content = _cdata.ToString();
-							_current?.AddChild(new Cdata(content));
+							_isCdata = true;
+							_cdata!.Clear();
 						}
-						_isCdata = false;
-						_cdata.Clear();
+						break;
 
+					case TOK.CDATA_SECT_CLOSE:
+						{
+
+							if (_cdata!.Length > 0)
+							{
+								var content = _cdata.ToString();
+								_current?.AddChild(new Cdata(content));
+							}
+							_isCdata = false;
+							_cdata.Clear();
+						}
 						break;
 
 					case TOK.PI:
@@ -153,7 +160,7 @@ public class XmppStreamParser : XmppParser
 						break;
 
 					case TOK.ENTITY_REF:
-						throw new JabberStreamException(StreamErrorCondition.NotWellFormed);
+						throw new JabberStreamException(StreamErrorCondition.BadFormat);
 				}
 
 				off = ct.TokenEnd;
@@ -171,12 +178,12 @@ public class XmppStreamParser : XmppParser
 		}
 	}
 
-	string NormalizeAttributeValue(byte[] buf, int offset, int length)
+	string? NormalizeAttributeValue(byte[] buf, int offset, int length)
 	{
 		if (length == 0)
 			return null;
 
-		string val = null;
+		string? val = null;
 		using var buffer = new BufferAggregate();
 
 		byte[] copy = new byte[length];
@@ -192,7 +199,7 @@ public class XmppStreamParser : XmppParser
 		{
 			while (off < b.Length)
 			{
-				tok = _enc.TokenizeAttributeValue(b, off, b.Length, ct);
+				tok = _encoding!.TokenizeAttributeValue(b, off, b.Length, ct);
 
 				switch (tok)
 				{
@@ -236,7 +243,7 @@ public class XmppStreamParser : XmppParser
 		string prefix;
 		var ht = new Dictionary<string, string>();
 
-		_namespaceMgr.PushScope();
+		_namespaces!.PushScope();
 
 		if (tok == TOK.START_TAG_WITH_ATTS || tok == TOK.EMPTY_ELEMENT_WITH_ATTS)
 		{
@@ -248,24 +255,24 @@ public class XmppStreamParser : XmppParser
 			{
 				start = ct.GetAttributeNameStart(i);
 				end = ct.GetAttributeNameEnd(i);
-				name = _stringPool.Add(s_UTF8.GetString(buf, start, end - start));
+				name = _stringPool!.Add(s_UTF8.GetString(buf, start, end - start));
 
 				start = ct.GetAttributeValueStart(i);
 				end = ct.GetAttributeValueEnd(i);
 				//val = utf.GetString(buf, start, end - start);
 
-				val = NormalizeAttributeValue(buf, start, end - start);
+				val = NormalizeAttributeValue(buf, start, end - start)!;
 
 				if (name.StartsWith("xmlns:"))
 				{
 					colon = name.IndexOf(':');
 					prefix = name.Substring(colon + 1);
-					_namespaceMgr.AddNamespace(prefix, val);
+					_namespaces.AddNamespace(prefix, val);
 					ht[name] = _stringPool.Add(val);
 				}
 				else if (name == "xmlns")
 				{
-					_namespaceMgr.AddNamespace(string.Empty, val);
+					_namespaces.AddNamespace(string.Empty, val);
 					ht[name] = _stringPool.Add(val);
 				}
 				else
@@ -275,9 +282,9 @@ public class XmppStreamParser : XmppParser
 			}
 		}
 
-		name = _stringPool.Add(s_UTF8.GetString(buf,
-			offset + _enc.MinBytesPerChar,
-			ct.NameEnd - offset - _enc.MinBytesPerChar));
+		name = _stringPool!.Add(s_UTF8.GetString(buf,
+			offset + _encoding!.MinBytesPerChar,
+			ct.NameEnd - offset - _encoding.MinBytesPerChar));
 
 		colon = name.IndexOf(':');
 		string ns;
@@ -285,11 +292,11 @@ public class XmppStreamParser : XmppParser
 		if (colon > 0)
 		{
 			prefix = name.Substring(0, colon);
-			ns = _namespaceMgr.LookupNamespace(prefix);
+			ns = _namespaces!.LookupNamespace(prefix)!;
 		}
 		else
 		{
-			ns = _namespaceMgr.DefaultNamespace;
+			ns = _namespaces.DefaultNamespace;
 		}
 
 		// eg: When session sends a stanza without namespace. Fallback to `jabber:client` instead.
@@ -303,7 +310,7 @@ public class XmppStreamParser : XmppParser
 			newElement.SetAttribute(key, val);
 
 		if (name == "stream:stream")
-			AsyncHelper.RunSync(() => this.FireStreamStart(newElement as StreamStream));
+			AsyncHelper.RunSync(() => this.FireStreamStart((newElement as StreamStream)!));
 		else
 		{
 			_current?.AddChild(newElement);
@@ -313,30 +320,34 @@ public class XmppStreamParser : XmppParser
 
 	protected virtual void EndTag(byte[] buf, int offset, ContentToken ct, TOK tok)
 	{
-		_namespaceMgr.PopScope();
+		_namespaces!.PopScope();
 
-		string name = null;
+		string name;
 
 		if ((tok == TOK.EMPTY_ELEMENT_WITH_ATTS) ||
 			(tok == TOK.EMPTY_ELEMENT_NO_ATTS))
+		{
 			name = s_UTF8.GetString(buf,
-				offset + _enc.MinBytesPerChar,
+				offset + _encoding!.MinBytesPerChar,
 				ct.NameEnd - offset -
-				_enc.MinBytesPerChar);
+				_encoding.MinBytesPerChar);
+		}
 		else
+		{
 			name = s_UTF8.GetString(buf,
-				offset + _enc.MinBytesPerChar * 2,
+				offset + _encoding!.MinBytesPerChar * 2,
 				ct.NameEnd - offset -
-				_enc.MinBytesPerChar * 2);
+				_encoding.MinBytesPerChar * 2);
+		}
 
-		name = _stringPool.Add(name);
+		name = _stringPool!.Add(name);
 
 		if (name == "stream:stream")
 			AsyncHelper.RunSync(FireStreamEnd);
 		else
 		{
 			if (_current == null)
-				throw new JabberStreamException(StreamErrorCondition.InternalServerError, "Unexcepted null child element.");
+				throw new JabberStreamException(StreamErrorCondition.NotWellFormed);
 
 			var parent = _current.Parent;
 
@@ -353,7 +364,7 @@ public class XmppStreamParser : XmppParser
 			return;
 
 		if (_isCdata)
-			_cdata.Append(text);
+			_cdata!.Append(text);
 		else
 		{
 			if (_current.LastNode is Text t)
