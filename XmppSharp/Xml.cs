@@ -118,6 +118,20 @@ public static partial class Xml
 		return child;
 	}
 
+	public static Element C(this Element parent, Element child)
+	{
+		parent.AddChild(child);
+		return parent;
+	}
+
+	public static Element C(Element parent, params Node[] nodes)
+	{
+		foreach (var node in nodes)
+			parent.AddChild(node);
+
+		return parent;
+	}
+
 	// work around to ensure we will trim all insignificant whitespaces (eg: from file)
 
 	public static Element Parse(string xml)
@@ -139,7 +153,7 @@ public static partial class Xml
 		return result.ConvertToElement();
 	}
 
-	static Element ConvertToElement(this XElement e)
+	internal static Element ConvertToElement(this XElement e)
 	{
 		var name = e.GetElementName();
 		var ns = e.Name.NamespaceName;

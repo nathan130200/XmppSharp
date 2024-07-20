@@ -27,13 +27,17 @@ public partial class Element : Node
 
 	Element()
 	{
-		attrs = new DynamicXmlAttributeBinder(this);
+		attrs = new DynamicAttributeBinding(this);
+		this.children = new DynamicElementBinding(this);
 	}
 
 #pragma warning disable
 
-	[EditorBrowsable(EditorBrowsableState.Always)]
+	[EditorBrowsable(EditorBrowsableState.Advanced)]
 	public dynamic attrs { get; }
+
+	[EditorBrowsable(EditorBrowsableState.Advanced)]
+	public dynamic children { get; }
 
 #pragma warning restore
 
@@ -356,6 +360,9 @@ public partial class Element : Node
 	public virtual void AddChild(Node? n)
 	{
 		if (n == null)
+			return;
+
+		if (n == this)
 			return;
 
 		if (n._parent != null)
