@@ -17,7 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XmppSharp.Expat", "XmppSharp.Expat\XmppSharp.Expat.csproj", "{CF12F677-C669-4201-9548-CE8A13EB752D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmppSharp.Tokenizer", "XmppSharp.Tokenizer\XmppSharp.Tokenizer.csproj", "{150AA1B8-C24F-4EA1-8E1D-FD35E17212A6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XmppSharp.Tokenizer", "XmppSharp.Tokenizer\XmppSharp.Tokenizer.csproj", "{150AA1B8-C24F-4EA1-8E1D-FD35E17212A6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,7 +32,6 @@ Global
 		{37601B18-4B72-4BBE-8600-0E73D96BA6CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{37601B18-4B72-4BBE-8600-0E73D96BA6CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{37601B18-4B72-4BBE-8600-0E73D96BA6CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{37601B18-4B72-4BBE-8600-0E73D96BA6CD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CF12F677-C669-4201-9548-CE8A13EB752D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CF12F677-C669-4201-9548-CE8A13EB752D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF12F677-C669-4201-9548-CE8A13EB752D}.Release|Any CPU.ActiveCfg = Release|Any CPU
