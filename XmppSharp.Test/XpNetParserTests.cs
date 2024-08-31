@@ -1,13 +1,9 @@
 ﻿using System.Diagnostics;
 using System.IO.Compression;
-using System.Net;
-using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using XmppSharp.Dom;
 using XmppSharp.Parser;
 using XmppSharp.Protocol.Base;
-using XmppSharp.Protocol.Sasl;
-using XmppSharp.Protocol.Tls;
 
 namespace XmppSharp.Test;
 
@@ -352,33 +348,7 @@ public class XpNetParserTests
 		Assert.IsNotNull(entry);
 
 		using var stream = entry.Open();
-
-		var tcs = new TaskCompletionSource<Element>();
-
-		using var parser = new XmppStreamParser();
-
-		parser.OnStreamElement += e =>
-		{
-			tcs.TrySetResult(e);
-			return Task.CompletedTask;
-		};
-
-		{
-			int len;
-			var buf = new byte[4];
-
-			while ((len = await stream.ReadAsync(buf)) > 0)
-			{
-				parser.Write(buf, len);
-
-				if (tcs.Task.IsCompleted)
-					break;
-			}
-		}
-
-		var element = await tcs.Task;
-
-		Console.WriteLine("OUT:\n" + element.ToString(false) + "\n");
+		var element = await Xml.ParseAsync(stream);
 
 		Assert.AreEqual("CodeSnippets", element.TagName);
 		Assert.AreEqual("http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet", element.NamespaceURI);

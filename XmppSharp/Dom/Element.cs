@@ -1,16 +1,26 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
 using System.Xml;
+using XmppSharp.Dynamic;
 using XmppSharp.Factory;
 
 namespace XmppSharp.Dom;
 
 [DebuggerDisplay("{" + nameof(StartTag) + "(),nq}")]
-public partial class Element : Node
+public partial class Element : Node, IFormattable
 {
+	string IFormattable.ToString(string? format, IFormatProvider? formatProvider)
+	{
+		if (format == "S") return StartTag();
+		else if (format == "E") return EndTag();
+		else if (format == "I") return ToString(true);
+		return ToString(false);
+	}
+
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	private string _localName = default!;
 
@@ -25,15 +35,22 @@ public partial class Element : Node
 
 	Element()
 	{
-
+		attrs = new DynamicAttributeDictionary(this);
 	}
+
+	[EditorBrowsable(EditorBrowsableState.Never)]
+
+#if NET6_0 || NET7_0
+	[NonSerialized]
+#endif
+	public readonly dynamic attrs;
 
 	public Element(string qualifiedName, string? namespaceURI = default, string? value = default) : this()
 	{
-		var info = Xml.ExtractQualifiedName(qualifiedName);
+		var nameInfo = Xml.ExtractQualifiedName(qualifiedName);
 
-		this._localName = info.LocalName;
-		this._prefix = info.HasPrefix ? info.Prefix : null;
+		this.LocalName = nameInfo.LocalName;
+		this.Prefix = nameInfo.HasPrefix ? nameInfo.Prefix : null;
 
 		if (namespaceURI != null)
 		{
@@ -162,13 +179,13 @@ public partial class Element : Node
 	public Element Clone(bool recursive)
 	{
 		var elem = ElementFactory.Create(this.TagName, this.GetNamespace(this.Prefix)!);
-		elem._localName = this._localName;
-		elem._prefix = this._prefix;
+		elem.LocalName = this._localName;
+		elem.Prefix = this._prefix;
 
 		lock (this._attributes)
 		{
 			foreach (var (key, value) in this._attributes)
-				elem._attributes[key] = value;
+				elem.SetAttribute(key, value);
 		}
 
 		if (recursive)
@@ -177,9 +194,9 @@ public partial class Element : Node
 			{
 				foreach (var node in this._childNodes)
 				{
-					var childNode = node.Clone();
-					elem._childNodes.Add(childNode);
-					childNode._parent = elem;
+					var newNode = node.Clone();
+					elem._childNodes.Add(newNode);
+					newNode._parent = elem;
 				}
 			}
 		}
@@ -190,16 +207,14 @@ public partial class Element : Node
 	public override Element Clone()
 		=> Clone(true);
 
-	static readonly XmlFormatting s_StartTagFormatting = XmlFormatting.None with { WriteEndDocumentOnClose = false };
-
 	public string StartTag()
 	{
 		var sb = new StringBuilder($"<{XmlConvert.EncodeName(TagName)}");
 
 		lock (_attributes)
 		{
-			foreach (var (key, value) in _attributes)
-				sb.AppendFormat(" {0}=\"{1}\"", XmlConvert.EncodeName(key), SecurityElement.Escape(value));
+			foreach (var (name, value) in _attributes)
+				sb.AppendFormat(" {0}=\"{1}\"", XmlConvert.EncodeName(name), SecurityElement.Escape(value));
 		}
 
 		return sb.Append('>').ToString();
@@ -208,9 +223,14 @@ public partial class Element : Node
 	public string EndTag()
 		=> string.Concat("</", XmlConvert.EncodeName(TagName), '>');
 
-	internal void WriteToInternal(XmlWriter writer, XmlFormatting formatting, bool includeChildren = true, bool writeEndTag = true)
+	internal void WriteToInternal(XmlWriter writer, XmlFormatting formatting)
 	{
-		string skipAttribute = this._prefix == null ? "xmlns" : $"xmlns:{this._prefix}";
+		var serialized = new HashSet<string>(StringComparer.Ordinal)
+		{
+			this._prefix == null
+				? "xmlns"
+				: $"xmlns:{this._prefix}"
+		};
 
 		if (this._prefix == null)
 			writer.WriteStartElement(this._localName, this.GetNamespace(this._prefix));
@@ -221,7 +241,7 @@ public partial class Element : Node
 		{
 			foreach (var (name, value) in this._attributes)
 			{
-				if (skipAttribute == name)
+				if (!serialized.Add(name))
 					continue;
 
 				var info = Xml.ExtractQualifiedName(name);
@@ -238,17 +258,13 @@ public partial class Element : Node
 			}
 		}
 
-		if (includeChildren)
+		lock (this._childNodes)
 		{
-			lock (this._childNodes)
-			{
-				foreach (var node in this._childNodes)
-					node.WriteTo(writer, formatting);
-			}
+			foreach (var node in this._childNodes)
+				node.WriteTo(writer, formatting);
 		}
 
-		if (writeEndTag)
-			writer.WriteEndElement();
+		writer.WriteEndElement();
 	}
 
 	public override void WriteTo(XmlWriter writer, XmlFormatting formatting)
@@ -321,8 +337,8 @@ public partial class Element : Node
 		if (n == null)
 			return;
 
-		// i'm follow XContainer rules, always clone element.
-		n = n.Clone();
+		if (n._parent != null)
+			n = n.Clone();
 
 		lock (this._childNodes)
 			this._childNodes.Add(n);
@@ -391,7 +407,7 @@ public partial class Element : Node
 		return value;
 	}
 
-	public IReadOnlyDictionary<string, string> Attributes()
+	public IReadOnlyDictionary<string, string> GetAttributes()
 	{
 		KeyValuePair<string, string>[] result;
 

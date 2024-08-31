@@ -1,17 +1,14 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using System.Xml.Linq;
-using NuGet.Frameworks;
-using XmppSharp.Parser;
-using XmppSharp.XpNet;
 
 namespace XmppSharp.Test;
 
 [TestClass]
 public class TokenizerTests
 {
-	static readonly byte[] StartTagData = "<foo xmlns='bar' xmlns:foo='bar'>"u8.ToArray();
-	static readonly byte[] EndTagData = "</foo>"u8.ToArray();
+	static readonly byte[] StartTagData = "<foo xmlns='bar' xmlns:foo='bar'>".GetBytes();
+	static readonly byte[] EndTagData = "</foo>".GetBytes();
 	static readonly byte[] ElementData = StartTagData.Concat(EndTagData).ToArray();
 
 	// Source: https://onlinetools.com/random/generate-random-xml
@@ -189,7 +186,7 @@ public class TokenizerTests
 	[TestMethod]
 	public void ParseEntityrefTokens()
 	{
-		var buf = "<foo xmlns='bar'>&amp;amp;&#x20;&#x22;</foo>"u8.ToArray();
+		var buf = "<foo xmlns='bar'>&amp;amp;&#x20;&#x22;</foo>".GetBytes();
 		ParseXmlFromBuffer(buf);
 	}
 

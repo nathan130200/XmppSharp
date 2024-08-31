@@ -61,18 +61,18 @@ public static partial class Xml
 		var settings = new XmlWriterSettings
 		{
 			Indent = formatting.IndentSize > 0,
-			IndentChars = new string(formatting.IndentChar, formatting.IndentSize),
+			IndentChars = formatting.IndentSize == 0 ? string.Empty : new string(formatting.IndentChar, formatting.IndentSize),
 			DoNotEscapeUriAttributes = formatting.DoNotEscapeUriAttributes,
 			WriteEndDocumentOnClose = formatting.WriteEndDocumentOnClose,
 			NewLineHandling = formatting.NewLineHandling,
 			NewLineOnAttributes = formatting.NewLineOnAttributes,
 			CheckCharacters = true,
 			CloseOutput = true,
-			ConformanceLevel = ConformanceLevel.Fragment,
+			ConformanceLevel = formatting.ConformanceLevel,
 			Encoding = Encoding.UTF8,
 			NamespaceHandling = formatting.NamespaceHandling,
 			OmitXmlDeclaration = formatting.OmitXmlDeclaration,
-			NewLineChars = formatting.NewLineChars
+			NewLineChars = formatting.NewLineChars,
 		};
 
 		return XmlWriter.Create(new StringWriter(output), settings);
@@ -90,15 +90,18 @@ public static partial class Xml
 	public static Element? Up(this Element child)
 	{
 		Require.NotNull(child);
+
 		return child.Parent;
 	}
 
-	public static Element? Root(this Element child)
+	public static Element Root(this Element child)
 	{
+		Require.NotNull(child);
+
 		while (!child.IsRootElement)
 			child = child.Parent!;
 
-		return child!;
+		return child;
 	}
 
 	public static Element Element(string name, string? xmlns = default, string? value = default)
@@ -111,9 +114,9 @@ public static partial class Xml
 		return result;
 	}
 
-	public static Element C(this Element parent, string name, string? xmlns = default, string? value = default)
+	public static Element C(this Element parent, string name, string? namespaceURI = default, string? value = default)
 	{
-		var child = Element(name, xmlns, value);
+		var child = Element(name, namespaceURI, value);
 		parent.AddChild(child);
 		return child;
 	}

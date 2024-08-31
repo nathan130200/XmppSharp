@@ -1,45 +1,45 @@
-﻿namespace XmppSharp.Test;
+﻿using XmppSharp.Dom;
+using XmppSharp.Protocol;
+
+namespace XmppSharp.Test;
 
 [TestClass]
 public class DynamicBindingTests
 {
-	//[TestMethod]
-	//public void TestWithPrimitives()
-	//{
-	//	var xml = Xml.Parse("<foo my_int='2' my_float='1.25' />");
+	[TestMethod]
+	public void TestWithPrimitives()
+	{
+		var xml = Xml.Parse("<foo my_int='2' my_float='1.25' />");
 
-	//	int myInt = xml.attrs.my_int;
-	//	Assert.AreEqual(2, myInt);
+		int myInt = xml.attrs.my_int;
+		Assert.AreEqual(2, myInt);
 
-	//	float myFloat = xml.attrs.my_float;
-	//	Assert.AreEqual(1.25f, myFloat);
-	//}
+		float myFloat = xml.attrs.my_float;
+		Assert.AreEqual(1.25f, myFloat);
+	}
 
 	[TestMethod]
 	public void TestNumChild()
 	{
 		var element = Xml.Parse("<foo/>");
 
-		var bar = Xml.Element("bar");
-		element.AddChild(bar);
-		element.AddChild(bar);
-		element.AddChild(bar);
-		element.AddChild(bar);
+		var bar = () => Xml.Element("bar");
+		element.AddChild(bar());
+		element.AddChild(bar());
+		element.AddChild(bar());
+		element.AddChild(bar());
 
 		var count = element.Children("bar").Count();
 
 		Assert.AreEqual(4, count);
 
-		Console.WriteLine("OUT [1]:\n" + element.ToString(XmlFormatting.Indented) + "\n");
-
-		element.AddChild(element);
-
-		Console.WriteLine("OUT [2]:\n" + element.ToString(XmlFormatting.Indented) + "\n");
+		Console.WriteLine("OUT:\n" + element.ToString(XmlFormatting.Indented) + "\n");
 	}
 
-	/*[TestMethod]
+	[TestMethod]
 	public void CreateFromCtor()
 	{
+		/*
 		var el = new Iq(IqType.Result)
 		{
 			children =
@@ -57,6 +57,14 @@ public class DynamicBindingTests
 				}
 			}
 		};
+		*/
+
+		var el = new Iq(IqType.Result);
+		{
+			var rpc = el.C("query", Namespaces.IqRpc);
+			rpc.attrs.command_id = 12345;
+			rpc.Value = "some cool text";
+		}
 
 		var xml = el.ToString(true);
 
@@ -66,5 +74,5 @@ public class DynamicBindingTests
 		Assert.AreEqual(12345, (int)el.FirstChild!.attrs.command_id);
 		Assert.IsTrue(el.FirstChild.LastNode is Text);
 		Assert.AreEqual("some cool text", el.FirstChild.LastNode.Value);
-	}*/
+	}
 }

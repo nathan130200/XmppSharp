@@ -10,19 +10,16 @@ namespace XmppSharp;
 /// </remarks>
 public readonly struct XmlFormatting
 {
-	/// <summary>
-	/// Determines the behavior of declaring namespaces in the XML element. (Default: <see cref="NamespaceHandling.OmitDuplicates"/>)
-	/// </summary>
+	/// <inheritdoc cref="XmlWriterSettings.NamespaceHandling" />
 	public NamespaceHandling NamespaceHandling { get; init; }
 
-	/// <summary>
-	/// Determines whether the XML output will omit the prologue, i.e. <c><![CDATA[<?xml version='1.0' ... ?>]]></c>. (Default: <see langword="true" />)
-	/// </summary>
+	/// <inheritdoc cref="XmlWriterSettings.ConformanceLevel" />
+	public ConformanceLevel ConformanceLevel { get; init; }
+
+	/// <inheritdoc cref="XmlWriterSettings.OmitXmlDeclaration" />
 	public bool OmitXmlDeclaration { get; init; }
 
-	/// <summary>
-	/// Determines whether to escape the URI attributes. Default: <see langword="false" />.
-	/// </summary>
+	/// <inheritdoc cref="XmlWriterSettings.DoNotEscapeUriAttributes" />
 	public bool DoNotEscapeUriAttributes { get; init; }
 
 	/// <summary>
@@ -50,24 +47,16 @@ public readonly struct XmlFormatting
 	/// </summary>
 	public char IndentChar { get; init; }
 
-	/// <summary>
-	/// Gets or sets a value that indicates whether the System.Xml.XmlWriter will add closing tags to all unclosed element tags when the <see cref="System.Xml.XmlWriter.Close"/> method is called.
-	/// </summary>
+	/// <inheritdoc cref="XmlWriterSettings.WriteEndDocumentOnClose" />
 	public bool WriteEndDocumentOnClose { get; init; }
 
-	/// <summary>
-	/// Gets or sets a value indicating whether to normalize line breaks in the output. (Default: <see cref="NewLineHandling.Replace"/>)
-	/// </summary>
+	/// <inheritdoc cref="XmlWriterSettings.NewLineHandling" />
 	public NewLineHandling NewLineHandling { get; init; }
 
-	/// <summary>
-	/// Gets or sets a value indicating whether to write attributes on a new line. (Default: <see langword="false" />)
-	/// </summary>
+	/// <inheritdoc cref="XmlWriterSettings.NewLineOnAttributes" />
 	public bool NewLineOnAttributes { get; init; }
 
-	/// <summary>
-	/// Gets or sets the character string to use for line breaks. (Default: <see cref="Environment.NewLine"/>)
-	/// </summary>
+	/// <inheritdoc cref="XmlWriterSettings.NewLineChars" />
 	public string NewLineChars { get; init; }
 
 	/// <summary>
@@ -81,6 +70,7 @@ public readonly struct XmlFormatting
 
 		WriteEndDocumentOnClose = true;
 		DoNotEscapeUriAttributes = false;
+		ConformanceLevel = ConformanceLevel.Fragment;
 
 		NamespaceHandling = NamespaceHandling.OmitDuplicates;
 		OmitXmlDeclaration = true;
@@ -94,7 +84,7 @@ public readonly struct XmlFormatting
 	}
 
 	/// <summary>
-	/// Standard XML Formatting outputs the xml string without formatting, using the default rules. Highly recommended for serialization, network sending, file store, etc.
+	/// Standard XML Formatting outputs the xml string without formatting, using the default rules. Highly recommended for serialization, network, file, etc.
 	/// </summary>
 	public static XmlFormatting None { get; } = new();
 

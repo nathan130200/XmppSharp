@@ -47,35 +47,16 @@ public class StanzaError : Element
 		}
 	}
 
-
-	// Legacy code API.
 	public int? Code
 	{
-		get
-		{
-			var attr = GetAttribute("code");
-
-			if (attr == null)
-				return null;
-
-			return int.Parse(attr);
-		}
-		set => this.SetAttribute("code", value);
+		get => this.attrs.code;
+		set => this.attrs.code = value;
 	}
 
-	// Legacy code API.
 	public int? CustomCode
 	{
-		get
-		{
-			var attr = GetAttribute("custom_code");
-
-			if (attr == null)
-				return null;
-
-			return int.Parse(attr);
-		}
-		set => this.SetAttribute("custom_code", value);
+		get => this.attrs.custom_code;
+		set => this.attrs.custom_code = value;
 	}
 
 	public string? Text
