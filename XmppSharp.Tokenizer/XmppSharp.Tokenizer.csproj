@@ -1,7 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+	<Import Project="..\XmppSharp.Shared\XmppSharp.Shared.xml" />
+
 	<PropertyGroup>
-		<TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+		<AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>annotations</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -10,8 +13,8 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageTags>xmpp, parser, tokenizer</PackageTags>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
-		<PackageOutputPath>$(SolutionDir)\_Build</PackageOutputPath>
-		<PackageVersion>1.1</PackageVersion>
+		<PackageOutputPath>$(SolutionDir)\Packages</PackageOutputPath>
+		<PackageVersion>1.1.2</PackageVersion>
 		<Description>XMPP# tokenizer package.</Description>
 		<PublishTrimmed>true</PublishTrimmed>
 	</PropertyGroup>

@@ -9,7 +9,12 @@ namespace XmppSharp;
 /// Represents an jabber identifier.
 /// </summary>
 [DebuggerDisplay("{ToString(),nq}")]
-public sealed record Jid : IEquatable<Jid>, IParsable<Jid>
+public sealed record Jid : IEquatable<Jid>
+
+#if NET7_0_OR_GREATER
+	, IParsable<Jid>
+#endif
+
 {
 	/// <inheritdoc />
 	public static bool TryParse(string? s, IFormatProvider? provider, out Jid result)

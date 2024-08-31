@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using System.Net;
+using System.Xml;
 using System.Xml.Schema;
 using XmppSharp.Exceptions;
 using XmppSharp.Factory;
@@ -68,6 +69,29 @@ public class XmppStreamReader : XmppParser
 		this._nameTable = null;
 	}
 
+	class InternalXmlThrowingResolver : XmlResolver
+	{
+		public static InternalXmlThrowingResolver Shared { get; } = new();
+
+		public override ICredentials Credentials
+		{
+			set
+			{
+				// do nothing
+			}
+		}
+
+		public override Task<object> GetEntityAsync(Uri absoluteUri, string? role, Type? ofObjectToReturn)
+		{
+			throw new InvalidOperationException("Resolving XML entities is not supported.");
+		}
+
+		public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
+		{
+			throw new InvalidOperationException("Resolving XML entities is not supported.");
+		}
+	}
+
 	/// <summary>
 	/// Restarts (or initialize) the state of the XML parser.
 	/// </summary>
@@ -91,7 +115,12 @@ public class XmppStreamReader : XmppParser
 
 			// More info: https://en.wikipedia.org/wiki/Billion_laughs_attack
 			DtdProcessing = DtdProcessing.Ignore,
+
+#if NET7_0_OR_GREATER
 			XmlResolver = XmlResolver.ThrowingResolver,
+#else
+			XmlResolver = InternalXmlThrowingResolver.Shared,
+#endif
 			ValidationFlags = XmlSchemaValidationFlags.AllowXmlAttributes,
 			NameTable = this._nameTable
 		});

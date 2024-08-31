@@ -6,6 +6,8 @@ using System.Numerics;
 
 namespace XmppSharp;
 
+#if NET7_0_OR_GREATER
+
 /// <summary>
 /// Represents the delegate type of a function that converts string to <typeparamref name="T"/>.
 /// </summary>
@@ -120,5 +122,7 @@ public static class TryParseHelpers
 		return null;
 	}
 }
+
+#endif
 
 #pragma warning restore

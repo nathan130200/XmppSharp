@@ -1,9 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+	<Import Project="..\XmppSharp.Shared\XmppSharp.Shared.xml" />
+
 	<PropertyGroup>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+		<Nullable>annotations</Nullable>
+		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
 		<NoWarn>$(NoWarn);CS1591</NoWarn>
 	</PropertyGroup>
 
@@ -14,7 +16,7 @@
 		<Description>Lightweight xmpp library inspired on classic xmpp library agsXMPP.</Description>
 		<PackageProjectUrl>https://github.com/nathan130200/XmppSharp</PackageProjectUrl>
 		<PackageTags>xml, jabber, xmpp, xmpp-client, xmpp-server, xmpp-component</PackageTags>
-		<PackageOutputPath>$(SolutionDir)/_Build/</PackageOutputPath>
+		<PackageOutputPath>$(SolutionDir)/Packages/</PackageOutputPath>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
@@ -32,7 +34,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>4.4.1</Version>
+		<Version>4.4.2</Version>
 		<Copyright>nathan130200</Copyright>
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
@@ -68,10 +70,6 @@
 	    <PrivateAssets>all</PrivateAssets>
 	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	  </PackageReference>
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\XmppSharp.Tokenizer\XmppSharp.Tokenizer.csproj" />
 	</ItemGroup>
 
 </Project>

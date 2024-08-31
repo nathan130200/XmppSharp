@@ -8,7 +8,13 @@ public readonly record struct XmlNameInfo
 	public bool HasPrefix
 		=> !string.IsNullOrWhiteSpace(this.Prefix);
 
-	public required string LocalName
+	public
+
+#if NET7_0_OR_GREATER
+		required
+#endif
+
+		string LocalName
 	{
 		get;
 		init;

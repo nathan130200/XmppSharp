@@ -16,6 +16,8 @@
 
 # Build results
 _[Bb]uild/
+[Bb]uild/
+
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/

@@ -33,8 +33,15 @@ public abstract class XmppParser : IDisposable
 		set => _disposed = value;
 	}
 
+#pragma warning disable
+
 	protected void ThrowIfDisposed()
-		=> ObjectDisposedException.ThrowIf(_disposed, this);
+	{
+		if (_disposed)
+			throw new ObjectDisposedException(GetType().FullName);
+	}
+
+#pragma warning restore
 
 	/// <summary>
 	/// Method that is called when disposing the parser.

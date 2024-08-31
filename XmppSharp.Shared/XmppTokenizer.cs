@@ -42,7 +42,14 @@ public class XmppTokenizer : IDisposable
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void ThrowIfDisposed()
-		=> ObjectDisposedException.ThrowIf(_disposed, this);
+	{
+#if NET7_0_OR_GREATER
+		ObjectDisposedException.ThrowIf(_disposed, this);
+#else
+		if(_disposed)
+			throw new ObjectDisposedException(GetType().FullName);
+#endif
+	}
 
 	public void Dispose()
 	{

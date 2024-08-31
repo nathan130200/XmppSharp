@@ -20,7 +20,7 @@ public class ExpatException : Exception
 
 	internal unsafe void SetParserInfo(nint parser)
 	{
-		if (parser == nint.Zero)
+		if (parser == 0)
 			return;
 
 		if (!_haveParserInfo)

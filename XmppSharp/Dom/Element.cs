@@ -1,11 +1,9 @@
-﻿using System.ComponentModel;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
 using System.Xml;
-using XmppSharp.Binder;
 using XmppSharp.Factory;
 
 namespace XmppSharp.Dom;
@@ -27,19 +25,8 @@ public partial class Element : Node
 
 	Element()
 	{
-		attrs = new DynamicAttributeBinding(this);
-		this.children = new DynamicElementBinding(this);
+
 	}
-
-#pragma warning disable
-
-	[EditorBrowsable(EditorBrowsableState.Advanced)]
-	public dynamic attrs { get; }
-
-	[EditorBrowsable(EditorBrowsableState.Advanced)]
-	public dynamic children { get; }
-
-#pragma warning restore
 
 	public Element(string qualifiedName, string? namespaceURI = default, string? value = default) : this()
 	{
@@ -66,51 +53,51 @@ public partial class Element : Node
 			return this._childNodes.ToArray();
 	}
 
-	static void DescendantNodesCore(Element parent, List<Node> result)
+	static void GetDescendantNodesCore(Element parent, List<Node> result)
 	{
 		foreach (var node in parent.Nodes())
 		{
 			result.Add(node);
 
 			if (node is Element e)
-				DescendantNodesCore(e, result);
+				GetDescendantNodesCore(e, result);
 		}
 	}
 
-	static void DescendantElementsCore(Element parent, List<Element> result)
+	static void GetDescendantElementsCore(Element parent, List<Element> result)
 	{
 		foreach (var element in parent.Children())
 		{
 			result.Add(element);
-			DescendantElementsCore(element, result);
+			GetDescendantElementsCore(element, result);
 		}
 	}
 
 	public IEnumerable<Node> DescendantNodes()
 	{
 		var result = new List<Node>();
-		DescendantNodesCore(this, result);
+		GetDescendantNodesCore(this, result);
 		return result;
 	}
 
 	public IEnumerable<Node> DescendantNodesAndSelf()
 	{
 		var result = new List<Node> { this };
-		DescendantNodesCore(this, result);
+		GetDescendantNodesCore(this, result);
 		return result;
 	}
 
 	public IEnumerable<Element> Descendants()
 	{
 		var result = new List<Element>();
-		DescendantElementsCore(this, result);
+		GetDescendantElementsCore(this, result);
 		return result;
 	}
 
 	public IEnumerable<Element> DescendantsAndSelf()
 	{
 		var result = new List<Element> { this };
-		DescendantElementsCore(this, result);
+		GetDescendantElementsCore(this, result);
 		return result;
 	}
 
@@ -273,14 +260,14 @@ public partial class Element : Node
 		set
 		{
 			Require.NotNullOrWhiteSpace(value, nameof(this.LocalName));
-			this._localName = value;
+			this._localName = string.Intern(value);
 		}
 	}
 
 	public string? Prefix
 	{
 		get => this._prefix;
-		set => this._prefix = string.IsNullOrWhiteSpace(value) ? null : value;
+		set => this._prefix = string.IsNullOrWhiteSpace(value) ? null : string.Intern(value);
 	}
 
 	public string TagName
@@ -288,20 +275,20 @@ public partial class Element : Node
 		get
 		{
 			if (this._prefix != null)
-				return string.Concat(_prefix, ':', _localName);
+				return string.Intern(string.Concat(_prefix, ':', _localName));
 
-			return _localName;
+			return string.Intern(_localName);
 		}
 		set
 		{
-			ArgumentException.ThrowIfNullOrEmpty(value);
+			Require.NotNullOrEmpty(value);
 
 			var info = Xml.ExtractQualifiedName(value);
 
 			if (info.HasPrefix)
-				_prefix = info.Prefix;
+				Prefix = info.Prefix;
 
-			_localName = info.LocalName;
+			LocalName = info.LocalName;
 		}
 	}
 
@@ -324,49 +311,18 @@ public partial class Element : Node
 	}
 
 	public Element? FirstChild
-	{
-		get
-		{
-			lock (this._childNodes)
-			{
-				for (int i = 0; i < _childNodes.Count; i++)
-				{
-					if (_childNodes[i] is Element e)
-						return e;
-				}
-
-				return default;
-			}
-		}
-	}
+		=> Nodes().OfType<Element>().FirstOrDefault();
 
 	public Element? LastChild
-	{
-		get
-		{
-			lock (this._childNodes)
-			{
-				for (var i = _childNodes.Count - 1; i >= 0; i--)
-				{
-					if (_childNodes[i] is Element e)
-						return e;
-				}
-
-				return null;
-			}
-		}
-	}
+		=> Nodes().OfType<Element>().LastOrDefault();
 
 	public virtual void AddChild(Node? n)
 	{
 		if (n == null)
 			return;
 
-		if (n == this)
-			return;
-
-		if (n._parent != null)
-			n = n.Clone();
+		// i'm follow XContainer rules, always clone element.
+		n = n.Clone();
 
 		lock (this._childNodes)
 			this._childNodes.Add(n);
@@ -382,18 +338,17 @@ public partial class Element : Node
 		lock (this._childNodes)
 		{
 			n._parent = null;
-
 			this._childNodes.Remove(n);
+		}
 
-			if (n is Element elem)
-			{
-				var prefix = elem.Prefix;
+		if (n is Element elem)
+		{
+			var prefix = elem.Prefix;
 
-				if (prefix != null)
-					elem.SetNamespace(prefix, this.GetNamespace(prefix));
-				else
-					elem.SetNamespace(this.GetNamespace());
-			}
+			if (prefix != null)
+				elem.SetNamespace(prefix, this.GetNamespace(prefix));
+			else
+				elem.SetNamespace(this.GetNamespace());
 		}
 	}
 
@@ -425,6 +380,9 @@ public partial class Element : Node
 	{
 		Require.NotNullOrWhiteSpace(name);
 
+
+		name = string.Intern(name);
+
 		string? value;
 
 		lock (this._attributes)
@@ -440,12 +398,14 @@ public partial class Element : Node
 		lock (_attributes)
 			result = _attributes.ToArray();
 
-		return result.ToDictionary(x => x.Key, x => x.Value);
+		return result.ToDictionary(x => string.Intern(x.Key), x => x.Value);
 	}
 
 	public Element SetAttribute(string name, object? value)
 	{
 		Require.NotNullOrWhiteSpace(name);
+
+		name = string.Intern(name);
 
 		lock (this._attributes)
 		{
@@ -463,7 +423,7 @@ public partial class Element : Node
 		return this;
 	}
 
-	public void RemoveAllChildNodes()
+	public void RemoveNodes()
 	{
 		lock (_childNodes)
 		{
@@ -486,21 +446,26 @@ public partial class Element : Node
 		}
 	}
 
-	public void RemoveAllAttributes()
+	public void RemoveAttributes()
 	{
 		lock (_attributes)
 			_attributes.Clear();
 	}
 
-	public void Clear()
+	public void RemoveAll()
 	{
-		RemoveAllChildNodes();
-		RemoveAllAttributes();
+		lock (this)
+		{
+			RemoveNodes();
+			RemoveAttributes();
+		}
 	}
 
 	public Element RemoveAttribute(string name)
 	{
 		Require.NotNullOrWhiteSpace(name);
+
+		name = string.Intern(name);
 
 		lock (this._attributes)
 			this._attributes.Remove(name);
@@ -511,6 +476,8 @@ public partial class Element : Node
 	public bool HasAttribute(string name)
 	{
 		Require.NotNullOrWhiteSpace(name);
+
+		name = string.Intern(name);
 
 		lock (this._attributes)
 			return this._attributes.ContainsKey(name);
@@ -615,21 +582,5 @@ public partial class Element : Node
 	{
 		Require.NotNullOrWhiteSpace(tagName);
 		return this.Child(tagName, namespaceURI) is not null;
-	}
-
-	public void ReplaceWith(Element other)
-	{
-		Require.NotNull(other);
-
-		var parent = this.Parent;
-		this.Remove();
-		parent?.AddChild(other);
-	}
-
-	public void ReplaceFrom(ref Element other)
-	{
-		Require.NotNull(other);
-		other.Remove();
-		other = this;
 	}
 }

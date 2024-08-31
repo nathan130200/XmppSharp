@@ -135,25 +135,25 @@ public static partial class Xml
 	// work around to ensure we will trim all insignificant whitespaces (eg: from file)
 
 	public static Element Parse(string xml)
-		=> XElement.Parse(xml, LoadOptions.None).ConvertToElement();
+		=> XElement.Parse(xml, LoadOptions.None).ToXmppElement();
 
 	public static Element Parse(Stream stream)
-		=> XElement.Load(stream, LoadOptions.None).ConvertToElement();
+		=> XElement.Load(stream, LoadOptions.None).ToXmppElement();
 
 	public static async Task<Element> ParseAsync(string xml, CancellationToken token = default)
 	{
 		using var sr = new StringReader(xml);
 		var result = await XElement.LoadAsync(sr, LoadOptions.None, token);
-		return result.ConvertToElement();
+		return result.ToXmppElement();
 	}
 
 	public static async Task<Element> ParseAsync(Stream stream, CancellationToken token = default)
 	{
 		var result = await XElement.LoadAsync(stream, LoadOptions.None, token);
-		return result.ConvertToElement();
+		return result.ToXmppElement();
 	}
 
-	internal static Element ConvertToElement(this XElement e)
+	public static Element ToXmppElement(this XElement e)
 	{
 		var name = e.GetElementName();
 		var ns = e.Name.NamespaceName;
@@ -170,7 +170,7 @@ public static partial class Xml
 			result.Value = e.Value;
 
 		foreach (var child in e.Elements())
-			result.AddChild(child.ConvertToElement());
+			result.AddChild(child.ToXmppElement());
 
 		return result;
 	}

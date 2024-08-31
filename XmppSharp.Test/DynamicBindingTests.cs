@@ -1,22 +1,19 @@
-﻿using XmppSharp.Dom;
-using XmppSharp.Protocol;
-
-namespace XmppSharp.Test;
+﻿namespace XmppSharp.Test;
 
 [TestClass]
 public class DynamicBindingTests
 {
-	[TestMethod]
-	public void TestWithPrimitives()
-	{
-		var xml = Xml.Parse("<foo my_int='2' my_float='1.25' />");
+	//[TestMethod]
+	//public void TestWithPrimitives()
+	//{
+	//	var xml = Xml.Parse("<foo my_int='2' my_float='1.25' />");
 
-		int myInt = xml.attrs.my_int;
-		Assert.AreEqual(2, myInt);
+	//	int myInt = xml.attrs.my_int;
+	//	Assert.AreEqual(2, myInt);
 
-		float myFloat = xml.attrs.my_float;
-		Assert.AreEqual(1.25f, myFloat);
-	}
+	//	float myFloat = xml.attrs.my_float;
+	//	Assert.AreEqual(1.25f, myFloat);
+	//}
 
 	[TestMethod]
 	public void TestNumChild()
@@ -40,7 +37,7 @@ public class DynamicBindingTests
 		Console.WriteLine("OUT [2]:\n" + element.ToString(XmlFormatting.Indented) + "\n");
 	}
 
-	[TestMethod]
+	/*[TestMethod]
 	public void CreateFromCtor()
 	{
 		var el = new Iq(IqType.Result)
@@ -69,5 +66,5 @@ public class DynamicBindingTests
 		Assert.AreEqual(12345, (int)el.FirstChild!.attrs.command_id);
 		Assert.IsTrue(el.FirstChild.LastNode is Text);
 		Assert.AreEqual("some cool text", el.FirstChild.LastNode.Value);
-	}
+	}*/
 }
