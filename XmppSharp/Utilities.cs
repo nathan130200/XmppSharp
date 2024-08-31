@@ -1,11 +1,11 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text;
-using System.Xml;
+using System.Text.RegularExpressions;
 using XmppSharp.Parser;
 
 namespace XmppSharp;
 
-public static class Utilities
+public static partial class Utilities
 {
 	public static ReadOnlyJid AsReadOnly(this Jid jid)
 		=> new(jid);
@@ -31,7 +31,7 @@ public static class Utilities
 
 		return result.ToLowerInvariant();
 	}
-	
+
 	public static TaskAwaiter<bool> GetAwaiter(this XmppStreamReader parser)
 		=> parser.AdvanceAsync().GetAwaiter();
 
@@ -59,5 +59,17 @@ public static class Utilities
 	{
 		result = e.Child(tagName);
 		return result != null;
+	}
+
+	public static bool TryMatch(this Regex regex, string input, out Match result)
+	{
+		result = regex.Match(input);
+		return result.Success;
+	}
+
+	public static bool TryMatches(this Regex regex, string input, out IEnumerable<Match> result)
+	{
+		result = regex.Matches(input);
+		return result.Any(x => x.Success);
 	}
 }

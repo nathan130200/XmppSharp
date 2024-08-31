@@ -39,7 +39,7 @@ public class Iq : Stanza
 				|| this.TryGetChild("ping", Namespaces.Ping, out result)
 				|| this.TryGetChild("vCard", Namespaces.vCard, out result);
 
-			return result;
+			return result ?? FirstChild;
 		}
 		set
 		{
