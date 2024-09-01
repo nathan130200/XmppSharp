@@ -38,12 +38,25 @@ public partial class Element : Node, IFormattable
 		attrs = new DynamicAttributeDictionary(this);
 	}
 
-	[EditorBrowsable(EditorBrowsableState.Never)]
+#pragma warning disable // bla bla bla, name rule violation
 
-#if NET6_0 || NET7_0
-	[NonSerialized]
+	/// <summary>
+	/// Gets dynamic access to the element's attributes. Values can be converted according to the provided cast type.
+	/// <para>
+	/// Example: <c>var status = (int)el.attrs.status;</c> the dynamic cast will attempt to convert to int.
+	/// </para>
+	/// <para>If the attribute does not exist, it will return the default value (null on <see cref="string" />s and objects, and <see cref="Nullable{T}" /> will also return null, 
+	/// primitive types will return the default value, or zero most of the cases).</para>
+	/// <para>
+	/// This property is a wrapper for the <see cref="DynamicAttributeDictionary" /> class, and the raw values returned from it are of type <see cref="DynamicAttributeValue" /> in case you want to manipulate it manually.
+	/// </para>
+	/// </summary>
+#if NET6_0 || NET8_0
+	[EditorBrowsable(EditorBrowsableState.Never)]
 #endif
-	public readonly dynamic attrs;
+	public dynamic attrs { get; }
+
+#pragma warning restore
 
 	public Element(string qualifiedName, string? namespaceURI = default, string? value = default) : this()
 	{

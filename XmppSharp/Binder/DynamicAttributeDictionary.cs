@@ -4,6 +4,9 @@ using System.Dynamic;
 
 namespace XmppSharp.Dynamic;
 
+/// <summary>
+/// Represents the class for dynamic handling the XML attributes.
+/// </summary>
 [EditorBrowsable(EditorBrowsableState.Never)]
 public sealed class DynamicAttributeDictionary : DynamicObject
 {
@@ -32,6 +35,9 @@ public sealed class DynamicAttributeDictionary : DynamicObject
 	}
 }
 
+/// <summary>
+/// Represents the class that contains a dynamic converter of the XML attribute value.
+/// </summary>
 [EditorBrowsable(EditorBrowsableState.Never)]
 public class DynamicAttributeValue : DynamicObject
 {
