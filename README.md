@@ -5,11 +5,12 @@ Lightweight XMPP library. [![nuget](https://img.shields.io/badge/XmppSharp-1?sty
 
 #### Supported features
 
-- [RFC6120](https://xmpp.org/rfcs/rfc6120.html) - XMPP: Core
-- [XEP-0199](https://xmpp.org/extensions/xep-0199.html) - XMPP: Ping
-- [XEP-0004](https://xmpp.org/extensions/xep-0004.html) - XMPP: Data Forms
-- [XEP-0030](https://xmpp.org/extensions/xep-0030.html) - XMPP: Service Discovery
-- [XEP-0045](https://xmpp.org/extensions/xep-0045.html) - XMPP: Multi User Chat
+- [RFC-6120](https://xmpp.org/rfcs/rfc6120.html) - Core
+- [XEP-0004](https://xmpp.org/extensions/xep-0004.html) - Data Forms
+- [XEP-0012](https://xmpp.org/extensions/xep-0012.html) - Last Activity
+- [XEP-0030](https://xmpp.org/extensions/xep-0030.html) - Service Discovery
+- [XEP-0045](https://xmpp.org/extensions/xep-0045.html) - Multi User Chat
+- [XEP-0199](https://xmpp.org/extensions/xep-0199.html) - Ping
 
 <hr/>
 
