@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Attributes;
 
-namespace XmppSharp.Protocol.Extensions.MultiUserChat;
+namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [XmppEnum]
 public enum Affiliation

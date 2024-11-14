@@ -1,7 +1,7 @@
 ﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
-namespace XmppSharp.Protocol.Extensions.DataForms;
+namespace XmppSharp.Protocol.Extensions.XEP0004;
 
 [XmppTag("x", Namespaces.DataForms)]
 public class Form : Element

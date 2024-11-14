@@ -40,7 +40,7 @@ public static class Namespaces
     /// <summary>
     /// <a href="https://xmpp.org/extensions/xep-0065.html">XEP-0065: SOCKS5 Bytestreams</a> — <c>http://jabber.org/protocol/bytestreams</c>
     /// </summary>
-    public const string ByteStreams = "http://jabber.org/protocol/bytestreams";
+    public const string SocksByteStreams = "http://jabber.org/protocol/bytestreams";
 
     /// <summary>
     /// <a href="https://xmpp.org/extensions/xep-0115.html">XEP-0115: Entity Capabilities</a> — <c>http://jabber.org/protocol/caps</c>

@@ -2,7 +2,7 @@
 using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
-namespace XmppSharp.Protocol.Extensions.MultiUserChat;
+namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [XmppTag("history", Namespaces.Muc)]
 public class History : Element

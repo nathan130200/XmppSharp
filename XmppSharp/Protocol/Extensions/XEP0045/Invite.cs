@@ -1,7 +1,7 @@
 ﻿using XmppSharp.Attributes;
 using XmppSharp.Protocol.Base;
 
-namespace XmppSharp.Protocol.Extensions.MultiUserChat;
+namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [XmppTag("invite", Namespaces.MucUser)]
 public class Invite : DirectionalElement

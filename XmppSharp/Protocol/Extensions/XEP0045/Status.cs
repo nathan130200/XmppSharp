@@ -1,7 +1,7 @@
 ﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
-namespace XmppSharp.Protocol.Extensions.MultiUserChat;
+namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [XmppTag("status", Namespaces.MucUser)]
 public class Status : Element

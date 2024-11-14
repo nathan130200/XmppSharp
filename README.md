@@ -11,6 +11,7 @@ Lightweight XMPP library. [![nuget](https://img.shields.io/badge/XmppSharp-1?sty
 - [XEP-0030](https://xmpp.org/extensions/xep-0030.html) - Service Discovery
 - [XEP-0045](https://xmpp.org/extensions/xep-0045.html) - Multi User Chat
 - [XEP-0199](https://xmpp.org/extensions/xep-0199.html) - Ping
+- [XEP-0202](https://xmpp.org/extensions/xep-0202.html) - Entity Time
 
 <hr/>
 
