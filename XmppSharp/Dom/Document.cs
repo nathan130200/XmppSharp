@@ -6,12 +6,11 @@ namespace XmppSharp.Dom;
 
 public sealed class Document
 {
-    public Encoding Encoding { get; set; } = Encoding.UTF8;
+    public Encoding? Encoding { get; set; } = Encoding.UTF8;
     public Element? RootElement { get; set; }
 
     public Document()
     {
-
     }
 
     public Document(Element rootElement)
@@ -124,15 +123,19 @@ public sealed class Document
 
                         case XmlNodeType.SignificantWhitespace:
                         case XmlNodeType.Text:
-                            {
-                                if (current != null)
-                                    current.Value += reader.Value;
-                            }
+                            current?.AddChild(new Text(reader.Value));
                             break;
 
-                        // skip unwanted whitespaces and PIs
                         case XmlNodeType.Whitespace:
                         case XmlNodeType.ProcessingInstruction:
+                            break;
+
+                        case XmlNodeType.Comment:
+                            current?.AddChild(new Comment(reader.Value));
+                            break;
+
+                        case XmlNodeType.CDATA:
+                            current?.AddChild(new Cdata(reader.Value));
                             break;
 
                         case XmlNodeType.XmlDeclaration:
@@ -144,9 +147,6 @@ public sealed class Document
                                     : Encoding.GetEncoding(encodingName);
                             }
                             break;
-
-                        default:
-                            throw new XmlException($"Unsupported XML token. ({reader.NodeType})", null, info.LineNumber, info.LinePosition);
                     }
                 }
             }

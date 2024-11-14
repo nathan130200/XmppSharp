@@ -7,10 +7,8 @@ namespace XmppSharp.Dom;
 
 [DebuggerDisplay("{StartTag(),nq}")]
 [DebuggerTypeProxy(typeof(ElementTypeProxy))]
-public class Element : ICloneable
+public class Element : Node
 {
-    object ICloneable.Clone() => Clone();
-
     #region Debugger Type Proxy
 
     class ElementTypeProxy
@@ -23,8 +21,12 @@ public class Element : ICloneable
         public string? TagName => _element?.TagName;
         public string? Namespace => _element?.Namespace;
         public string? DefaultNamespace => _element?.GetNamespace();
-        public IReadOnlyList<Element>? Children => _element?.Children();
+        public IEnumerable<Node>? Children => _element?.Nodes();
         public IReadOnlyDictionary<string, string>? Attributes => _element?.Attributes;
+
+        public Node? FirstNode => _element?.FirstNode;
+        public Node? LastNode => _element?.LastNode;
+
         public Element? FirstChild => _element?.FirstChild;
         public Element? LastChild => _element?.LastChild;
         public string? StartTag => _element?.StartTag();
@@ -34,16 +36,13 @@ public class Element : ICloneable
     #endregion
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private Element? _parent;
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private string _localName = default!;
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private string? _prefix;
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private List<Element> _children;
+    private List<Node> _children;
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private Dictionary<string, string> _attributes;
@@ -96,11 +95,10 @@ public class Element : ICloneable
 
         lock (other._children)
         {
-            foreach (var element in other.Children())
-                _children.Add(element.Clone());
+            foreach (var node in other.Nodes())
+                _children.Add(node.Clone());
         }
 
-        Value = other.Value;
     }
 
     public bool IsRootElement
@@ -108,17 +106,11 @@ public class Element : ICloneable
 
     public string? Value
     {
-        get;
-        set;
-    }
-
-    public Element? Parent
-    {
-        get => _parent;
+        get => string.Concat(Nodes().OfType<Text>());
         set
         {
-            _parent?.RemoveChild(this);
-            value?.AddChild(this);
+            RemoveAllChildNodes();
+            AddChild(new Text(value));
         }
     }
 
@@ -153,41 +145,33 @@ public class Element : ICloneable
         }
     }
 
-    public void Remove()
-        => _parent?.RemoveChild(this);
-
-    public void AddChild(Element e)
+    public void AddChild(Node? node)
     {
-        ThrowHelper.ThrowIfNull(e);
-
-        if (e._parent != null)
-            e = e.Clone();
-
-        lock (_children)
-            _children.Add(e);
-    }
-
-    public void RemoveChild(Element e)
-    {
-        ThrowHelper.ThrowIfNull(e);
-
-        if (e._parent != this)
+        if (node == null)
             return;
 
-        var namespaceURI = e.GetNamespace(e.Prefix);
+        if (node._parent != null)
+            node = node.Clone();
+
+        lock (_children)
+            _children.Add(node);
+    }
+
+    public void RemoveChild(Node? node)
+    {
+        if (node == null)
+            return;
+
+        if (node._parent != this)
+            return;
+
+        if (node is Element element)
+            element.SetNamespace(GetNamespace(element.Prefix));
 
         lock (_children)
         {
-            _children.Remove(e);
-            e._parent = null;
-        }
-
-        if (namespaceURI != null)
-        {
-            if (e.Prefix != null)
-                e.SetNamespace(e.Prefix, namespaceURI);
-            else
-                e.SetNamespace(namespaceURI);
+            _children.Remove(node);
+            node._parent = null;
         }
     }
 
@@ -214,15 +198,15 @@ public class Element : ICloneable
         return this;
     }
 
-    public Element Clone()
+    public override Node Clone()
     {
         var result = ElementFactory.CreateElement(TagName, Namespace);
 
         foreach (var (key, value) in Attributes)
             result._attributes[key] = value;
 
-        foreach (var child in Children())
-            result.AddChild(child.Clone());
+        foreach (var node in Nodes())
+            result.AddChild(node.Clone());
 
         result.Value = Value;
 
@@ -276,23 +260,10 @@ public class Element : ICloneable
         SetAttribute($"xmlns:{prefix}", namespaceURI);
     }
 
-    public Element? FirstChild
-    {
-        get
-        {
-            lock (_children)
-                return _children.FirstOrDefault();
-        }
-    }
-
-    public Element? LastChild
-    {
-        get
-        {
-            lock (_children)
-                return _children.LastOrDefault();
-        }
-    }
+    public Node? FirstNode => Nodes().FirstOrDefault();
+    public Node? LastNode => Nodes().LastOrDefault();
+    public Element? FirstChild => Children().FirstOrDefault();
+    public Element? LastChild => Children().LastOrDefault();
 
     public string? DefaultNamespace
     {
@@ -310,6 +281,16 @@ public class Element : ICloneable
             else
                 SetNamespace(Prefix, value);
         }
+    }
+
+    public IEnumerable<Node> Nodes()
+    {
+        Node[] result;
+
+        lock (_children)
+            result = _children.ToArray();
+
+        return result.ToList();
     }
 
     public IReadOnlyDictionary<string, string> Attributes
@@ -370,15 +351,8 @@ public class Element : ICloneable
         return sb.ToString();
     }
 
-    public IReadOnlyList<Element> Children()
-    {
-        Element[] result;
-
-        lock (_children)
-            result = _children.ToArray();
-
-        return result.ToList();
-    }
+    public IEnumerable<Element> Children()
+        => Nodes().OfType<Element>();
 
     public IEnumerable<Element> Children(string tagName, string? namespaceURI = default)
     {
@@ -390,7 +364,7 @@ public class Element : ICloneable
     {
         lock (_children)
         {
-            foreach (var element in _children)
+            foreach (var element in Children())
             {
                 if (element.TagName == tagName && (ns == null || ns == element.Namespace))
                 {
@@ -449,9 +423,9 @@ public class Element : ICloneable
         }
     }
 
-    public void ClearChildren()
+    public void RemoveAllChildNodes()
     {
-        Element[] items;
+        Node[] items;
 
         lock (_children)
         {

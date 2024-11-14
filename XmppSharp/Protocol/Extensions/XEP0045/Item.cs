@@ -54,9 +54,7 @@ public class Item : Element
         set
         {
             Child<Actor>()?.Remove();
-
-            if (value != null)
-                AddChild(value);
+            AddChild(value);
         }
     }
 

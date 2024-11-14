@@ -21,10 +21,18 @@ public class StreamFeatures : Element
         get => Child<StartTls>();
         set
         {
-            StartTls?.Remove();
+            Child<StartTls>()?.Remove();
+            AddChild(value);
+        }
+    }
 
-            if (value != null)
-                AddChild(value);
+    public Mechanisms? Mechanisms
+    {
+        get => Child<Mechanisms>();
+        set
+        {
+            Child<Mechanisms>()?.Remove();
+            AddChild(value);
         }
     }
 
@@ -49,18 +57,6 @@ public class StreamFeatures : Element
 
             if (value)
                 SetTag("session", Namespaces.Session);
-        }
-    }
-
-    public Mechanisms? Mechanisms
-    {
-        get => Child<Mechanisms>();
-        set
-        {
-            Mechanisms?.Remove();
-
-            if (value != null)
-                AddChild(value);
         }
     }
 }

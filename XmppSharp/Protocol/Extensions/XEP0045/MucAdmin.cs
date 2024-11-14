@@ -21,10 +21,7 @@ public class MucAdmin : Element
             if (value?.Any() == true)
             {
                 foreach (var item in value)
-                {
-                    if (item != null)
-                        AddChild(item);
-                }
+                    AddChild(item);
             }
         }
     }

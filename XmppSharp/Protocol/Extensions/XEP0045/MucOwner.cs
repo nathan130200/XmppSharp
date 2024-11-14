@@ -18,9 +18,7 @@ public class MucOwner : Element
         set
         {
             Child<Form>()?.Remove();
-
-            if (value != null)
-                AddChild(value);
+            AddChild(value);
         }
     }
 
@@ -30,9 +28,7 @@ public class MucOwner : Element
         set
         {
             Child<Destroy>()?.Remove();
-
-            if (value != null)
-                AddChild(value);
+            AddChild(value);
         }
     }
 }

@@ -17,9 +17,7 @@ public class MucUser : Element
         set
         {
             Child<Decline>()?.Remove();
-
-            if (value != null)
-                AddChild(value);
+            AddChild(value);
         }
     }
 
@@ -29,9 +27,7 @@ public class MucUser : Element
         set
         {
             Child<Destroy>()?.Remove();
-
-            if (value != null)
-                AddChild(value);
+            AddChild(value);
         }
     }
 
@@ -53,9 +49,7 @@ public class MucUser : Element
         set
         {
             Child<Item>()?.Remove();
-
-            if (value != null)
-                AddChild(value);
+            AddChild(value);
         }
     }
 

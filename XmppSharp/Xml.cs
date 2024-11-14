@@ -5,6 +5,7 @@ using System.Web;
 using System.Xml;
 using XmppSharp.Collections;
 using XmppSharp.Dom;
+using XmppSharp.Protocol.Base;
 
 namespace XmppSharp;
 
@@ -54,6 +55,13 @@ public static class Xml
             s_IndentChars ??= "  ";
             return s_IndentChars;
         }
+    }
+
+    public static T AddError<T>(this T stanza, Action<StanzaError> callback) where T : Stanza
+    {
+        stanza.Error = new StanzaError();
+        callback(stanza.Error);
+        return stanza;
     }
 
     public static string? EncodeName(string? s)
@@ -121,7 +129,8 @@ public static class Xml
 
         foreach (var (key, value) in e.Attributes)
         {
-            if (key == skipAttribute) continue;
+            if (key == skipAttribute)
+                continue;
 
             var name = new XmppName(key);
 
@@ -138,11 +147,17 @@ public static class Xml
             }
         }
 
-        if (e.Value != null)
-            xw.WriteString(e.Value);
-
-        foreach (var child in e.Children())
-            WriteTree(child, xw);
+        foreach (var node in e.Nodes())
+        {
+            if (node is Element child)
+                WriteTree(child, xw);
+            else if (node is Text text)
+                xw.WriteValue(text.Value);
+            else if (node is Comment comment)
+                xw.WriteComment(comment.Value);
+            else if (node is Cdata cdata)
+                xw.WriteCData(cdata.Value);
+        }
 
         xw.WriteEndElement();
     }

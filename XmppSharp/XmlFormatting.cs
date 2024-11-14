@@ -11,6 +11,7 @@ public enum XmlFormatting
     DoNotEscapeUriAttributes = 1 << 4,
     CheckCharacters = 1 << 5,
 
+
     Default
         = OmitDuplicatedNamespaces
         | OmitXmlDeclaration

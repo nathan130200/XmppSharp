@@ -41,9 +41,7 @@ public abstract class Stanza : DirectionalElement
         set
         {
             Child<StanzaError>()?.Remove();
-
-            if (value != null)
-                AddChild(value);
+            AddChild(value);
         }
     }
 }
