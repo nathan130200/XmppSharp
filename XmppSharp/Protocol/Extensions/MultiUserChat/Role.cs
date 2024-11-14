@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Attributes;
 
-namespace XmppSharp.Protocol.Extensions.XEP0045;
+namespace XmppSharp.Protocol.Extensions.MultiUserChat;
 
 [XmppEnum]
 public enum Role

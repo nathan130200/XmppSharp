@@ -1,8 +1,8 @@
 ﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
-using XmppSharp.Protocol.Extensions.XEP0004;
+using XmppSharp.Protocol.Extensions.DataForms;
 
-namespace XmppSharp.Protocol.Extensions.XEP0045;
+namespace XmppSharp.Protocol.Extensions.MultiUserChat;
 
 [XmppTag("query", Namespaces.MucOwner)]
 public class MucOwner : Element

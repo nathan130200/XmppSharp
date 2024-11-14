@@ -1,7 +1,7 @@
 ﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
-namespace XmppSharp.Protocol.Extensions.XEP0045;
+namespace XmppSharp.Protocol.Extensions.MultiUserChat;
 
 [XmppTag("query", Namespaces.MucAdmin)]
 public class MucAdmin : Element

@@ -1,7 +1,7 @@
 ﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
-namespace XmppSharp.Protocol.Extensions.XEP0030;
+namespace XmppSharp.Protocol.Extensions.ServiceDiscovery;
 
 [XmppTag("query", Namespaces.DiscoInfo)]
 public class DiscoInfo : Element

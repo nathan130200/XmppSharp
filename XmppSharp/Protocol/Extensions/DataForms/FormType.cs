@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Attributes;
 
-namespace XmppSharp.Protocol.Extensions.XEP0004;
+namespace XmppSharp.Protocol.Extensions.DataForms;
 
 [XmppEnum]
 public enum FormType

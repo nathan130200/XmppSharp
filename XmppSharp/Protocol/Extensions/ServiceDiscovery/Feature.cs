@@ -1,7 +1,7 @@
 ﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
-namespace XmppSharp.Protocol.Extensions.XEP0030;
+namespace XmppSharp.Protocol.Extensions.ServiceDiscovery;
 
 [XmppTag("feature", Namespaces.DiscoInfo)]
 public class Feature : Element

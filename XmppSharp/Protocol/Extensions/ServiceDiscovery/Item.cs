@@ -1,7 +1,7 @@
 ﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
-namespace XmppSharp.Protocol.Extensions.XEP0030;
+namespace XmppSharp.Protocol.Extensions.ServiceDiscovery;
 
 [XmppTag("item", Namespaces.DiscoItems)]
 public class Item : Element
