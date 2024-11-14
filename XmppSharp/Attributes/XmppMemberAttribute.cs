@@ -1,13 +1,12 @@
 ﻿namespace XmppSharp.Attributes;
 
-/// <summary>
-/// Annotating a field or property with this attribute helps when retrieving metadata associated with it.
-/// </summary>
-[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false)]
 public sealed class XmppMemberAttribute : Attribute
 {
-	public string Name { get; }
+    public string Value { get; }
 
-	public XmppMemberAttribute(string name)
-		=> this.Name = name;
+    public XmppMemberAttribute(string value)
+    {
+        Value = value;
+    }
 }

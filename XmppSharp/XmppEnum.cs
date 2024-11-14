@@ -1,190 +1,92 @@
-﻿using System.Diagnostics;
-using System.Reflection;
+﻿using System.Reflection;
 using XmppSharp.Attributes;
 
 namespace XmppSharp;
 
 public static class XmppEnum
 {
-	[StackTraceHidden]
-	static void ThrowIfNotXmppEnum<T>()
-	{
-		if (!IsValidType<T>())
-			throw new XmppEnumException($"Type '{typeof(T).FullName}' is not valid xmpp enum!");
-	}
+    class Cache<T> where T : struct, Enum
+    {
+        public static readonly IEnumerable<T> s_Values;
+        public static readonly Dictionary<string, T> s_NameToValue;
+        public static readonly Dictionary<string, T> s_XmlToValue;
+        public static readonly EqualityComparer<T> s_EqualityContract;
 
-	/// <summary>
-	/// Determines whether the given type is a valid XMPP enum type.
-	/// </summary>
-	public static bool IsValidType<T>()
-		=> typeof(T).GetCustomAttributes<XmppEnumAttribute>().Any();
+        static Cache()
+        {
+            if (typeof(T).GetCustomAttribute<XmppEnumAttribute>() == null)
+                throw new InvalidOperationException();
 
-	public static bool IsDefined<T>(T value) where T : struct, Enum
-	{
-		ThrowIfNotXmppEnum<T>();
+            s_EqualityContract = EqualityComparer<T>.Default;
 
-		foreach (var (_, other) in XmppEnum<T>.Values)
-		{
-			if (XmppEnum<T>.Comparer.Equals(other, value))
-				return true;
-		}
+            s_Values = Enum.GetValues<T>();
 
-		return false;
-	}
+            var fields = from field in typeof(T).GetFields()
+                         where field.FieldType == typeof(T)
+                         let attribute = field.GetCustomAttribute<XmppMemberAttribute>()
+                         select new
+                         {
+                             field.Name,
+                             Value = (T)field.GetValue(null)!,
+                             XmlName = attribute?.Value
+                         };
 
-	/// <summary>
-	/// Gets all XMPP names mapped to the given type.
-	/// </summary>
-	/// <typeparam name="T">Enum type annotated with <see cref="XmppEnumAttribute"/></typeparam>
-	public static IEnumerable<string> GetNames<T>() where T : struct, Enum
-	{
-		ThrowIfNotXmppEnum<T>();
-		return XmppEnum<T>.Values.Select(x => x.Key);
-	}
+            s_NameToValue = fields.ToDictionary(x => x.Name, x => x.Value);
 
-	/// <summary>
-	/// Gets the mapping of all names and values mapped to the given type.
-	/// </summary>
-	/// <typeparam name="T">Enum type annotated with <see cref="XmppEnumAttribute"/></typeparam>
-	public static IReadOnlyDictionary<string, T> GetValues<T>() where T : struct, Enum
-	{
-		ThrowIfNotXmppEnum<T>();
-		return XmppEnum<T>.Values;
-	}
+            s_XmlToValue = fields.Where(x => x.XmlName != null)
+                .ToDictionary(x => x.XmlName, x => x.Value);
+        }
+    }
 
-	/// <summary>
-	/// Converts the value of the given enum to the XMPP name.
-	/// </summary>
-	/// <typeparam name="T">Enum type annotated with <see cref="XmppEnumAttribute"/></typeparam>
-	/// <param name="value">Enum value that will be mapped.</param>
-	public static string? ToXmppName<T>(this T value) where T : struct, Enum
-	{
-		ThrowIfNotXmppEnum<T>();
+    public static IEnumerable<T> GetValues<T>() where T : struct, Enum
+        => Cache<T>.s_Values;
 
-		if (!IsDefined(value))
-			return null;
+    public static IEnumerable<string> GetNames<T>() where T : struct, Enum
+        => Cache<T>.s_NameToValue.Select(x => x.Key);
 
-		return XmppEnum<T>.ToXml(value);
-	}
+    public static IEnumerable<string> GetXmlNames<T>() where T : struct, Enum
+        => Cache<T>.s_XmlToValue.Select(x => x.Key);
 
-	/// <summary>
-	/// Parses the given string into the target XMPP enum, or <see langword="null"/> if no match is found.
-	/// </summary>
-	/// <typeparam name="T">Enum type annotated with <see cref="XmppEnumAttribute"/></typeparam>
-	/// <param name="value">String that will be mapped.</param>
-	public static T? Parse<T>(string? value) where T : struct, Enum
-	{
-		ThrowIfNotXmppEnum<T>();
+    public static IReadOnlyDictionary<string, T> GetNameMapping<T>() where T : struct, Enum
+        => Cache<T>.s_NameToValue;
 
-		if (string.IsNullOrWhiteSpace(value))
-			return default;
+    public static IReadOnlyDictionary<string, T> GetXmlMapping<T>() where T : struct, Enum
+        => Cache<T>.s_XmlToValue;
 
-		return XmppEnum<T>.Parse(value);
-	}
+    public static string? ToXml<T>(T? value) where T : struct, Enum
+    {
+        if (!value.HasValue)
+            return default;
 
-	/// <summary>
-	/// Parses the given string into the target XMPP enum, or returns the provided fallback value if none is match.
-	/// </summary>
-	/// <typeparam name="T">Enum type annotated with <see cref="XmppEnumAttribute"/></typeparam>
-	/// <param name="value">String that will be mapped.</param>
-	/// <param name="defaultValue">Fallback value in case no match is found.</param>
-	public static T ParseOrDefault<T>(string? value, T defaultValue) where T : struct, Enum
-	{
-		ThrowIfNotXmppEnum<T>();
+        return ToXml((T)value);
+    }
 
-		if (string.IsNullOrWhiteSpace(value))
-			return defaultValue;
+    public static string? ToXml<T>(T value) where T : struct, Enum
+    {
+        var contract = Cache<T>.s_EqualityContract;
+        var entry = Cache<T>.s_XmlToValue.FirstOrDefault(x => contract.Equals(x.Value, value));
+        return entry.Key;
+    }
 
-		return XmppEnum<T>.ParseOrDefault(value, defaultValue);
-	}
+    public static T FromXml<T>(string? str, T defaultValue) where T : struct, Enum
+    {
+        if (string.IsNullOrWhiteSpace(str))
+            return defaultValue;
 
-	public static bool TryParse<T>(string? value, out T result) where T : struct, Enum
-	{
-		var temp = Parse<T>(value);
-		result = temp!.Value;
-		return temp.HasValue;
-	}
+        if (Cache<T>.s_XmlToValue.TryGetValue(str, out var result))
+            return result;
 
-	/// <summary>
-	/// Parses the string provided in the destination XMPP enum, or throws an exception if none is match
-	/// </summary>
-	/// <typeparam name="T">Enum type annotated with <see cref="XmppEnumAttribute"/></typeparam>
-	/// <param name="value">String that will be mapped.</param>
-	public static T ParseOrThrow<T>(string value) where T : struct, Enum
-	{
-		ThrowIfNotXmppEnum<T>();
-		return XmppEnum<T>.ParseOrThrow(value);
-	}
-}
+        return defaultValue;
+    }
 
-internal class XmppEnum<T>
-	where T : struct, Enum
-{
-	public static IReadOnlyDictionary<string, T> Values { get; set; }
-	public static EqualityComparer<T> Comparer { get; } = EqualityComparer<T>.Default;
+    public static T? FromXmlOrDefault<T>(string? str) where T : struct, Enum
+    {
+        if (string.IsNullOrWhiteSpace(str))
+            return default;
 
-	public static string? ToXml(T value)
-	{
-		foreach (var (name, self) in Values)
-		{
-			if (Comparer.Equals(self, value))
-				return name;
-		}
+        if (Cache<T>.s_XmlToValue.TryGetValue(str, out var result))
+            return result;
 
-		return default;
-	}
-
-	public static T? Parse(string value)
-	{
-		foreach (var (name, self) in Values)
-		{
-			if (name == value)
-				return self;
-		}
-
-		return default;
-	}
-
-	public static T ParseOrDefault(string value, T defaultValue)
-	{
-		foreach (var (name, self) in Values)
-		{
-			if (name == value)
-				return self;
-		}
-
-		return defaultValue;
-	}
-
-	public static T ParseOrThrow(string value)
-	{
-		foreach (var (name, self) in Values)
-		{
-			if (name == value)
-				return self;
-		}
-
-		throw new XmppEnumException($"This xmpp enum of type {typeof(T).FullName} does not contain a member that matches the value '{value}'");
-	}
-
-	static XmppEnum()
-	{
-		var baseType = typeof(T);
-
-		var values = new Dictionary<string, T>();
-
-		foreach (var member in Enum.GetNames<T>())
-		{
-			var field = baseType.GetField(member)!;
-
-			var name = field.GetCustomAttribute<XmppMemberAttribute>()?.Name;
-
-			if (name == null)
-				continue;
-
-			values[name] = (T)field.GetValue(null)!;
-		}
-
-		Values = values;
-	}
+        return default;
+    }
 }

@@ -1,56 +1,53 @@
 ﻿using XmppSharp.Attributes;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Sasl;
 
-[XmppTag("failure", "urn:ietf:params:xml:ns:xmpp-sasl")]
+[XmppTag("failure", Namespaces.Sasl)]
 public class Failure : Element
 {
-	public Failure() : base("failure", Namespaces.Sasl)
-	{
+    public Failure() : base("failure", Namespaces.Sasl)
+    {
 
-	}
+    }
 
-	public Failure(FailureCondition condition, string? text = default) : this()
-	{
-		this.Condition = condition;
+    public Failure(FailureCondition? condition, string? text = default) : this()
+    {
+        Condition = condition;
+        Text = text;
+    }
 
-		if (text != null)
-			this.Text = text;
-	}
+    public FailureCondition? Condition
+    {
+        get
+        {
+            foreach (var (name, value) in XmppEnum.GetXmlMapping<FailureCondition>())
+            {
+                if (HasTag(name, Namespaces.Sasl))
+                    return value;
+            }
 
-	public FailureCondition Condition
-	{
-		get
-		{
-			foreach (var (key, value) in XmppEnum.GetValues<FailureCondition>())
-			{
-				if (this.HasTag(key, Namespaces.Sasl))
-					return value;
-			}
+            return default;
+        }
+        set
+        {
+            foreach (var name in XmppEnum.GetXmlNames<FailureCondition>())
+                RemoveTag(name, Namespaces.Sasl);
 
-			return FailureCondition.Unspecified;
-		}
-		set
-		{
-			var other = Condition;
+            if (value.HasValue)
+                SetTag(XmppEnum.ToXml(value)!, Namespaces.Sasl);
+        }
+    }
 
-			if (other != FailureCondition.Unspecified)
-				this.RemoveTag(other.ToXmppName()!, Namespaces.Sasl);
+    public string? Text
+    {
+        get => GetTag("text", Namespaces.Sasl);
+        set
+        {
+            RemoveTag("text", Namespaces.Sasl);
 
-			if (value != FailureCondition.Unspecified)
-				this.SetTag(value.ToXmppName()!, Namespaces.Sasl);
-		}
-	}
-
-	public string? Text
-	{
-		get => this.GetTag("text");
-		set
-		{
-			if (value == null)
-				this.RemoveTag("text");
-			else
-				this.SetTag("text", value: value);
-		}
-	}
+            if (value != null)
+                SetTag("text", Namespaces.Sasl);
+        }
+    }
 }

@@ -1,45 +1,49 @@
-﻿namespace XmppSharp.Protocol.Base;
+﻿using System.Diagnostics;
+
+namespace XmppSharp.Protocol.Base;
 
 public abstract class Stanza : DirectionalElement
 {
-	protected Stanza(string qualifiedName) : base(qualifiedName)
-	{
-	}
+    protected Stanza(Stanza other) : base(other)
+    {
+    }
 
-	protected Stanza(string qualifiedName, string namespaceURI) : base(qualifiedName, namespaceURI)
-	{
-	}
+    protected Stanza(string tagName, string? namespaceURI = null, object? value = null) : base(tagName, namespaceURI, value)
+    {
 
-	public string? Id
-	{
-		get => this.GetAttribute("id");
-		set => this.SetAttribute("id", value);
-	}
+    }
 
-	public string? Type
-	{
-		get => this.GetAttribute("type");
-		set => this.SetAttribute("type", value);
-	}
+    public string? Id
+    {
+        get => GetAttribute("id");
+        set => SetAttribute("id", value);
+    }
 
-	public string? Language
-	{
-		get => this.GetAttribute("xml:lang");
-		set => this.SetAttribute("xml:lang", value);
-	}
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public string? Type
+    {
+        get => GetAttribute("type");
+        set => SetAttribute("type", value);
+    }
 
-	public void GenerateId()
-		=> this.Id = Guid.NewGuid().ToString("d");
+    public string? Language
+    {
+        get => GetAttribute("xml:lang");
+        set => SetAttribute("xml:lang", value);
+    }
 
-	public StanzaError? Error
-	{
-		get => this.Child<StanzaError>();
-		set
-		{
-			this.RemoveTag("error", Namespaces.Stanzas);
+    public void GenerateId(IdGenerator? generator = default)
+        => Id = (generator ?? IdGenerator.Timestamp).Generate();
 
-			if (value != null)
-				this.AddChild(value);
-		}
-	}
+    public StanzaError? Error
+    {
+        get => Child<StanzaError>();
+        set
+        {
+            Child<StanzaError>()?.Remove();
+
+            if (value != null)
+                AddChild(value);
+        }
+    }
 }

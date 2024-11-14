@@ -1,4 +1,6 @@
 ﻿using XmppSharp.Attributes;
+using XmppSharp.Collections;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Base;
 
@@ -8,66 +10,81 @@ namespace XmppSharp.Protocol.Base;
 [XmppTag("error", Namespaces.Connect)]
 public class StanzaError : Element
 {
-	public StanzaError() : base("error", Namespaces.Client)
-	{
+    public StanzaError() : base("error")
+    {
 
-	}
+    }
 
-	public StanzaErrorType? Type
-	{
-		get => XmppEnum.Parse<StanzaErrorType>(this.GetAttribute("type"));
-		set
-		{
-			if (!value.TryGetValue(out var result))
-				this.RemoveAttribute("type");
-			else
-				this.SetAttribute("type", result.ToXmppName());
-		}
-	}
+    public StanzaErrorType? Type
+    {
+        get => XmppEnum.FromXmlOrDefault<StanzaErrorType>(GetAttribute("type"));
+        set
+        {
+            if (!value.HasValue)
+                RemoveAttribute("type");
+            else
+                SetAttribute("type", XmppEnum.ToXml(value));
+        }
+    }
 
-	public StanzaErrorCondition? Condition
-	{
-		get
-		{
-			foreach (var (name, value) in XmppEnum.GetValues<StanzaErrorCondition>())
-			{
-				if (this.HasTag(name, Namespaces.Stanzas))
-					return value;
-			}
+    public StanzaErrorCondition? Condition
+    {
+        get
+        {
+            foreach (var (name, value) in XmppEnum.GetXmlMapping<StanzaErrorCondition>())
+            {
+                if (HasTag(name, Namespaces.Stanzas))
+                    return value;
+            }
 
-			return default;
-		}
-		set
-		{
-			XmppEnum.GetNames<StanzaErrorCondition>()
-				.ForEach(name => this.RemoveTag(name, Namespaces.Stanzas));
+            return default;
+        }
+        set
+        {
+            foreach (var name in XmppEnum.GetNames<StanzaErrorCondition>())
+                RemoveTag(name, Namespaces.Stanzas);
 
-			if (value.TryGetValue(out var result))
-				this.SetTag(result.ToXmppName()!, Namespaces.Stanzas);
-		}
-	}
+            if (value.HasValue)
+            {
+                var name = XmppEnum.ToXml((StanzaErrorCondition)value)!;
+                SetTag(name, Namespaces.Stanzas);
+            }
+        }
+    }
 
-	public int? Code
-	{
-		get => this.attrs.code;
-		set => this.attrs.code = value;
-	}
+    public int? Code
+    {
+        get => this.GetAttribute<int>("code");
+        set
+        {
+            if (!value.HasValue)
+                RemoveAttribute("code");
+            else
+                SetAttribute("code", (int)value);
+        }
+    }
 
-	public int? CustomCode
-	{
-		get => this.attrs.custom_code;
-		set => this.attrs.custom_code = value;
-	}
+    public int? CustomCode
+    {
+        get => this.GetAttribute<int>("custom_code");
+        set
+        {
+            if (!value.HasValue)
+                RemoveAttribute("custom_code");
+            else
+                SetAttribute("custom_code", (int)value);
+        }
+    }
 
-	public string? Text
-	{
-		get => this.GetTag("text", Namespaces.Stanzas);
-		set
-		{
-			if (value == null)
-				this.RemoveTag("text", Namespaces.Stanzas);
-			else
-				this.SetTag("text", Namespaces.Stanzas, value);
-		}
-	}
+    public string? Text
+    {
+        get => GetTag("text", Namespaces.Stanzas);
+        set
+        {
+            RemoveTag("text", Namespaces.Stanzas);
+
+            if (value != null)
+                SetTag("text", Namespaces.Stanzas, value);
+        }
+    }
 }

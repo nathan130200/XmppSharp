@@ -1,30 +1,20 @@
-﻿using XmppSharp.Attributes;
+﻿namespace XmppSharp.Protocol.Base;
 
-namespace XmppSharp.Protocol.Base;
-
-[XmppTag("stream:stream", "http://etherx.jabber.org/streams")]
-public class StreamStream : DirectionalElement
+public class StreamStream : Stanza
 {
-	public StreamStream() : base("stream:stream", Namespaces.Stream)
-	{
+    public StreamStream(StreamStream other) : base(other)
+    {
 
-	}
+    }
 
-	public string? Id
-	{
-		get => this.GetAttribute("id");
-		set => this.SetAttribute("id", value);
-	}
+    public StreamStream() : base("stream:stream", Namespaces.Stream)
+    {
 
-	public string? Language
-	{
-		get => this.GetAttribute("xml:lang");
-		set => this.SetAttribute("xml:lang", value);
-	}
+    }
 
-	public string? Version
-	{
-		get => this.GetAttribute("version");
-		set => this.SetAttribute("version", value);
-	}
+    public string? Version
+    {
+        get => GetAttribute("version");
+        set => SetAttribute("version", value);
+    }
 }

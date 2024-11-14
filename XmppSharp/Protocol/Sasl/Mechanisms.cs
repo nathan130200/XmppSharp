@@ -1,45 +1,38 @@
 ﻿using XmppSharp.Attributes;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Sasl;
 
 [XmppTag("mechanisms", Namespaces.Sasl)]
 public class Mechanisms : Element
 {
-	public Mechanisms() : base("mechanisms", Namespaces.Sasl)
-	{
+    public Mechanisms(Mechanisms other) : base(other)
+    {
 
-	}
+    }
 
-	public IEnumerable<Mechanism> SupportedMechanisms
-	{
-		get => this.Children<Mechanism>();
-		set
-		{
-			this.Children().Remove();
+    public Mechanisms() : base("mechanisms", Namespaces.Sasl)
+    {
 
-			foreach (var item in value)
-				this.AddChild(item);
-		}
-	}
+    }
 
-	public void AddMechanism(MechanismType type)
-	{
-		if (type == MechanismType.Unspecified || !Enum.IsDefined(type))
-			return;
+    public IEnumerable<Mechanisms> SupportedMechanisms
+    {
+        get => Children<Mechanisms>();
+        set
+        {
+            ThrowHelper.ThrowIfNull(value);
 
-		this.AddMechanism(type.ToXmppName()!);
-	}
+            Children<Mechanisms>()?.Remove();
 
-	public void AddMechanism(string name)
-	{
-		Require.NotNullOrWhiteSpace(name);
-		this.AddChild(new Element("mechanism", Namespaces.Sasl));
-	}
+            if (value?.Any() == true)
+            {
+                foreach (var item in value)
+                    AddChild(item);
+            }
+        }
+    }
 
-	public bool IsMechanismSupported(string name)
-		=> this.SupportedMechanisms?.Any(x => x.MechanismName == name) == true;
-
-	public bool IsMechanismSupported(MechanismType type)
-		=> type != MechanismType.Unspecified
-			&& this.IsMechanismSupported(type.ToXmppName()!);
+    public void AddMechanism(string name)
+        => AddChild(new Mechanism(name));
 }

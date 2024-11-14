@@ -1,12 +1,13 @@
 ﻿using XmppSharp.Attributes;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Sasl;
 
-[XmppTag("challenge", "urn:ietf:params:xml:ns:xmpp-sasl")]
+[XmppTag("challenge", Namespaces.Sasl)]
 public sealed class Challenge : Element
 {
-	public Challenge() : base("challenge", Namespaces.Sasl)
-	{
+    public Challenge() : base("challenge", Namespaces.Sasl)
+    {
 
-	}
+    }
 }

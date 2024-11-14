@@ -1,39 +1,19 @@
 ﻿using XmppSharp.Attributes;
+using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Sasl;
 
-[XmppTag("mechanism", "urn:ietf:params:xml:ns:xmpp-sasl")]
+[XmppTag("mechanism", Namespaces.Sasl)]
 public class Mechanism : Element
 {
-	public Mechanism() : base("mechanism", Namespaces.Sasl)
-	{
-		this.MechanismType = MechanismType.Plain;
-	}
+    public Mechanism() : base("mechanism", Namespaces.Sasl)
+    {
 
-	public Mechanism(MechanismType type) : this()
-		=> this.MechanismType = type;
+    }
 
-	public Mechanism(string mechanismName) : this()
-	{
-		Require.NotNullOrWhiteSpace(mechanismName);
-		this.MechanismName = mechanismName;
-	}
-
-	public MechanismType MechanismType
-	{
-		get => XmppEnum.ParseOrDefault(this.Value, MechanismType.Unspecified);
-		set
-		{
-			if (!Enum.IsDefined(value) || value == MechanismType.Unspecified)
-				this.MechanismName = default;
-			else
-				this.MechanismName = value.ToXmppName();
-		}
-	}
-
-	public string? MechanismName
-	{
-		get => this.Value;
-		set => this.Value = value ?? string.Empty;
-	}
+    public Mechanism(string mechanismName) : this()
+    {
+        ThrowHelper.ThrowIfNullOrWhiteSpace(mechanismName);
+        Value = mechanismName;
+    }
 }

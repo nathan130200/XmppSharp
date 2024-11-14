@@ -1,220 +1,323 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Security;
+using System.Text;
+using System.Web;
 using System.Xml;
-using System.Xml.Linq;
-using XmppSharp.Factory;
+using XmppSharp.Collections;
+using XmppSharp.Dom;
 
 namespace XmppSharp;
 
-public static partial class Xml
+public static class Xml
 {
-	public const string XmppEndTag = "</stream:stream>";
 
-	public static XmlNameInfo ExtractQualifiedName(string source)
-	{
-		Require.NotNullOrWhiteSpace(source);
+#if NET6_0
 
-		var ofs = source.IndexOf(':');
+    public static XmlResolver ThrowingResolver { get; } = new ThrowingXmlResolverImpl();
 
-		string? prefix = default;
+    class ThrowingXmlResolverImpl : XmlResolver
+    {
+        public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
+            => throw new NotSupportedException();
 
-		if (ofs != -1)
-			prefix = source[0..ofs];
+        public override Task<object> GetEntityAsync(Uri absoluteUri, string? role, Type? ofObjectToReturn)
+            => throw new NotSupportedException();
+    }
 
-		var localName = source[(ofs + 1)..];
+#endif
 
-		return new()
-		{
-			LocalName = localName,
-			Prefix = prefix
-		};
-	}
+    public static byte[] GetBytes(this string str, Encoding? encoding = default)
+        => (encoding ?? Encoding.UTF8).GetBytes(str);
 
-	/// <summary>
-	/// More information: <a href="https://www.w3.org/TR/xml/#NT-S">https://www.w3.org/TR/xml/#NT-S</a>
-	/// </summary>
-	public static readonly char[] WhitespaceChars = { ' ', '\r', '\n', '\t' };
+    public static string GetString(this byte[] bytes, Encoding? encoding = default)
+        => (encoding ?? Encoding.UTF8).GetString(bytes);
 
-	/// <summary>
-	/// Removes insignificant whitespaces from the string.
-	/// </summary>
-	/// <param name="s">String to be changed.</param>
-	/// <param name="trimStart">Determines whether to eliminate the insignificant whitespace at the beginning of the string.</param>
-	/// <param name="trimEnd">Determines whether to eliminate the insignificant whitespace at the end of the string.</param>
-	/// <returns>Returns the string without the insignificant whitespaces.</returns>
-	public static string TrimWhitespaces(this string s,
-		bool trimStart = true,
-		bool trimEnd = true)
-	{
-		if (trimStart)
-			s = s.TrimStart(WhitespaceChars);
+    [ThreadStatic]
+    private static string? s_IndentChars;
 
-		if (trimEnd)
-			s = s.TrimEnd(WhitespaceChars);
+    [ThreadStatic]
+    private static string? s_NewLineChars;
 
-		return s;
-	}
+    public static string NewLineChars
+    {
+        get
+        {
+            s_NewLineChars ??= "\n";
+            return s_NewLineChars;
+        }
+    }
 
-	internal static XmlWriter CreateWriter(StringBuilder output, XmlFormatting formatting)
-	{
-		Require.NotNull(output);
+    public static string IndentChars
+    {
+        get
+        {
+            s_IndentChars ??= "  ";
+            return s_IndentChars;
+        }
+    }
 
-		var settings = new XmlWriterSettings
-		{
-			Indent = formatting.IndentSize > 0,
-			IndentChars = formatting.IndentSize == 0 ? string.Empty : new string(formatting.IndentChar, formatting.IndentSize),
-			DoNotEscapeUriAttributes = formatting.DoNotEscapeUriAttributes,
-			WriteEndDocumentOnClose = formatting.WriteEndDocumentOnClose,
-			NewLineHandling = formatting.NewLineHandling,
-			NewLineOnAttributes = formatting.NewLineOnAttributes,
-			CheckCharacters = true,
-			CloseOutput = true,
-			ConformanceLevel = formatting.ConformanceLevel,
-			Encoding = Encoding.UTF8,
-			NamespaceHandling = formatting.NamespaceHandling,
-			OmitXmlDeclaration = formatting.OmitXmlDeclaration,
-			NewLineChars = formatting.NewLineChars,
-		};
+    public static string? EncodeName(string? s)
+        => XmlConvert.EncodeName(s);
 
-		return XmlWriter.Create(new StringWriter(output), settings);
-	}
+    public static string? Escape(string? s)
+        => SecurityElement.Escape(s);
 
-	public static void Remove(this IEnumerable<Node> source)
-	{
-		if (source?.Any() == false)
-			return;
+    public static string? EscapeAttribute(string? s)
+        => HttpUtility.HtmlAttributeEncode(s);
 
-		foreach (var item in source!)
-			item.Remove();
-	}
+    public static string? Unescape(string? s)
+        => HttpUtility.HtmlDecode(s);
 
-	public static Element? Up(this Element child)
-	{
-		Require.NotNull(child);
+    public static IEnumerable<T> ForEach<T>(this IEnumerable<T> source, Action<T> callback)
+    {
+        ThrowHelper.ThrowIfNull(source);
+        ThrowHelper.ThrowIfNull(callback);
 
-		return child.Parent;
-	}
+        if (source.Any())
+        {
+            foreach (var item in source)
+                callback(item);
+        }
 
-	public static Element Root(this Element child)
-	{
-		Require.NotNull(child);
+        return source;
+    }
 
-		while (!child.IsRootElement)
-			child = child.Parent!;
+    public static XmlWriter CreateWriter(TextWriter textWriter, XmlFormatting formatting, Encoding? encoding = default)
+    {
+        var isFragment = formatting.HasFlag(XmlFormatting.OmitXmlDeclaration);
 
-		return child;
-	}
+        return XmlWriter.Create(textWriter, new XmlWriterSettings()
+        {
+            Indent = formatting.HasFlag(XmlFormatting.Indented),
+            IndentChars = IndentChars,
+            ConformanceLevel = isFragment ? ConformanceLevel.Fragment : ConformanceLevel.Document,
+            CloseOutput = false,
+            Encoding = encoding ?? Encoding.UTF8,
+            NamespaceHandling = formatting.HasFlag(XmlFormatting.OmitDuplicatedNamespaces)
+                ? NamespaceHandling.OmitDuplicates
+                : NamespaceHandling.Default,
 
-	public static Element Element(string name, string? xmlns = default, string? value = default)
-	{
-		var result = new Element(name, xmlns, value);
+            OmitXmlDeclaration = formatting.HasFlag(XmlFormatting.OmitXmlDeclaration),
+            NewLineChars = NewLineChars,
+            NewLineOnAttributes = formatting.HasFlag(XmlFormatting.NewLineOnAttributes),
+            DoNotEscapeUriAttributes = formatting.HasFlag(XmlFormatting.DoNotEscapeUriAttributes),
+            CheckCharacters = formatting.HasFlag(XmlFormatting.CheckCharacters),
+        });
+    }
 
-		if (value != null)
-			result.Value = value;
+    public static void Remove(this IEnumerable<Element> e)
+    {
+        if (e.Any())
+        {
+            foreach (var item in e)
+                item.Remove();
+        }
+    }
 
-		return result;
-	}
+    public static void WriteTree(Element e, XmlWriter xw)
+    {
+        var skipAttribute = e.Prefix == null ? "xmlns" : $"xmlns:{e.Prefix}";
+        xw.WriteStartElement(e.Prefix, e.LocalName, e.Namespace);
 
-	public static Element C(this Element parent, string name, string? namespaceURI = default, string? value = default)
-	{
-		var child = Element(name, namespaceURI, value);
-		parent.AddChild(child);
-		return child;
-	}
+        foreach (var (key, value) in e.Attributes)
+        {
+            if (key == skipAttribute) continue;
 
-	public static Element C(this Element parent, Element child)
-	{
-		parent.AddChild(child);
-		return parent;
-	}
+            var name = new XmppName(key);
 
-	public static Element C(Element parent, params Node[] nodes)
-	{
-		foreach (var node in nodes)
-			parent.AddChild(node);
+            if (!name.HasPrefix)
+                xw.WriteAttributeString(name.LocalName, value);
+            else
+            {
+                xw.WriteAttributeString(name.LocalName, name.Prefix switch
+                {
+                    "xml" => Namespaces.Xml,
+                    "xmlns" => Namespaces.Xmlns,
+                    _ => e.GetNamespace(name.Prefix) ?? string.Empty
+                }, value);
+            }
+        }
 
-		return parent;
-	}
+        if (e.Value != null)
+            xw.WriteString(e.Value);
 
-	// work around to ensure we will trim all insignificant whitespaces (eg: from file)
+        foreach (var child in e.Children())
+            WriteTree(child, xw);
 
-	public static Element Parse(string xml)
-		=> XElement.Parse(xml, LoadOptions.None).ToXmppElement();
+        xw.WriteEndElement();
+    }
 
-	public static Element Parse(Stream stream)
-		=> XElement.Load(stream, LoadOptions.None).ToXmppElement();
+    delegate bool TryParseDelegate<T>(string? s, out T result);
+    delegate object? ValueConverterDelegate(string? s, IFormatProvider? formatProvider);
 
-	public static async Task<Element> ParseAsync(string xml, CancellationToken token = default)
-	{
-		using var sr = new StringReader(xml);
-		var result = await XElement.LoadAsync(sr, LoadOptions.None, token);
-		return result.ToXmppElement();
-	}
+    static readonly Dictionary<Type, ValueConverterDelegate> s_ValueConverters = new()
+    {
+        [typeof(float)] = TryParseFloat,
+        [typeof(double)] = TryParseDouble,
 
-	public static async Task<Element> ParseAsync(Stream stream, CancellationToken token = default)
-	{
-		var result = await XElement.LoadAsync(stream, LoadOptions.None, token);
-		return result.ToXmppElement();
-	}
+        [typeof(sbyte)] = CreateNumberParser<sbyte>(sbyte.TryParse),
+        [typeof(short)] = CreateNumberParser<short>(short.TryParse),
+        [typeof(int)] = CreateNumberParser<int>(int.TryParse),
+        [typeof(long)] = CreateNumberParser<long>(long.TryParse),
 
-	public static Element ToXmppElement(this XElement e)
-	{
-		var name = e.GetElementName();
-		var ns = e.Name.NamespaceName;
+        [typeof(byte)] = CreateNumberParser<byte>(byte.TryParse),
+        [typeof(ushort)] = CreateNumberParser<ushort>(ushort.TryParse),
+        [typeof(uint)] = CreateNumberParser<uint>(uint.TryParse),
+        [typeof(ulong)] = CreateNumberParser<ulong>(ulong.TryParse),
 
-		if (string.IsNullOrWhiteSpace(ns) && name is "iq" or "message" or "presence")
-			ns = Namespaces.Client;
+        [typeof(bool)] = TryParseBool,
+        [typeof(TimeSpan)] = TryParseTimeSpan,
+        [typeof(DateTime)] = TryParseDateTime,
+        [typeof(DateTimeOffset)] = TryParseDateTimeOffset,
+    };
 
-		var result = ElementFactory.Create(name, ns);
+    static object? TryParseTimeSpan(string? s, IFormatProvider? ifp)
+    {
+        if (TimeSpan.TryParse(s, ifp, out var ts))
+            return ts;
 
-		foreach (var attr in e.Attributes())
-			result.SetAttribute(attr.GetAttributeName(), attr.Value);
+        return default;
+    }
 
-		if (e.Value != null)
-			result.Value = e.Value;
+    static object? TryParseDateTimeOffset(string? s, IFormatProvider? ifp)
+        => DateTimeOffset.TryParse(s, ifp, DateTimeStyles.None, out var res) ? res : default;
 
-		foreach (var child in e.Elements())
-			result.AddChild(child.ToXmppElement());
+    static object? TryParseDateTime(string? s, IFormatProvider? ifp)
+        => DateTime.TryParse(s, ifp, DateTimeStyles.None, out var res) ? res : default;
 
-		return result;
-	}
+    static object? TryParseBool(string? s, IFormatProvider? _)
+    {
+        if (s == null)
+            return null;
 
-	static string GetAttributeName(this XAttribute e)
-	{
-		var name = e.Name;
-		var ns = name.Namespace;
+        return s == "1"
+            || s.Equals("true", StringComparison.OrdinalIgnoreCase)
+            || s.Equals(bool.TrueString, StringComparison.InvariantCultureIgnoreCase);
+    }
 
-		string? prefix;
+    static object? TryParseFloat(string? s, IFormatProvider? ifp)
+    {
+        if (float.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, ifp, out var result))
+            return result;
 
-		if (ns == XNamespace.Xml)
-			prefix = "xml";
-		else if (ns == XNamespace.Xmlns)
-			prefix = "xmlns";
-		else
-			prefix = e.Parent?.GetPrefixOfNamespace(ns);
+        return default;
+    }
 
-		if (string.IsNullOrEmpty(prefix))
-			return name.LocalName;
+    static object? TryParseDouble(string? s, IFormatProvider? ifp)
+    {
+        if (double.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, ifp, out var result))
+            return result;
 
-		return string.Concat(prefix, ':', name.LocalName);
-	}
+        return default;
+    }
 
-	static string GetElementName(this XElement e)
-	{
-		var name = e.Name;
-		var ns = name.Namespace;
+    delegate bool TryParseNumberDelegate<T>(string? s, NumberStyles style, IFormatProvider? ifp, out T res);
 
-		string? prefix;
+    static ValueConverterDelegate CreateNumberParser<T>(TryParseNumberDelegate<T> cb)
+    {
+        return new((s, ifp) =>
+        {
+            if (cb(s, NumberStyles.Number, ifp ?? CultureInfo.InvariantCulture, out var result))
+                return result;
 
-		if (ns == XNamespace.Xml)
-			prefix = "xml";
-		else if (ns == XNamespace.Xmlns)
-			prefix = "xmlns";
-		else
-			prefix = e.GetPrefixOfNamespace(ns);
+            return default;
+        });
+    }
 
-		if (string.IsNullOrEmpty(prefix))
-			return name.LocalName;
+    public static T ParseValueOrDefault<T>(string? value, T defaultValue, IFormatProvider? ifp = default)
+    {
+        if (!s_ValueConverters.TryGetValue(typeof(T), out var conv))
+            throw new NotImplementedException($"Parsing value of type '{typeof(T)}' is not implemented.");
 
-		return string.Concat(prefix, ':', name.LocalName);
-	}
+        ifp ??= CultureInfo.InvariantCulture;
+
+        var temp = conv!(value, ifp);
+
+        if (temp == null)
+            return defaultValue;
+
+        return (T)temp;
+    }
+
+    public static T? ParseValue<T>(string? value, IFormatProvider? ifp = default) where T : struct
+    {
+        var type = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+
+        if (!s_ValueConverters.TryGetValue(type, out var conv))
+            throw new NotImplementedException($"Parsing value of type '{typeof(T)}' is not implemented.");
+
+        ifp ??= CultureInfo.InvariantCulture;
+
+        var temp = conv!(value, ifp);
+
+        if (temp == null)
+            return default;
+
+        return (T)temp;
+    }
+
+    public static T GetAttributeEnum<T>(this Element e, string name, T defaultValue, bool ignoreCase = true) where T : struct, Enum
+    {
+        var result = e.GetAttributeEnum<T>(name, ignoreCase);
+        return result ?? defaultValue;
+    }
+
+    public static T? GetAttributeEnum<T>(this Element e, string name, bool ignoreCase = true) where T : struct, Enum
+    {
+        var str = e.GetAttribute(name);
+
+        if (str != null)
+        {
+            {
+                var temp = XmppEnum.FromXmlOrDefault<T>(str);
+
+                if (temp.HasValue)
+                    return temp.Value;
+            }
+
+            {
+                if (Enum.TryParse<T>(str, ignoreCase, out var temp))
+                    return temp;
+            }
+        }
+
+        return null;
+    }
+
+#if NET6_0
+
+    public static T GetAttribute<T>(this Element e, string name, T defaultValue)
+        => ParseValueOrDefault(e.GetAttribute(name), defaultValue);
+
+    public static T? GetAttribute<T>(this Element e, string name) where T : struct
+        => ParseValue<T>(e.GetAttribute(name));
+
+#elif NET7_0_OR_GREATER
+
+    public static T GetAttribute<T>(this Element e, string name, T defaultValue, IFormatProvider? formatter = default) where T : IParsable<T>
+    {
+        formatter ??= CultureInfo.InvariantCulture;
+
+        var attrVal = e.GetAttribute(name);
+
+        if (!T.TryParse(attrVal, formatter, out var result))
+            return defaultValue;
+
+        return result;
+    }
+
+    public static T? GetAttribute<T>(this Element e, string name, IFormatProvider? formatter = default) where T : struct, IParsable<T>
+    {
+        formatter ??= CultureInfo.InvariantCulture;
+
+        var attrVal = e.GetAttribute(name);
+
+        if (!T.TryParse(attrVal, formatter, out var result))
+            return default;
+
+        return result;
+    }
+
+#endif
+
 }
