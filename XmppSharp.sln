@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmppSharp", "XmppSharp\Xmpp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmppSharp.Test", "XmppSharp.Test\XmppSharp.Test.csproj", "{2097B849-7974-4E17-AD3C-C3237E7E2B02}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmppSharp.Expat", "XmppSharp.Expat\XmppSharp.Expat.csproj", "{4FB37BEB-BFF1-442B-98F5-904DDAA9EA49}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{2097B849-7974-4E17-AD3C-C3237E7E2B02}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2097B849-7974-4E17-AD3C-C3237E7E2B02}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2097B849-7974-4E17-AD3C-C3237E7E2B02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4FB37BEB-BFF1-442B-98F5-904DDAA9EA49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4FB37BEB-BFF1-442B-98F5-904DDAA9EA49}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4FB37BEB-BFF1-442B-98F5-904DDAA9EA49}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4FB37BEB-BFF1-442B-98F5-904DDAA9EA49}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

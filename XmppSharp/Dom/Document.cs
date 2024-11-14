@@ -174,6 +174,8 @@ public sealed class Document
     {
         var sb = new StringBuilder();
 
+        Encoding ??= Encoding.UTF8;
+
         using (var sw = new StringWriterWithEncoding(sb, Encoding))
         {
             using (var writer = Xml.CreateWriter(sw, formatting, Encoding))
