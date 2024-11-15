@@ -1,87 +1,48 @@
-﻿using XmppSharp.Factory;
+﻿using System.Runtime.CompilerServices;
+using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Parser;
 
-/// <summary>
-/// Base class to implement an XMPP parser.
-/// </summary>
 public abstract class XmppParser : IDisposable
 {
-	/// <summary>
-	/// The event is triggered when the XMPP open tag is found <c>&lt;stream:stream&gt;</c>
-	/// </summary>
-	public event AsyncAction<StreamStream> OnStreamStart = default!;
+    private volatile bool _disposed;
 
-	/// <summary>
-	/// The event is triggered when any well-formed element is found.
-	/// <para>However, if the XML tag is registered using <see cref="ElementFactory" /> the parser will automatically construct the element in the registered type.</para>
-	/// <para>Elements that cannot be constructed using <see cref="ElementFactory" /> only return element as base type of <see cref="Element" />.</para>
-	/// </summary>
-	public event AsyncAction<Element> OnStreamElement = default!;
+    protected bool Disposed => _disposed;
 
-	/// <summary>
-	/// The event is triggered when the XMPP close tag is found <c>&lt;/stream:stream&gt;</c>
-	/// </summary>
-	public event AsyncAction OnStreamEnd = default!;
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    protected void ThrowIfDisposed()
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(GetType().FullName);
+    }
 
-	private volatile bool _disposed;
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _disposed = true;
+            DisposeCore();
+        }
 
-	protected bool IsDisposed
-	{
-		get => _disposed;
-		set => _disposed = value;
-	}
+        GC.SuppressFinalize(this);
+    }
 
-#pragma warning disable
+    protected virtual void DisposeCore()
+    {
 
-	protected void ThrowIfDisposed()
-	{
-		if (_disposed)
-			throw new ObjectDisposedException(GetType().FullName);
-	}
+    }
 
-#pragma warning restore
+    public event Action<StreamStream>? OnStreamStart;
+    public event Action<Element>? OnStreamElement;
+    public event Action? OnStreamEnd;
 
-	/// <summary>
-	/// Method that is called when disposing the parser.
-	/// </summary>
-	protected virtual void Release()
-	{
+    protected virtual void FireOnStreamStart(StreamStream element)
+        => OnStreamStart?.Invoke(element);
 
-	}
+    protected virtual void FireOnStreamElement(Element element)
+        => OnStreamElement?.Invoke(element);
 
-	public void Dispose()
-	{
-		if (!_disposed)
-		{
-			_disposed = true;
-			Release();
-			GC.SuppressFinalize(this);
-		}
-	}
-
-	protected async Task FireStreamStart(StreamStream e)
-	{
-		await Task.Yield();
-
-		if (OnStreamStart != null)
-			await OnStreamStart(e);
-	}
-
-	protected async Task FireStreamEnd()
-	{
-		await Task.Yield();
-
-		if (OnStreamEnd != null)
-			await OnStreamEnd();
-	}
-
-	protected async Task FireStreamElement(Element e)
-	{
-		await Task.Yield();
-
-		if (OnStreamElement != null)
-			await OnStreamElement(e);
-	}
+    protected virtual void FireOnStreamEnd()
+        => OnStreamEnd?.Invoke();
 }

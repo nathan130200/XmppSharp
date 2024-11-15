@@ -1,38 +1,26 @@
 ﻿using System.Diagnostics;
-using System.Xml;
 
 namespace XmppSharp.Dom;
 
 public abstract class Node : ICloneable
 {
-	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-	internal Element? _parent;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal Element? _parent;
 
-	public Element? Parent
-	{
-		get => this._parent;
-		set
-		{
-			this._parent?.RemoveChild(this);
-			value?.AddChild(this);
-		}
-	}
+    public abstract Node Clone();
 
-	public virtual void Remove()
-	{
-		this._parent?.RemoveChild(this);
-		this._parent = null;
-	}
+    object ICloneable.Clone() => Clone();
 
-	public virtual string? Value
-	{
-		get;
-		set;
-	}
+    public Element? Parent
+    {
+        get => _parent;
+        set
+        {
+            _parent?.RemoveChild(this);
+            value?.AddChild(this);
+        }
+    }
 
-	public abstract void WriteTo(XmlWriter writer, XmlFormatting formatting);
-
-	public abstract Node Clone();
-
-	object ICloneable.Clone() => this.Clone();
+    public void Remove()
+        => _parent?.RemoveChild(this);
 }

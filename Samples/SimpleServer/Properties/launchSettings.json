@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SimpleServer": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

@@ -1,164 +1,160 @@
-﻿using System.Text.RegularExpressions;
-using System.Xml;
+﻿using System.Collections;
 using XmppSharp.Dom;
-using XmppSharp.Exceptions;
 using XmppSharp.Expat;
-using XmppSharp.Expat.Native;
-using XmppSharp.Factory;
 using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Parser;
 
-public partial class ExpatXmppParser : IDisposable
+public class NamespaceStack
 {
-	private ExpatParser _parser;
-	private Element _currentElem;
-	private XmlNamespaceManager _nsStack;
-	private NameTable _nameTable;
+    private readonly Stack<Hashtable> _stack = new();
+    private readonly object _syncRoot = new();
 
-	public event Action<StreamStream> OnStreamStart;
-	public event Action<Element> OnStreamElement;
-	public event Action OnStreamEnd;
+    public NamespaceStack()
+    {
+        PushScope();
+        AddNamespace("xml", Namespaces.Xml);
+        AddNamespace("xmlns", Namespaces.Xmlns);
+    }
 
-	public ExpatXmppParser(EncodingType encoding = EncodingType.UTF8)
-	{
-		this._nsStack = new(this._nameTable = new NameTable());
+    public void PushScope()
+    {
+        lock (_syncRoot)
+            _stack.Push(new Hashtable());
+    }
 
-		this._parser = new ExpatParser(encoding);
+    public void PopScope()
+    {
+        lock (_syncRoot)
+        {
+            if (_stack.Count > 1)
+                _stack.Pop();
+        }
+    }
 
-		this._parser.OnElementStart += (name, attributes) =>
-		{
-			this._nsStack.PushScope();
+    public void AddNamespace(string prefix, string uri)
+    {
+        lock (_syncRoot)
+        {
+            var dict = _stack.Peek();
+            dict.Add(prefix, uri);
+        }
+    }
 
-			foreach (var (key, value) in attributes)
-			{
-				if (key == "xmlns")
-					this._nsStack.AddNamespace(string.Empty, value);
-				else if (key.StartsWith("xmlns:"))
-				{
-					var prefix = key[(key.IndexOf(':') + 1)..];
-					this._nsStack.AddNamespace(prefix, value);
-				}
-			}
+    public string? LookupNamespace(string? prefix)
+    {
+        prefix ??= string.Empty;
 
-			var qname = Xml.ExtractQualifiedName(name);
+        lock (_syncRoot)
+        {
+            foreach (var entry in _stack)
+            {
+                if (entry.ContainsKey(prefix))
+                    return (string)entry[prefix];
+            }
+        }
 
-			var ns = this._nsStack.LookupNamespace(qname.HasPrefix ? qname.Prefix : string.Empty);
+        return null;
+    }
 
-			if (name is "iq" or "message" or "presence") // work-around
-				ns ??= Namespaces.Client;
+    public void Clear()
+    {
+        lock (_syncRoot)
+        {
+            while (_stack.Count > 1)
+                _stack.Pop();
+        }
+    }
 
-			var element = ElementFactory.Create(name, ns);
+    public string DefaultNamespace
+        => LookupNamespace(string.Empty);
+}
 
-			foreach (var (key, value) in attributes)
-				element.SetAttribute(key, value);
+public class ExpatXmppParser : XmppParser
+{
+    private ExpatParser _parser;
+    private Element? _current;
+    private NamespaceStack _namespaces;
 
-			if (name == "stream:stream")
-				OnStreamStart?.Invoke(element as StreamStream);
-			else
-			{
-				_currentElem?.AddChild(element);
-				_currentElem = element;
-			}
-		};
+    public ExpatXmppParser(ExpatEncoding encoding)
+    {
+        _namespaces = new NamespaceStack();
+        _parser = new ExpatParser(encoding);
 
-		this._parser.OnElementEnd += (name) =>
-		{
-			this._nsStack.PopScope();
+        _parser.OnStartTag += (name, attrs) =>
+        {
+            Console.WriteLine("[OnStartTag]: name: " + name + " (attributes: " + attrs.Count + ")");
 
-			if (name == "stream:stream")
-				OnStreamEnd?.Invoke();
-			else
-			{
-				var parent = _currentElem.Parent;
+            _namespaces.PushScope();
 
-				if (parent == null)
-					this.OnStreamElement?.Invoke(_currentElem);
-				else
-				{
-					if (name != _currentElem.TagName)
-					{
-						var ex = new JabberStreamException(StreamErrorCondition.InvalidXml, "Parent end tag mismatch.");
-						ex.Data.Add("Actual", name);
-						ex.Data.Add("Expected", _currentElem.TagName);
-						throw ex;
-					}
-				}
+            foreach (var (key, value) in attrs)
+            {
+                if (key == "xmlns")
+                    _namespaces.AddNamespace(string.Empty, value);
+                else if (key.Prefix == "xmlns")
+                    _namespaces.AddNamespace(key.LocalName, value);
+            }
 
-				_currentElem = parent;
-			}
-		};
+            var element = ElementFactory.CreateElement(name, _namespaces.LookupNamespace(name.Prefix));
 
-		this._parser.OnText += (text) =>
-		{
-			if (_currentElem == null)
-				return;
+            foreach (var (key, value) in attrs)
+                element.SetAttribute(key, value);
 
-			var trimWhitespace = _currentElem.GetAttribute("xml:space") != "preserve";
+            if (element is StreamStream stream)
+                AsyncHelper.RunAsync(FireOnStreamStart, stream);
+            else
+            {
+                if (_current == null)
+                    _current = element;
+                else
+                {
+                    _current.AddChild(element);
+                    _current = element;
+                }
+            }
+        };
 
-			if (trimWhitespace)
-				text = text.TrimWhitespaces();
+        _parser.OnEndTag += name =>
+        {
+            Console.WriteLine("[OnEndTag] name: " + name);
 
-			if (_currentElem.LastNode is Text node)
-				node.Value += text;
-			else
-				_currentElem.AddChild(new Text(text));
-		};
+            if (name == "stream:stream")
+                AsyncHelper.RunAsync(FireOnStreamEnd);
+            else
+            {
+                var parent = _current.Parent;
 
-		this._parser.OnCdata += value =>
-		{
-			this._currentElem?.AddChild(new Cdata(value));
-		};
+                if (parent == null)
+                    AsyncHelper.RunAsync(FireOnStreamElement, _current);
 
-		this._parser.OnComment += value =>
-		{
-			this._currentElem?.AddChild(new Comment(value));
-		};
-	}
+                _current = parent;
+            }
 
-	public void Reset()
-	{
-		this.ThrowIfDisposed();
+            _namespaces.PopScope();
+        };
 
-		this._nsStack = new(this._nameTable);
-		this._parser.Reset();
-	}
+        _parser.OnText += value => _current?.AddChild(new Text(value));
+        _parser.OnComment += value => _current?.AddChild(new Comment(value));
+        _parser.OnCdata += value => _current?.AddChild(new Cdata(value));
+    }
 
-	public void Write(byte[] buffer, int count, bool isFinal = false)
-	{
-		this.ThrowIfDisposed();
-		this._parser.Write(buffer, count, isFinal);
-	}
+    protected override void DisposeCore()
+    {
+        _parser?.Dispose();
+        _parser = null;
+    }
 
-	public void WriteInplace(byte[] buffer, int count, bool isFinal = false)
-	{
-		this.ThrowIfDisposed();
-		this._parser.WriteInplace(buffer, count, isFinal);
-	}
+    public void Reset()
+    {
+        ThrowIfDisposed();
+        _current = null;
+        _namespaces.Clear();
+        _parser.Reset();
+    }
 
-	protected volatile bool _disposed;
-
-	protected void ThrowIfDisposed()
-	{
-		ObjectDisposedException.ThrowIf(_disposed, this);
-	}
-
-	public void Dispose()
-	{
-		if (_disposed)
-			return;
-
-		_disposed = true;
-
-		this._nsStack = null;
-
-		while (this._nsStack.PopScope())
-			;
-
-		this._nameTable = null;
-		this._parser?.Dispose();
-		this._parser = null;
-
-		GC.SuppressFinalize(this);
-	}
+    public void Write(byte[] buffer, int length, bool isFinal = false)
+    {
+        ThrowIfDisposed();
+        _parser.Write(buffer, length, isFinal);
+    }
 }

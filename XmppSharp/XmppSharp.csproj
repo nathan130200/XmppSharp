@@ -1,75 +1,46 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<Import Project="..\XmppSharp.Shared\XmppSharp.Shared.xml" />
-
 	<PropertyGroup>
+		<TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>annotations</Nullable>
-		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
-		<NoWarn>$(NoWarn);CS1591</NoWarn>
+		<Nullable>enable</Nullable>
+		<Version>$(XmppSharpVersion)</Version>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<Description>Lightweight XMPP library.</Description>
 	</PropertyGroup>
 
-	<PropertyGroup>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Title>XmppSharp</Title>
-		<Company>nathan130200</Company>
-		<Description>Lightweight xmpp library inspired on classic xmpp library agsXMPP.</Description>
-		<PackageProjectUrl>https://github.com/nathan130200/XmppSharp</PackageProjectUrl>
-		<PackageTags>xml, jabber, xmpp, xmpp-client, xmpp-server, xmpp-component</PackageTags>
-		<PackageOutputPath>$(SolutionDir)/Packages/</PackageOutputPath>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-		<DebugSymbols>true</DebugSymbols>
-		<DebugType>full</DebugType>
-	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+	</ItemGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<DebugSymbols>true</DebugSymbols>
-		<DebugType>embedded</DebugType>
+		<PackageId>XmppSharp</PackageId>
+		<PackageVersion>$(XmppSharpVersion)</PackageVersion>
+		<PackageTags>xmpp, xmpp client, xmpp server, xmpp component, jabber, xml</PackageTags>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
-		<EmbedUntrackedSources>false</EmbedUntrackedSources>
-	</PropertyGroup>
-
-	<PropertyGroup>
-		<Version>4.4.3</Version>
-		<Copyright>nathan130200</Copyright>
-		<RepositoryType>git</RepositoryType>
-		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
-		<PackageReadmeFile>CHANGELOG.md</PackageReadmeFile>
+		<PackageOutputPath>$(SolutionDir)Packages</PackageOutputPath>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<Authors>nathan130200</Authors>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Remove="Dynamic\**" />
-		<EmbeddedResource Remove="Dynamic\**" />
-		<None Remove="Dynamic\**" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Using Include="XmppSharp" />
-		<Using Include="XmppSharp.Dom" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Include="CHANGELOG.md">
+		<None Include="$(SolutionDir)LICENSE">
 			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-		<None Include="..\LICENSE">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
+			<PackagePath>/</PackagePath>
 		</None>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
-	    <PrivateAssets>all</PrivateAssets>
-	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	  </PackageReference>
+		<None Include="$(SolutionDir)README.md">
+			<Pack>True</Pack>
+			<PackagePath>/</PackagePath>
+		</None>
 	</ItemGroup>
 
 </Project>

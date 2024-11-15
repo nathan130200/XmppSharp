@@ -1,271 +1,128 @@
-﻿using System.Net;
-using System.Xml;
-using System.Xml.Schema;
-using XmppSharp.Exceptions;
-using XmppSharp.Factory;
+﻿using System.Xml;
+using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Parser;
 
-/// <summary>
-/// An default XMPP parser implemented on top of <see cref="XmlReader"/>.
-/// </summary>
 public class XmppStreamReader : XmppParser
 {
-	private NameTable? _nameTable = new();
-	private XmlReader? _reader;
-	private volatile bool _disposed;
+    private Stream? _baseStream;
+    private readonly bool _leaveOpen;
+    private XmlReader? _reader;
+    private Element? current;
 
-	private Element? _currentElement;
-	private readonly bool _leaveOpen;
-	private readonly bool _isFromFactory;
-	private Func<Stream>? _streamFactory;
-	private Stream? _baseStream;
+    public XmppStreamReader(Stream baseStream, int bufferSize = -1, bool leaveOpen = true)
+    {
+        _baseStream = baseStream;
+        _leaveOpen = leaveOpen;
 
-	/// <summary>
-	/// Initializes a new instance of <see cref="XmppStreamReader" />. Use this constructor for generic purposes, where the base type of the stream will not change (eg: loading from file).
-	/// </summary>
-	/// <param name="stream">Stream that will be used to read the characters.</param>
-	/// <param name="leaveOpen">Determines whether the stream should remain open after dispose this parser.</param>
-	public XmppStreamReader(Stream stream, bool leaveOpen = true)
-	{
-		Require.NotNull(stream);
-
-		this._isFromFactory = false;
-		this._leaveOpen = leaveOpen;
-		this._baseStream = stream;
-	}
-
-	/// <summary>
-	/// Initializes a new instance of <see cref="XmppStreamReader" />. Use this constructor only if the stream can change according to the connection state (eg: connection upgrade from raw stream to ssl stream).
-	/// </summary>
-	/// <param name="streamFactory">Factory function to get the stream when <see cref="Reset" /> is called.</param>
-	/// <param name="leaveOpen">Determines whether the stream should remain open after dispose this parser.</param>
-	public XmppStreamReader(Func<Stream> streamFactory, bool leaveOpen = true)
-	{
-		Require.NotNull(streamFactory);
-
-		this._isFromFactory = true;
-		this._leaveOpen = leaveOpen;
-		this._streamFactory = streamFactory;
-	}
-
-	protected override void Release()
-	{
-		if (this._disposed)
-			return;
-
-		this._disposed = true;
-
-		if (!this._leaveOpen)
-			this._baseStream?.Dispose();
-
-		this._baseStream = null;
-		this._streamFactory = null;
-
-		this._reader?.Dispose();
-		this._reader = null;
-
-		this._nameTable = null;
-	}
-
-	class InternalXmlThrowingResolver : XmlResolver
-	{
-		public static InternalXmlThrowingResolver Shared { get; } = new();
-
-		public override ICredentials Credentials
-		{
-			set
-			{
-				// do nothing
-			}
-		}
-
-		public override Task<object> GetEntityAsync(Uri absoluteUri, string? role, Type? ofObjectToReturn)
-		{
-			throw new InvalidOperationException("Resolving XML entities is not supported.");
-		}
-
-		public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
-		{
-			throw new InvalidOperationException("Resolving XML entities is not supported.");
-		}
-	}
-
-	/// <summary>
-	/// Restarts (or initialize) the state of the XML parser.
-	/// </summary>
-	/// <exception cref="ObjectDisposedException">If this instance of <see cref="XmppStreamReader" /> has already been disposed.</exception>
-	public virtual void Reset()
-	{
-		this._reader?.Dispose();
-
-		ThrowIfDisposed();
-
-		if (this._isFromFactory)
-			this._baseStream = this._streamFactory!();
-
-		this._reader = XmlReader.Create(this._baseStream!, new()
-		{
-			CloseInput = false,
-			Async = true,
-			IgnoreWhitespace = true,
-			IgnoreProcessingInstructions = true,
-			ConformanceLevel = ConformanceLevel.Fragment,
-
-			// More info: https://en.wikipedia.org/wiki/Billion_laughs_attack
-			DtdProcessing = DtdProcessing.Ignore,
-
-#if NET7_0_OR_GREATER
-			XmlResolver = XmlResolver.ThrowingResolver,
+        _reader = XmlReader.Create(new StreamReader(_baseStream, bufferSize: bufferSize, leaveOpen: true), new XmlReaderSettings()
+        {
+            CloseInput = true,
+            CheckCharacters = true,
+            ConformanceLevel = ConformanceLevel.Fragment,
+            IgnoreProcessingInstructions = true,
+            IgnoreWhitespace = true,
+#if NET6_0
+            XmlResolver = Xml.ThrowingResolver
 #else
-			XmlResolver = InternalXmlThrowingResolver.Shared,
+            XmlResolver = XmlResolver.ThrowingResolver
 #endif
-			ValidationFlags = XmlSchemaValidationFlags.AllowXmlAttributes,
-			NameTable = this._nameTable
-		});
-	}
+        });
+    }
 
-	/// <summary>
-	/// Gets the XML element in current scope.
-	/// </summary>
-	public Element? CurrentElement
-		=> this._currentElement;
+    public virtual bool Advance()
+    {
+        if (Disposed)
+            return false;
 
-	/// <summary>
-	/// Gets the XML depth in the parser tree.
-	/// </summary>
-	public int Depth
-	{
-		get
-		{
-			if (this._disposed)
-				return 0;
+        if (_reader == null)
+            return false;
 
-			return this._reader?.Depth ?? 0;
-		}
-	}
+        if (!_reader.Read())
+            return false;
 
-	public virtual bool Advance()
-		=> AsyncHelper.RunSync(AdvanceAsync);
+        switch (_reader.NodeType)
+        {
+            case XmlNodeType.Element:
+                {
+                    var elem = ElementFactory.CreateElement(_reader.Name, _reader.NamespaceURI);
 
-	public virtual async Task<bool> AdvanceAsync()
-	{
-		if (this._disposed)
-			return false;
+                    if (_reader.HasAttributes)
+                    {
+                        while (_reader.MoveToNextAttribute())
+                            elem.SetAttribute(_reader.Name, _reader.Value);
+                    }
 
-		if (this._reader == null)
-			return false;
+                    _reader.MoveToElement();
 
-		bool result;
+                    if (elem is StreamStream ss)
+                        FireOnStreamStart(ss);
+                    else
+                    {
+                        if (_reader.IsEmptyElement)
+                        {
+                            if (current == null)
+                                FireOnStreamElement(elem);
+                            else
+                                current.AddChild(elem);
+                        }
+                        else
+                        {
+                            current?.AddChild(elem);
+                            current = elem;
+                        }
+                    }
+                }
+                break;
 
-		try
-		{
-			result = await this._reader.ReadAsync();
-		}
-		catch (XmlException e)
-		{
-			if (_reader.EOF)
-				return false;
+            case XmlNodeType.EndElement:
+                {
+                    if (current != null)
+                    {
+                        var parent = current.Parent;
 
-			throw new JabberStreamException(StreamErrorCondition.InvalidXml, e);
-		}
+                        if (parent == null)
+                            FireOnStreamElement(current);
 
-		if (!result)
-			return false;
+                        current = parent;
+                    }
+                }
+                break;
 
-		switch (this._reader.NodeType)
-		{
-			case XmlNodeType.Element:
-				{
-					Element currentElem;
+            case XmlNodeType.Comment:
+                current?.AddChild(new Comment(_reader.Value));
+                break;
 
-					if (this._reader.Name != "stream:stream")
-					{
-						var ns = this._reader.NamespaceURI;
+            case XmlNodeType.CDATA:
+                current?.AddChild(new Cdata(_reader.Value));
+                break;
 
-						if (string.IsNullOrEmpty(ns) && this._reader.LocalName is "iq" or "message" or "presence")
-							ns = "jabber:client";
+            case XmlNodeType.Text:
+            case XmlNodeType.SignificantWhitespace:
+                current?.AddChild(new Text(_reader.Value));
+                break;
+        }
 
-						currentElem = ElementFactory.Create(this._reader.Name, ns);
-					}
-					else
-						currentElem = new StreamStream();
+        return true;
+    }
 
-					if (this._reader.HasAttributes)
-					{
-						while (this._reader.MoveToNextAttribute())
-							currentElem.SetAttribute(this._reader.Name, this._reader.Value);
+    protected override void DisposeCore()
+    {
+        try
+        {
+            _reader?.Dispose();
+            _reader = null;
+        }
+        catch
+        {
+            // skip some XML errors (eg: unclosed tags)
+        }
 
-						this._reader.MoveToElement();
-					}
-
-					if (this._reader.Name == "stream:stream")
-					{
-						if (this._reader.NamespaceURI != Namespaces.Stream)
-							throw new JabberStreamException(StreamErrorCondition.InvalidNamespace);
-
-						await FireStreamStart((StreamStream)currentElem);
-					}
-					else
-					{
-						if (this._reader.IsEmptyElement)
-						{
-							if (this._currentElement != null)
-								this._currentElement.AddChild(currentElem);
-							else
-								await FireStreamElement(currentElem);
-						}
-						else
-						{
-							this._currentElement?.AddChild(currentElem);
-							this._currentElement = currentElem;
-						}
-					}
-				}
-				break;
-
-			case XmlNodeType.EndElement:
-				{
-					if (this._reader.Name == "stream:stream")
-						await FireStreamEnd();
-					else
-					{
-						if (this._currentElement == null)
-							throw new JabberStreamException(StreamErrorCondition.InvalidXml, "Unexcepted end tag.");
-
-						var parent = this._currentElement.Parent;
-
-						if (parent == null)
-							await FireStreamElement(this._currentElement);
-
-						this._currentElement = parent;
-					}
-				}
-				break;
-
-			case XmlNodeType.SignificantWhitespace:
-			case XmlNodeType.Text:
-				{
-					if (this._currentElement != null)
-					{
-						if (this._currentElement.LastNode is Text text)
-							text.Value += this._reader.Value;
-						else
-							this._currentElement.AddChild(new Text(this._reader.Value));
-					}
-				}
-				break;
-
-			case XmlNodeType.Comment:
-				this._currentElement?.AddChild(new Comment(this._reader.Value));
-				break;
-
-			case XmlNodeType.CDATA:
-				this._currentElement?.AddChild(new Cdata(this._reader.Value));
-				break;
-		}
-
-		return result;
-	}
+        if (!_leaveOpen)
+        {
+            _baseStream?.Dispose();
+            _baseStream = null;
+        }
+    }
 }

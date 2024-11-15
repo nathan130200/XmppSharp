@@ -1,5 +1,6 @@
 <Project>
 	<PropertyGroup>
-		<AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+		<XmppSharpVersion>5.0.0</XmppSharpVersion>
+		<XmppSharpExpatVersion>2.0.0</XmppSharpExpatVersion>
 	</PropertyGroup>
 </Project>

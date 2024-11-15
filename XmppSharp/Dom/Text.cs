@@ -1,18 +1,85 @@
-﻿using System.Xml;
+﻿using System.Diagnostics;
 
 namespace XmppSharp.Dom;
 
-public class Text : ContentNode
+[DebuggerDisplay("Text: {Value,nq}")]
+public class Text : Node
 {
-	public Text(string value) => this.Value = value;
-	public Text(Text other) => this.Value = other.Value;
+    public string? Value
+    {
+        get;
+        set;
+    }
 
-	public override Node Clone()
-		=> new Text(this);
+    public Text()
+    {
 
-	public override void WriteTo(XmlWriter writer, XmlFormatting formatting)
-	{
-		if (formatting.IncludeTextNodes)
-			writer.WriteString(this.Value);
-	}
+    }
+
+    public Text(string? value)
+    {
+        Value = value;
+    }
+
+    public override string ToString()
+        => Value ?? string.Empty;
+
+    public override Node Clone()
+        => new Text(Value);
+}
+
+// ---------------------------------------------------- //
+
+[DebuggerDisplay("Comment: {Value,nq}")]
+public class Comment : Node
+{
+    public string? Value
+    {
+        get;
+        set;
+    }
+
+    public Comment()
+    {
+
+    }
+
+    public Comment(string? value)
+    {
+        Value = value;
+    }
+
+    public override string ToString()
+        => $"<!--{Value}-->";
+
+    public override Node Clone()
+        => new Comment(Value);
+}
+
+// ---------------------------------------------------- //
+
+[DebuggerDisplay("Cdata: {Value,nq}")]
+public class Cdata : Node
+{
+    public string? Value
+    {
+        get;
+        set;
+    }
+
+    public Cdata()
+    {
+
+    }
+
+    public Cdata(string? value)
+    {
+        Value = value;
+    }
+
+    public override string ToString()
+        => $"<![CDATA[{Value}]]>";
+
+    public override Node Clone()
+        => new Cdata(Value);
 }

@@ -1,14 +1,14 @@
 ﻿namespace XmppSharp.Attributes;
 
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public sealed class XmppTagAttribute : Attribute
 {
-	public string LocalName { get; }
-	public string NamespaceURI { get; }
+    public string TagName { get; }
+    public string NamespaceURI { get; }
 
-	public XmppTagAttribute(string localName, string namespaceURI)
-	{
-		this.LocalName = localName;
-		this.NamespaceURI = namespaceURI;
-	}
+    public XmppTagAttribute(string tagName, string namespaceURI)
+    {
+        TagName = tagName;
+        NamespaceURI = namespaceURI;
+    }
 }
