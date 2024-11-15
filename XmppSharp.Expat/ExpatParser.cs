@@ -3,6 +3,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Xml;
 using XmppSharp.Collections;
 using static XmppSharp.Expat.Native;
 
@@ -27,7 +28,7 @@ public class ExpatEncoding
     }
 }
 
-public class ExpatParser : IDisposable
+public class ExpatParser : IDisposable, IXmlLineInfo
 {
     internal IntPtr _parser;
     internal volatile bool _disposed;
@@ -211,5 +212,29 @@ public class ExpatParser : IDisposable
     {
         if (_disposed)
             throw new ObjectDisposedException(GetType().Name);
+    }
+
+    public bool HasLineInfo() => !_disposed;
+
+    public int LineNumber
+    {
+        get
+        {
+            if (_disposed)
+                return -1;
+
+            return XML_GetCurrentLineNumber(_parser);
+        }
+    }
+
+    public int LinePosition
+    {
+        get
+        {
+            if (_disposed)
+                return -1;
+
+            return XML_GetCurrentColumnNumber(_parser);
+        }
     }
 }
