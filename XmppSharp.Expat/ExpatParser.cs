@@ -58,6 +58,17 @@ public class ExpatParser : IDisposable
         Setup();
     }
 
+    public void SetBillionLaughsAttackProtection(float? maxAplificationFactor, long? activationThresholdBytes)
+    {
+        ThrowIfDisposed();
+
+        if (maxAplificationFactor != null)
+            XML_SetBillionLaughsAttackProtectionMaximumAmplification(_parser, maxAplificationFactor.Value);
+
+        if (activationThresholdBytes != null)
+            XML_SetBillionLaughsAttackProtectionActivationThreshold(_parser, activationThresholdBytes.Value);
+    }
+
     void Setup()
     {
         XML_SetElementHandler(_parser, StartElementCallback, EndElementCallback);
