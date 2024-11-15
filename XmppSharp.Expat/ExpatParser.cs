@@ -65,13 +65,13 @@ public class ExpatParser : IDisposable
     volatile bool _isCdataSection = false;
     StringBuilder _cdataSection = new StringBuilder();
 
-    public event Action<string, IReadOnlyDictionary<string, string>> OnStartTag;
+    public event Action<XmppName, IReadOnlyDictionary<XmppName, string>> OnStartTag;
     public event Action<string> OnEndTag;
     public event Action<string?>? OnComment;
     public event Action<string?>? OnCdata;
     public event Action<string?>? OnText;
 
-    void FireOnStartTag(string tagName, Dictionary<string, string> attrs) => OnStartTag?.Invoke(tagName, attrs);
+    void FireOnStartTag(XmppName tagName, Dictionary<XmppName, string> attrs) => OnStartTag?.Invoke(tagName, attrs);
     void FireOnEndTag(string tagName) => OnEndTag?.Invoke(tagName);
     void FireOnComment(string? value) => OnComment?.Invoke(value);
     void FireOnCdata(string? value) => OnCdata?.Invoke(value);
@@ -84,7 +84,7 @@ public class ExpatParser : IDisposable
         // tag name is C-style string.
         string tagName = Marshal.PtrToStringAnsi(namePtr);
 
-        var attributes = new Dictionary<string, string>();
+        var attributes = new Dictionary<XmppName, string>();
 
         // Get num of attributes.
         var numAttributes = XML_GetSpecifiedAttributeCount(parser._handle);
