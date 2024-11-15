@@ -25,4 +25,10 @@ public class DiscoItems : Element
             }
         }
     }
+
+    public DiscoItems AddItem(Item item)
+    {
+        AddChild(item);
+        return this;
+    }
 }

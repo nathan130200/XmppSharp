@@ -1,6 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Data;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using XmppSharp;
 using XmppSharp.Collections;
@@ -10,7 +12,10 @@ using XmppSharp.Parser;
 using XmppSharp.Protocol;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Client;
+using XmppSharp.Protocol.Extensions;
+using XmppSharp.Protocol.Extensions.XEP0030;
 using XmppSharp.Protocol.Sasl;
+using XmppSharp.Protocol.Tls;
 
 namespace SimpleServer;
 
@@ -22,7 +27,8 @@ public sealed class Connection : IDisposable
     private Jid? _jabberId = null;
     private volatile bool _disposed;
     private volatile FileAccess _access = FileAccess.ReadWrite;
-    private ConcurrentQueue<byte[]> _writeQueue = [];
+    private ConcurrentQueue<(string xml, byte[] buffer)> _writeQueue = [];
+    private X509Certificate2? _cert;
 
     public Connection(Socket socket)
     {
@@ -33,42 +39,43 @@ public sealed class Connection : IDisposable
         _parser.OnStreamElement += OnStreamElement;
     }
 
-    internal void Setup()
+    internal async Task Initialize()
     {
-        Server.RegisterConnection(this);
-
-        new Thread(BeginSend)
-        {
-            Name = "Xmpp Connection/Send Thread",
-            IsBackground = true
-        }.Start();
-
-        new Thread(BeginReceive)
-        {
-            Name = "Xmpp Connection/Receive Thread",
-            IsBackground = true
-        }.Start();
+        await Task.WhenAll(
+            BeginSend(),
+            BeginReceive()
+        );
     }
 
-    void BeginSend()
+    async Task BeginSend()
     {
         try
         {
             while (!_disposed)
             {
-                Thread.Sleep(1);
+                await Task.Delay(1);
 
-                if (!_access.HasFlag(FileAccess.Write))
-                    continue;
+                while (!_access.HasFlag(FileAccess.Write))
+                {
+                    Console.WriteLine("write paused");
 
-                while (_writeQueue.TryDequeue(out var buffer))
+                    if (_disposed)
+                    {
+                        Console.WriteLine("cancel write: disposed");
+                        return;
+                    }
+
+                    await Task.Delay(160);
+                }
+
+                if (_writeQueue.TryDequeue(out var entry))
                 {
                     if (_stream == null)
                         return;
 
-                    Thread.Sleep(1);
+                    await _stream.WriteAsync(entry.buffer);
 
-                    _stream.Write(buffer);
+                    Console.WriteLine("send >>\n{0}\n", entry.xml);
                 }
             }
         }
@@ -83,7 +90,7 @@ public sealed class Connection : IDisposable
         }
     }
 
-    void BeginReceive()
+    async Task BeginReceive()
     {
         var buf = new byte[256];
 
@@ -91,23 +98,28 @@ public sealed class Connection : IDisposable
         {
             while (!_disposed)
             {
-                Thread.Sleep(1);
+                await Task.Delay(1);
 
-                if (!_access.HasFlag(FileAccess.Read))
+                while (!_access.HasFlag(FileAccess.Read))
                 {
-                    Console.WriteLine("read is paused");
-                    continue;
+                    Console.WriteLine("read paused");
+
+                    if (_disposed)
+                    {
+                        Console.WriteLine("cancel read: disposed");
+                        return;
+                    }
+
+                    await Task.Delay(160);
                 }
 
                 if (_stream == null || _parser == null)
                     break;
 
-                var len = _stream.Read(buf);
+                var len = await _stream.ReadAsync(buf);
 
                 if (len <= 0)
                     break;
-
-                Console.WriteLine("recv (num bytes): " + len);
 
                 _parser?.Write(buf, len);
             }
@@ -142,21 +154,14 @@ public sealed class Connection : IDisposable
         _stream?.Dispose();
         _stream = null;
 
+        _cert?.Dispose();
+        _cert = null;
+
         _socket?.Dispose();
         _socket = null;
 
         _parser?.Dispose();
         _parser = null;
-
-        Server.UnregisterConnection(this);
-    }
-
-    void SendInternal(byte[] buffer)
-    {
-        if (!_access.HasFlag(FileAccess.Write))
-            return;
-
-        _writeQueue.Enqueue(buffer);
     }
 
     public void Send(object data)
@@ -164,9 +169,7 @@ public sealed class Connection : IDisposable
         if (data is not string s)
             s = data.ToString()!;
 
-        SendInternal(s.GetBytes());
-
-        Console.WriteLine("send >>\n{0}\n", s);
+        _writeQueue.Enqueue((s, s.GetBytes()));
     }
 
     void OnStreamStart(StreamStream e)
@@ -186,6 +189,9 @@ public sealed class Connection : IDisposable
 
         if (_jabberId == null)
         {
+            if (_stream is not SslStream)
+                features.StartTls = new(StartTlsPolicy.Optional);
+
             features.Mechanisms = new()
             {
                 SupportedMechanisms =
@@ -218,9 +224,46 @@ public sealed class Connection : IDisposable
         }
     }
 
-    void OnStreamElement(Element e)
+    async void OnStreamElement(Element e)
     {
         Console.WriteLine("recv <<\n{0}\n", e.ToString(true));
+
+        if (e is StartTls)
+        {
+            _access &= ~FileAccess.Read;
+            Send(new Proceed());
+
+            while (!_writeQueue.IsEmpty)
+                await Task.Delay(160);
+
+            _access &= ~FileAccess.Write;
+
+            try
+            {
+                var handshakeTask = Task.Run(async () =>
+                {
+                    _cert = Server.GenerateCertificate();
+                    _stream = new SslStream(_stream!, false);
+                    _parser!.Reset();
+
+                    await ((SslStream)_stream).AuthenticateAsServerAsync(_cert);
+
+                    _access = FileAccess.ReadWrite;
+                });
+
+                var result = await Task.WhenAny(handshakeTask, Task.Delay(2500));
+
+                if (result != handshakeTask)
+                    throw new TimeoutException("TLS handshake timeout!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("TLS handshake failed: " + ex);
+                Dispose();
+            }
+
+            return;
+        }
 
         if (e is Auth auth)
         {
@@ -300,6 +343,87 @@ public sealed class Connection : IDisposable
                 Send(iq);
                 return;
             }
+
+            if (iq.To == null || iq.To == Server.Hostname)
+            {
+                if (iq.FirstChild is DiscoInfo discoInfo)
+                {
+                    discoInfo.AddIdentity(new Identity
+                    {
+                        Category = "component",
+                        Type = "c2s"
+                    });
+
+                    discoInfo.AddFeature(new Feature(Namespaces.DiscoInfo));
+                    discoInfo.AddFeature(new Feature(Namespaces.DiscoItems));
+                    discoInfo.AddFeature(new Feature(Namespaces.Ibb));
+                    discoInfo.AddFeature(new Feature(Namespaces.Ping));
+                    discoInfo.AddFeature(new Feature(Namespaces.IqVersion));
+
+                    iq.SwitchDirection();
+                    iq.Type = IqType.Result;
+
+                    Send(iq);
+                }
+                else if (iq.FirstChild is DiscoItems discoItems)
+                {
+                    foreach (var connection in Server.Connections.Where(x => x._jabberId != null))
+                    {
+                        discoItems.AddItem(new Item { Jid = connection._jabberId });
+                    }
+
+                    iq.SwitchDirection();
+                    iq.Type = IqType.Result;
+                    Send(iq);
+                }
+                else if (iq.FirstChild is Ping)
+                {
+                    iq.SwitchDirection();
+                    iq.Type = IqType.Result;
+                    Send(iq);
+                }
+                else
+                {
+                    iq.SwitchDirection();
+                    iq.Type = IqType.Error;
+
+                    iq.Error = new StanzaError()
+                    {
+                        Type = StanzaErrorType.Cancel,
+                        Condition = StanzaErrorCondition.FeatureNotImplemented
+                    };
+
+                    Send(iq);
+
+                    return;
+                }
+            }
+            else
+            {
+                var targetConnection = Server.Connections.FirstOrDefault(x => x._jabberId == iq.To);
+
+                if (targetConnection == null)
+                {
+                    iq.Type = IqType.Error;
+                    iq.SwitchDirection();
+                    iq.Error = new StanzaError
+                    {
+                        Type = StanzaErrorType.Wait,
+                        Condition = StanzaErrorCondition.RecipientUnavailable
+
+                    };
+
+                    Send(iq);
+                }
+                else
+                {
+                    targetConnection.Send(new Iq(iq)
+                    {
+                        From = _jabberId
+                    });
+                }
+            }
         }
+        // Handle other XMPP elements.
     }
 }

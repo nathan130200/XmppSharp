@@ -32,6 +32,18 @@ public class DiscoInfo : Element
         }
     }
 
+    public DiscoInfo AddIdentity(Identity identity)
+    {
+        AddChild(identity);
+        return this;
+    }
+
+    public DiscoInfo AddFeature(Feature feature)
+    {
+        AddChild(feature);
+        return this;
+    }
+
     public IEnumerable<Feature> Features
     {
         get => Children<Feature>();

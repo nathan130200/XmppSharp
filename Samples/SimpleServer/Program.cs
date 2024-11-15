@@ -2,9 +2,9 @@
 
 static class Program
 {
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
         Server.StartListen();
-        Thread.Sleep(-1);
+        await Task.Delay(-1);
     }
 }

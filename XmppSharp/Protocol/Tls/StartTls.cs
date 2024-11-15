@@ -11,6 +11,11 @@ public class StartTls : Element
 
     }
 
+    public StartTls(StartTlsPolicy policy) : this()
+    {
+        Policy = policy;
+    }
+
     public StartTlsPolicy Policy
     {
         get
