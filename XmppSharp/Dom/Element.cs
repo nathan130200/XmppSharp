@@ -336,7 +336,7 @@ public class Element : Node
     public string EndTag()
         => $"</{Xml.EncodeName(TagName)}>";
 
-    public sealed override string ToString() => ToString(false);
+    public override string ToString() => ToString(false);
 
     public string ToString(bool indented)
     {

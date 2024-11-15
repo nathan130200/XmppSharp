@@ -10,7 +10,7 @@ namespace XmppSharp;
 
 public static class Xml
 {
-    public const string XmppEndTag = "</stream:stream>";
+    public const string XMPP_STREAM_END = "</stream:stream>";
 
 #if NET6_0
 

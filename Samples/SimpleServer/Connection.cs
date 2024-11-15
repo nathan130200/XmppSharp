@@ -131,7 +131,7 @@ public sealed class Connection : IDisposable
         _access &= ~FileAccess.Read;
         _socket?.Shutdown(SocketShutdown.Receive);
 
-        Send(Xml.XmppEndTag);
+        Send(Xml.XMPP_STREAM_END);
 
         SpinWait sw = default;
 
@@ -205,7 +205,7 @@ public sealed class Connection : IDisposable
 
     private void OnStreamEnd()
     {
-        Send(Xml.XmppEndTag);
+        Send(Xml.XMPP_STREAM_END);
         Dispose();
     }
 
