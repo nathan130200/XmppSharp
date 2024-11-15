@@ -2,6 +2,7 @@
 using System.Net.Sockets;
 using System.Text;
 using XmppSharp.Dom;
+using XmppSharp.Expat;
 using XmppSharp.Parser;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Sasl;
@@ -124,7 +125,7 @@ public class XmppParsingTests
         Assert.IsNotNull(client);
 
         using var stream = new NetworkStream(client);
-        using var reader = new ExpatXmppParser(Encoding.UTF8);
+        using var reader = new ExpatXmppParser(ExpatEncoding.UTF8);
 
         Console.WriteLine("setup xmpp parser");
 

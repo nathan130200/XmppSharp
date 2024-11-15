@@ -8,10 +8,19 @@ using static XmppSharp.Expat.Native;
 
 namespace XmppSharp.Expat;
 
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void XML_StartElementHandler(IntPtr userData, IntPtr name, IntPtr atts);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void XML_EndElementHandler(IntPtr userData, IntPtr name);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void XML_CharacterDataHandler(IntPtr userData, IntPtr s, int len);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void XML_CommentHandler(IntPtr userData, IntPtr data);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void XML_CdataSectionHandler(IntPtr userData);
 
 [StructLayout(LayoutKind.Auto)]
@@ -32,13 +41,17 @@ public static class Native
     const string LibraryName = "libexpat";
 
     [DllImport(LibraryName)]
-    public static extern nint XML_ParserCreate(string? encoding = null);
+    public static extern nint XML_ParserCreate(string encoding);
 
     [DllImport(LibraryName)]
-    public static extern bool XML_ParserReset(IntPtr parser, string? encoding = null);
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool XML_ParserReset(IntPtr parser, string encoding);
 
     [DllImport(LibraryName)]
     public static extern void XML_ParserFree(IntPtr parser);
+
+    [DllImport(LibraryName)]
+    public static extern Status XML_SetEncoding(IntPtr parser, string encoding);
 
     [DllImport(LibraryName)]
     public static extern Error XML_GetErrorCode(IntPtr parser);
@@ -59,7 +72,7 @@ public static class Native
     public static extern int XML_GetSpecifiedAttributeCount(IntPtr parser);
 
     [DllImport(LibraryName)]
-    public static extern Status XML_Parse(IntPtr parser, IntPtr s, int len, bool isFinal);
+    public static extern Status XML_Parse(IntPtr parser, IntPtr s, int len, [MarshalAs(UnmanagedType.I1)] bool isFinal);
 
     [DllImport(LibraryName)]
     public static extern int XML_GetCurrentLineNumber(IntPtr parser);

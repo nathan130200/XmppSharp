@@ -1,10 +1,7 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using XmppSharp.Collections;
-
-#if NET7_0_OR_GREATER
-using System.Diagnostics.CodeAnalysis;
-#endif
 
 namespace XmppSharp;
 
@@ -83,8 +80,10 @@ public sealed record Jid :
         return sb.ToString();
     }
 
+    [return: NotNullIfNotNull(nameof(jid))]
     public static implicit operator string?(Jid? jid) => jid?.ToString();
 
+    [return: NotNullIfNotNull(nameof(jid))]
     public static implicit operator Jid?(string? jid)
     {
         if (jid == null)
@@ -92,6 +91,7 @@ public sealed record Jid :
 
         return new(jid);
     }
+
 
     public bool IsBare => string.IsNullOrWhiteSpace(_resource);
     public Jid Bare => this with { Resource = null };

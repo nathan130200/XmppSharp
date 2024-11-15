@@ -1,49 +1,136 @@
-﻿using System.Text;
+﻿using System.Collections;
 using XmppSharp.Dom;
 using XmppSharp.Expat;
 using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Parser;
 
+public class NamespaceStack
+{
+    private readonly Stack<Hashtable> _stack = new();
+    private readonly object _syncRoot = new();
+
+    public NamespaceStack()
+    {
+        PushScope();
+        AddNamespace("xml", Namespaces.Xml);
+        AddNamespace("xmlns", Namespaces.Xmlns);
+    }
+
+    public void PushScope()
+    {
+        lock (_syncRoot)
+            _stack.Push(new Hashtable());
+    }
+
+    public void PopScope()
+    {
+        lock (_syncRoot)
+        {
+            if (_stack.Count > 1)
+                _stack.Pop();
+        }
+    }
+
+    public void AddNamespace(string prefix, string uri)
+    {
+        lock (_syncRoot)
+        {
+            var dict = _stack.Peek();
+            dict.Add(prefix, uri);
+        }
+    }
+
+    public string? LookupNamespace(string? prefix)
+    {
+        prefix ??= string.Empty;
+
+        lock (_syncRoot)
+        {
+            foreach (var entry in _stack)
+            {
+                if (entry.ContainsKey(prefix))
+                    return (string)entry[prefix];
+            }
+        }
+
+        return null;
+    }
+
+    public void Clear()
+    {
+        lock (_syncRoot)
+        {
+            while (_stack.Count > 1)
+                _stack.Pop();
+        }
+    }
+
+    public string DefaultNamespace
+        => LookupNamespace(string.Empty);
+}
+
 public class ExpatXmppParser : XmppParser
 {
     private ExpatParser _parser;
     private Element? _current;
+    private NamespaceStack _namespaces;
 
-    public ExpatXmppParser(Encoding? encoding = default)
+    public ExpatXmppParser(ExpatEncoding encoding)
     {
+        _namespaces = new NamespaceStack();
         _parser = new ExpatParser(encoding);
 
         _parser.OnStartTag += (name, attrs) =>
         {
-            var attrName = name.HasPrefix ? $"xmlns:{name.Prefix}" : "xmlns";
-            var element = ElementFactory.CreateElement(name, attrs.GetValueOrDefault(attrName));
+            Console.WriteLine("[OnStartTag]: name: " + name + " (attributes: " + attrs.Count + ")");
+
+            _namespaces.PushScope();
+
+            foreach (var (key, value) in attrs)
+            {
+                if (key == "xmlns")
+                    _namespaces.AddNamespace(string.Empty, value);
+                else if (key.Prefix == "xmlns")
+                    _namespaces.AddNamespace(key.LocalName, value);
+            }
+
+            var element = ElementFactory.CreateElement(name, _namespaces.LookupNamespace(name.Prefix));
 
             foreach (var (key, value) in attrs)
                 element.SetAttribute(key, value);
 
             if (element is StreamStream stream)
-                FireOnStreamStart(stream);
+                AsyncHelper.RunAsync(FireOnStreamStart, stream);
             else
             {
-                _current?.AddChild(element);
-                _current = element;
+                if (_current == null)
+                    _current = element;
+                else
+                {
+                    _current.AddChild(element);
+                    _current = element;
+                }
             }
         };
 
         _parser.OnEndTag += name =>
         {
+            Console.WriteLine("[OnEndTag] name: " + name);
+
             if (name == "stream:stream")
-                FireOnStreamEnd();
+                AsyncHelper.RunAsync(FireOnStreamEnd);
             else
             {
                 var parent = _current.Parent;
 
                 if (parent == null)
-                    FireOnStreamElement(_current);
+                    AsyncHelper.RunAsync(FireOnStreamElement, _current);
 
                 _current = parent;
             }
+
+            _namespaces.PopScope();
         };
 
         _parser.OnText += value => _current?.AddChild(new Text(value));
@@ -60,12 +147,14 @@ public class ExpatXmppParser : XmppParser
     public void Reset()
     {
         ThrowIfDisposed();
+        _current = null;
+        _namespaces.Clear();
         _parser.Reset();
     }
 
     public void Write(byte[] buffer, int length, bool isFinal = false)
     {
         ThrowIfDisposed();
-        _parser.Write(buffer, length);
+        _parser.Write(buffer, length, isFinal);
     }
 }

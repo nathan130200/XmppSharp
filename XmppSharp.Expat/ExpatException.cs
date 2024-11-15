@@ -23,9 +23,9 @@ public class ExpatException : Exception
     {
         if (!parser._disposed)
         {
-            _errorMessage = XML_GetErrorCode(parser._handle).GetMessage();
-            Line = XML_GetCurrentLineNumber(parser._handle);
-            Column = XML_GetCurrentColumnNumber(parser._handle);
+            _errorMessage = XML_GetErrorCode(parser._parser).GetMessage();
+            Line = XML_GetCurrentLineNumber(parser._parser);
+            Column = XML_GetCurrentColumnNumber(parser._parser);
         }
     }
 
@@ -35,8 +35,8 @@ public class ExpatException : Exception
 
         if (!parser._disposed)
         {
-            Line = XML_GetCurrentLineNumber(parser._handle);
-            Column = XML_GetCurrentColumnNumber(parser._handle);
+            Line = XML_GetCurrentLineNumber(parser._parser);
+            Column = XML_GetCurrentColumnNumber(parser._parser);
         }
     }
 

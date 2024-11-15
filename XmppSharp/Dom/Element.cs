@@ -155,6 +155,8 @@ public class Element : Node
 
         lock (_children)
             _children.Add(node);
+
+        node._parent = this;
     }
 
     public void RemoveChild(Node? node)

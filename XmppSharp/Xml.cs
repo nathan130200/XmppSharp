@@ -5,12 +5,12 @@ using System.Web;
 using System.Xml;
 using XmppSharp.Collections;
 using XmppSharp.Dom;
-using XmppSharp.Protocol.Base;
 
 namespace XmppSharp;
 
 public static class Xml
 {
+    public const string XmppEndTag = "</stream:stream>";
 
 #if NET6_0
 
@@ -49,13 +49,6 @@ public static class Xml
             s_IndentChars ??= "  ";
             return s_IndentChars;
         }
-    }
-
-    public static T AddError<T>(this T stanza, Action<StanzaError> callback) where T : Stanza
-    {
-        stanza.Error = new StanzaError();
-        callback(stanza.Error);
-        return stanza;
     }
 
     public static string? EncodeName(string? s)

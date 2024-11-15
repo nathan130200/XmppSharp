@@ -8,19 +8,37 @@ using static XmppSharp.Expat.Native;
 
 namespace XmppSharp.Expat;
 
+public class ExpatEncoding
+{
+    public static ExpatEncoding ISO88591 = new("ISO-8859-1", Encoding.Latin1);
+    public static ExpatEncoding ASCII = new("US-ASCII", Encoding.ASCII);
+    public static ExpatEncoding UTF8 = new("UTF-8", Encoding.UTF8);
+    public static ExpatEncoding UTF16 = new("UTF-16", Encoding.Unicode);
+    public static ExpatEncoding UTF16BE = new("UTF-16BE", Encoding.BigEndianUnicode);
+    public static ExpatEncoding UTF16LE = new("UTF-16LE", Encoding.Unicode);
+
+    public string Name { get; }
+    public Encoding Encoding { get; }
+
+    ExpatEncoding(string name, Encoding enc)
+    {
+        Name = name;
+        Encoding = enc;
+    }
+}
+
 public class ExpatParser : IDisposable
 {
-    internal IntPtr _handle;
+    internal IntPtr _parser;
     internal volatile bool _disposed;
-    internal Encoding _encoding;
+    internal ExpatEncoding _encoding;
     internal GCHandle _userData;
 
-    public ExpatParser(Encoding? encoding = default)
+    public ExpatParser(ExpatEncoding? encoding = default)
     {
-        _encoding = encoding ?? Encoding.UTF8;
-
-        _handle = XML_ParserCreate(_encoding.WebName.ToUpper());
+        _encoding = encoding ?? ExpatEncoding.UTF8;
         _userData = GCHandle.Alloc(this);
+        _parser = XML_ParserCreate(_encoding.Name);
 
         Setup();
     }
@@ -28,37 +46,46 @@ public class ExpatParser : IDisposable
     public void Reset()
     {
         ThrowIfDisposed();
-        XML_ParserReset(_handle, _encoding.WebName);
+
+        if (!XML_ParserReset(_parser, _encoding.Name))
+            throw new ExpatException(this);
+
+        var error = XML_GetErrorCode(_parser);
+
+        if (error != Error.NONE)
+            throw new ExpatException(this);
+
         Setup();
     }
 
     void Setup()
     {
-        XML_SetElementHandler(_handle, StartElementCallback, EndElementCallback);
-        XML_SetCdataSectionHandler(_handle, OnCdataStartCallback, OnCdataEndCallback);
-        XML_SetCharacterDataHandler(_handle, OnCharacterDataCallback);
-        XML_SetCommentHandler(_handle, OnCommentCallback);
-        XML_SetUserData(_handle, (IntPtr)_userData);
+        XML_SetElementHandler(_parser, StartElementCallback, EndElementCallback);
+        XML_SetCdataSectionHandler(_parser, OnCdataStartCallback, OnCdataEndCallback);
+        XML_SetCharacterDataHandler(_parser, OnCharacterDataCallback);
+        XML_SetCommentHandler(_parser, OnCommentCallback);
+        XML_SetUserData(_parser, (IntPtr)_userData);
     }
 
-    public void Write(byte[] buffer, int len, bool isFinal = false)
+    public unsafe void Write(byte[] buffer, int len, bool isFinal = false)
     {
         ThrowIfDisposed();
 
-        GCHandle handle = default;
+        GCHandle ptr = default;
 
         try
         {
-            handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            var result = XML_Parse(_handle, handle.AddrOfPinnedObject(), len, isFinal);
+            ptr = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+
+            var result = XML_Parse(_parser, ptr.AddrOfPinnedObject(), len, isFinal);
 
             if (result != Status.OK)
                 throw new ExpatException(this);
         }
         finally
         {
-            if (handle.IsAllocated)
-                handle.Free();
+            if (ptr.IsAllocated)
+                ptr.Free();
         }
     }
 
@@ -71,25 +98,19 @@ public class ExpatParser : IDisposable
     public event Action<string?>? OnCdata;
     public event Action<string?>? OnText;
 
-    void FireOnStartTag(XmppName tagName, Dictionary<XmppName, string> attrs) => OnStartTag?.Invoke(tagName, attrs);
-    void FireOnEndTag(string tagName) => OnEndTag?.Invoke(tagName);
-    void FireOnComment(string? value) => OnComment?.Invoke(value);
-    void FireOnCdata(string? value) => OnCdata?.Invoke(value);
-    void FireOnText(string? value) => OnText?.Invoke(value);
-
     static void StartElementCallback(IntPtr userData, IntPtr namePtr, IntPtr attrListPtr)
     {
         var parser = (ExpatParser)GCHandle.FromIntPtr(userData).Target;
 
-        // tag name is C-style string.
-        string tagName = Marshal.PtrToStringAnsi(namePtr);
+        // name is C-style string.
+        string name = Marshal.PtrToStringAnsi(namePtr);
 
         var attributes = new Dictionary<XmppName, string>();
 
         // Get num of attributes.
-        var numAttributes = XML_GetSpecifiedAttributeCount(parser._handle);
+        var numAttributes = XML_GetSpecifiedAttributeCount(parser._parser);
 
-        // XML_Char** where each XML_Char* is followed by: name, value, name, value, ...
+        // attributes is XML_Char** where each XML_Char* is followed by: name, value, name, value, ...
         for (int i = 0; i < numAttributes; i += 2)
         {
             // attrName = ofs * pointerSize
@@ -103,15 +124,14 @@ public class ExpatParser : IDisposable
         }
 
         // invoke event
-        parser.FireOnStartTag(tagName, attributes);
+        parser.OnStartTag?.Invoke(name, attributes);
     }
 
     static void EndElementCallback(IntPtr userData, IntPtr namePtr)
     {
-        // tag name is C-style string.
+        // name is C-style string.
         var parser = (ExpatParser)GCHandle.FromIntPtr(userData).Target;
-        var tagName = Marshal.PtrToStringAnsi(namePtr);
-        parser.FireOnEndTag(tagName);
+        parser.OnEndTag?.Invoke(Marshal.PtrToStringAnsi(namePtr));
     }
 
     static void OnCdataStartCallback(IntPtr userData)
@@ -128,7 +148,7 @@ public class ExpatParser : IDisposable
         {
             var str = parser._cdataSection.ToString();
             parser._cdataSection.Clear();
-            parser.FireOnCdata(str);
+            parser.OnCdata?.Invoke(str);
         }
 
         parser._isCdataSection = false;
@@ -139,10 +159,10 @@ public class ExpatParser : IDisposable
         // data is not C-style string
         var parser = (ExpatParser)GCHandle.FromIntPtr(userDara).Target;
 
-        var content = parser._encoding.GetString((byte*)data, size);
+        var content = parser._encoding.Encoding.GetString((byte*)data, size);
 
         if (!parser._isCdataSection)
-            parser.FireOnText(content);
+            parser.OnText?.Invoke(content);
         else
             parser._cdataSection.Append(content);
     }
@@ -151,7 +171,7 @@ public class ExpatParser : IDisposable
     {
         var parser = (ExpatParser)GCHandle.FromIntPtr(userData).Target;
         var value = Marshal.PtrToStringAnsi(valuePtr);
-        parser.FireOnComment(value);
+        parser.OnComment?.Invoke(value);
     }
 
     public void Dispose()
@@ -161,10 +181,10 @@ public class ExpatParser : IDisposable
 
         _disposed = true;
 
-        if (_handle != IntPtr.Zero)
+        if (_parser != IntPtr.Zero)
         {
-            XML_ParserFree(_handle);
-            _handle = IntPtr.Zero;
+            XML_ParserFree(_parser);
+            _parser = IntPtr.Zero;
         }
 
         if (_userData.IsAllocated)
