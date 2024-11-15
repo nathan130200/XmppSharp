@@ -75,6 +75,7 @@ public class ExpatXmppParser : XmppParser
     private ExpatParser _parser;
     private Element? _current;
     private NamespaceStack _namespaces;
+    private volatile bool _streamOpen = false;
 
     public ExpatXmppParser(ExpatEncoding encoding)
     {
@@ -83,8 +84,6 @@ public class ExpatXmppParser : XmppParser
 
         _parser.OnStartTag += (name, attrs) =>
         {
-            Console.WriteLine("[OnStartTag]: name: " + name + " (attributes: " + attrs.Count + ")");
-
             _namespaces.PushScope();
 
             foreach (var (key, value) in attrs)
@@ -101,7 +100,13 @@ public class ExpatXmppParser : XmppParser
                 element.SetAttribute(key, value);
 
             if (element is StreamStream stream)
-                AsyncHelper.RunAsync(FireOnStreamStart, stream);
+            {
+                if (!_streamOpen)
+                {
+                    _streamOpen = true;
+                    AsyncHelper.RunAsync(FireOnStreamStart, stream);
+                }
+            }
             else
             {
                 if (_current == null)
@@ -116,10 +121,14 @@ public class ExpatXmppParser : XmppParser
 
         _parser.OnEndTag += name =>
         {
-            Console.WriteLine("[OnEndTag] name: " + name);
-
             if (name == "stream:stream")
-                AsyncHelper.RunAsync(FireOnStreamEnd);
+            {
+                if (_streamOpen)
+                {
+                    AsyncHelper.RunAsync(FireOnStreamEnd);
+                    _streamOpen = false;
+                }
+            }
             else
             {
                 var parent = _current.Parent;
@@ -149,6 +158,7 @@ public class ExpatXmppParser : XmppParser
         ThrowIfDisposed();
         _current = null;
         _namespaces.Clear();
+        _streamOpen = false;
         _parser.Reset();
     }
 

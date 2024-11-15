@@ -11,7 +11,13 @@ public class Identity : Element
 
     }
 
-    public Identity(string category, string name, string? type = default) : this()
+    public Identity(string category, string? type) : this()
+    {
+        Category = category;
+        Type = type;
+    }
+
+    public Identity(string category, string name, string? type) : this()
     {
         Category = category;
         Name = name;

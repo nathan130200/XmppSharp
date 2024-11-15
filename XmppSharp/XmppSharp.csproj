@@ -9,6 +9,7 @@
 		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<Description>Lightweight XMPP library.</Description>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>

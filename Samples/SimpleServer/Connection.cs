@@ -98,7 +98,7 @@ public sealed class Connection : IDisposable
         {
             while (!_disposed)
             {
-                await Task.Delay(1);
+                await Task.Delay(16);
 
                 while (!_access.HasFlag(FileAccess.Read))
                 {
@@ -115,6 +115,9 @@ public sealed class Connection : IDisposable
 
                 if (_stream == null || _parser == null)
                     break;
+
+                if (!_access.HasFlag(FileAccess.Read))
+                    continue;
 
                 var len = await _stream.ReadAsync(buf);
 
@@ -231,10 +234,13 @@ public sealed class Connection : IDisposable
         if (e is StartTls)
         {
             _access &= ~FileAccess.Read;
+
+            await Task.Delay(100);
+
             Send(new Proceed());
 
             while (!_writeQueue.IsEmpty)
-                await Task.Delay(160);
+                await Task.Delay(1000);
 
             _access &= ~FileAccess.Write;
 
@@ -247,6 +253,8 @@ public sealed class Connection : IDisposable
                     _parser!.Reset();
 
                     await ((SslStream)_stream).AuthenticateAsServerAsync(_cert);
+
+                    await Task.Delay(1000);
 
                     _access = FileAccess.ReadWrite;
                 });
@@ -348,17 +356,14 @@ public sealed class Connection : IDisposable
             {
                 if (iq.FirstChild is DiscoInfo discoInfo)
                 {
-                    discoInfo.AddIdentity(new Identity
-                    {
-                        Category = "component",
-                        Type = "c2s"
-                    });
+                    discoInfo.AddIdentity(Identities.Component.C2S);
+                    discoInfo.AddIdentity(Identities.Component.Router);
+                    discoInfo.AddIdentity(Identities.Component.Presence);
+                    discoInfo.AddIdentity(Identities.Server.IM);
 
                     discoInfo.AddFeature(new Feature(Namespaces.DiscoInfo));
                     discoInfo.AddFeature(new Feature(Namespaces.DiscoItems));
-                    discoInfo.AddFeature(new Feature(Namespaces.Ibb));
                     discoInfo.AddFeature(new Feature(Namespaces.Ping));
-                    discoInfo.AddFeature(new Feature(Namespaces.IqVersion));
 
                     iq.SwitchDirection();
                     iq.Type = IqType.Result;
@@ -369,6 +374,9 @@ public sealed class Connection : IDisposable
                 {
                     foreach (var connection in Server.Connections.Where(x => x._jabberId != null))
                     {
+                        if (connection == this)
+                            continue;
+
                         discoItems.AddItem(new Item { Jid = connection._jabberId });
                     }
 
@@ -417,10 +425,13 @@ public sealed class Connection : IDisposable
                 }
                 else
                 {
-                    targetConnection.Send(new Iq(iq)
-                    {
-                        From = _jabberId
-                    });
+                    //if (iq.To == null)
+                    //    iq.To = targetConnection._jabberId;
+
+                    if (iq.From == null)
+                        iq.From = _jabberId;
+
+                    targetConnection.Send(iq);
                 }
             }
         }
