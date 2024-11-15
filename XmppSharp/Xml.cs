@@ -27,12 +27,6 @@ public static class Xml
 
 #endif
 
-    public static byte[] GetBytes(this string str, Encoding? encoding = default)
-        => (encoding ?? Encoding.UTF8).GetBytes(str);
-
-    public static string GetString(this byte[] bytes, Encoding? encoding = default)
-        => (encoding ?? Encoding.UTF8).GetString(bytes);
-
     [ThreadStatic]
     private static string? s_IndentChars;
 

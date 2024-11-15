@@ -50,7 +50,7 @@ public class Comment : Node
     }
 
     public override string ToString()
-        => Value ?? string.Empty;
+        => $"<!--{Value}-->";
 
     public override Node Clone()
         => new Comment(Value);
@@ -78,7 +78,7 @@ public class Cdata : Node
     }
 
     public override string ToString()
-        => Value ?? string.Empty;
+        => $"<![CDATA[{Value}]]>";
 
     public override Node Clone()
         => new Cdata(Value);

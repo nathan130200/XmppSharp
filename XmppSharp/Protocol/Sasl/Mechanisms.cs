@@ -16,14 +16,14 @@ public class Mechanisms : Element
 
     }
 
-    public IEnumerable<Mechanisms> SupportedMechanisms
+    public IEnumerable<Mechanism> SupportedMechanisms
     {
-        get => Children<Mechanisms>();
+        get => Children<Mechanism>();
         set
         {
             ThrowHelper.ThrowIfNull(value);
 
-            Children<Mechanisms>()?.Remove();
+            Children<Mechanism>()?.Remove();
 
             if (value?.Any() == true)
             {

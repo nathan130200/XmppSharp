@@ -1,225 +1,157 @@
-﻿namespace XmppSharp.Expat;
+﻿#pragma warning disable
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using XmppSharp.Expat.Native;
-using static XmppSharp.Expat.Native.PInvoke;
+using XmppSharp.Collections;
+using static XmppSharp.Expat.Native;
 
-public unsafe class ExpatParser : IDisposable
+namespace XmppSharp.Expat;
+
+public class ExpatParser : IDisposable
 {
-    public event Action<string, string?, bool?>? OnProlog;
-    public event Action<string, string?>? OnProcessingInstruction;
-    public event Action<string, IReadOnlyDictionary<string, string>>? OnElementStart;
-    public event Action<string>? OnElementEnd;
-    public event Action<string>? OnCdata;
-    public event Action<string>? OnComment;
-    public event Action<string>? OnText;
+    internal IntPtr _handle;
+    internal volatile bool _disposed;
+    internal Encoding _encoding;
+    internal GCHandle _userData;
 
-    //private StartElementHandler _startElementHandler;
-    //private EndElementHandler _endElementHandler;
-    //private CommentHandler _commentHandler;
-    //private CdataSectionHandler _cdataStartHandler, _cdataEndHandler;
-    //private ProcessingInstructionHandler _processingInstructionHandler;
-    //private PrologHandler _prologHandler;
-
-    private volatile bool _disposed;
-
-    private GCHandle _class;
-    private nint _cpointer;
-    private StringBuilder _cdata;
-    private bool _isCdata;
-
-    private string _encodingName;
-    private Encoding _encoding;
-
-    public ExpatParser(EncodingType type = EncodingType.UTF8)
+    public ExpatParser(Encoding? encoding = default)
     {
-        if (!Enum.IsDefined(type))
-            type = EncodingType.UTF8;
+        _encoding = encoding ?? Encoding.UTF8;
 
-        (_encodingName, _encoding) = type.GetEncoding();
+        _handle = XML_ParserCreate(_encoding.WebName.ToUpper());
+        _userData = GCHandle.Alloc(this);
 
-        _cpointer = ParserCreate(_encodingName);
-
-        if (_cpointer == IntPtr.Zero)
-        {
-            _disposed = true;
-            throw new ExpatException("Unable to create parser instance.");
-        }
-
-        _cdata = new StringBuilder();
-        _class = GCHandle.Alloc(this, GCHandleType.Weak);
-
-        Init();
+        Setup();
     }
 
-    public void SetEncoding(EncodingType type)
+    public void Reset()
     {
         ThrowIfDisposed();
-        (_encodingName, _encoding) = type.GetEncoding();
-        var result = PInvoke.SetEncoding(_cpointer, _encodingName);
-        ThrowIfFailed(result, _cpointer);
+        XML_ParserReset(_handle, _encoding.WebName);
+        Setup();
     }
 
-    public nint CPointer
-        => _cpointer;
-
-    public int ByteIndex
+    void Setup()
     {
-        get
-        {
-            if (_disposed)
-                return -1;
+        XML_SetElementHandler(_handle, StartElementCallback, EndElementCallback);
+        XML_SetCdataSectionHandler(_handle, OnCdataStartCallback, OnCdataEndCallback);
+        XML_SetCharacterDataHandler(_handle, OnCharacterDataCallback);
+        XML_SetCommentHandler(_handle, OnCommentCallback);
+        XML_SetUserData(_handle, (IntPtr)_userData);
+    }
 
-            return GetCurrentByteIndex(_cpointer);
+    public void Write(byte[] buffer, int len, bool isFinal = false)
+    {
+        ThrowIfDisposed();
+
+        GCHandle handle = default;
+
+        try
+        {
+            handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            var result = XML_Parse(_handle, handle.AddrOfPinnedObject(), len, isFinal);
+
+            if (result != Status.OK)
+                throw new ExpatException(this);
+        }
+        finally
+        {
+            if (handle.IsAllocated)
+                handle.Free();
         }
     }
 
-    public int ByteCount
+    volatile bool _isCdataSection = false;
+    StringBuilder _cdataSection = new StringBuilder();
+
+    public event Action<string, IReadOnlyDictionary<string, string>> OnStartTag;
+    public event Action<string> OnEndTag;
+    public event Action<string?>? OnComment;
+    public event Action<string?>? OnCdata;
+    public event Action<string?>? OnText;
+
+    void FireOnStartTag(string tagName, Dictionary<string, string> attrs) => OnStartTag?.Invoke(tagName, attrs);
+    void FireOnEndTag(string tagName) => OnEndTag?.Invoke(tagName);
+    void FireOnComment(string? value) => OnComment?.Invoke(value);
+    void FireOnCdata(string? value) => OnCdata?.Invoke(value);
+    void FireOnText(string? value) => OnText?.Invoke(value);
+
+    static void StartElementCallback(IntPtr userData, IntPtr namePtr, IntPtr attrListPtr)
     {
-        get
+        var parser = (ExpatParser)GCHandle.FromIntPtr(userData).Target;
+
+        // tag name is C-style string.
+        string tagName = Marshal.PtrToStringAnsi(namePtr);
+
+        var attributes = new Dictionary<string, string>();
+
+        // Get num of attributes.
+        var numAttributes = XML_GetSpecifiedAttributeCount(parser._handle);
+
+        // XML_Char** where each XML_Char* is followed by: name, value, name, value, ...
+        for (int i = 0; i < numAttributes; i += 2)
         {
-            if (_disposed)
-                return -1;
+            // attrName = ofs * pointerSize
+            var attrNamePtr = Marshal.ReadIntPtr(attrListPtr, i * IntPtr.Size);
 
-            return GetCurrentByteCount(_cpointer);
-        }
-    }
+            // attrValue = (ofs + 1) * pointerSize
+            var attrValuePtr = Marshal.ReadIntPtr(attrListPtr, (i + 1) * IntPtr.Size);
 
-    public void SetExceptionInfo(ExpatException ex)
-    {
-        if (_disposed)
-            return;
-
-        ex.SetParserInfo(_cpointer);
-    }
-
-    public long LineNumber
-    {
-        get
-        {
-            if (_disposed)
-                return -1;
-
-            return GetCurrentLineNumber(_cpointer);
-        }
-    }
-
-    public long ColumnNumber
-    {
-        get
-        {
-            if (_disposed)
-                return -1;
-
-            return GetCurrentColumnNumber(_cpointer);
-        }
-    }
-
-    protected void FireOnElementStart(string name, Dictionary<string, string> attrs)
-        => OnElementStart?.Invoke(name, attrs);
-
-    protected void FireOnElementEnd(string name)
-        => OnElementEnd?.Invoke(name);
-
-    protected void FireOnComment(string value)
-        => OnComment?.Invoke(value);
-
-    protected void FireOnCdata(string value)
-        => OnCdata?.Invoke(value);
-
-    protected void FireOnText(string value)
-        => OnText?.Invoke(value);
-
-    protected void FireOnProlog(string version, string? encoding, bool? standalone)
-        => OnProlog?.Invoke(version, encoding, standalone);
-
-    protected void FireOnProcessingInstruction(string target, string? data)
-        => OnProcessingInstruction?.Invoke(target, data);
-
-    public static ExpatParser GetParser(nint ptr)
-        => (ExpatParser)GCHandle.FromIntPtr(ptr).Target;
-
-    static void StartElementHandlerImpl(nint cls, XML_Char* _name, XML_Char** _attrs)
-    {
-        var parser = GetParser(cls);
-        var name = new string(_name);
-        var attrs = new Dictionary<string, string>();
-
-        var count = GetSpecifiedAttributeCount(parser._cpointer);
-
-        for (var i = 0; i < count; i += 2)
-        {
-            var key = new string(_attrs[i]);
-            var value = new string(_attrs[i + 1]);
-            attrs[key] = value;
+            // read null-terminated string for both name and value
+            attributes[Marshal.PtrToStringAnsi(attrNamePtr)] = Marshal.PtrToStringAnsi(attrValuePtr);
         }
 
-        parser.FireOnElementStart(name, attrs);
+        // invoke event
+        parser.FireOnStartTag(tagName, attributes);
     }
 
-    static void EndElementHandlerImpl(nint cls, XML_Char* name)
+    static void EndElementCallback(IntPtr userData, IntPtr namePtr)
     {
-        var parser = GetParser(cls);
-        parser.FireOnElementEnd(new string(name));
+        // tag name is C-style string.
+        var parser = (ExpatParser)GCHandle.FromIntPtr(userData).Target;
+        var tagName = Marshal.PtrToStringAnsi(namePtr);
+        parser.FireOnEndTag(tagName);
     }
 
-    static void CdataStartHandlerImpl(nint cls)
+    static void OnCdataStartCallback(IntPtr userData)
     {
-        var parser = GetParser(cls);
-        parser._isCdata = true;
+        var parser = (ExpatParser)GCHandle.FromIntPtr(userData).Target;
+        parser._isCdataSection = true;
     }
 
-    static void CdataEndHandlerImpl(nint cls)
+    static void OnCdataEndCallback(IntPtr userData)
     {
-        var parser = GetParser(cls);
-        parser._isCdata = false;
+        var parser = (ExpatParser)GCHandle.FromIntPtr(userData).Target;
 
-        var text = parser._cdata.ToString();
-        parser._cdata.Clear();
-        parser.FireOnCdata(text);
+        if (parser._cdataSection.Length > 0)
+        {
+            var str = parser._cdataSection.ToString();
+            parser._cdataSection.Clear();
+            parser.FireOnCdata(str);
+        }
+
+        parser._isCdataSection = false;
     }
 
-    static void CharacterDataHandlerImpl(nint cls, XML_Char* data, int len)
+    static unsafe void OnCharacterDataCallback(IntPtr userDara, IntPtr data, int size)
     {
-        var parser = GetParser(cls);
+        // data is not C-style string
+        var parser = (ExpatParser)GCHandle.FromIntPtr(userDara).Target;
 
-        var buf = new string(data, 0, len);
+        var content = parser._encoding.GetString((byte*)data, size);
 
-        if (parser._isCdata)
-            parser._cdata.Append(buf);
+        if (!parser._isCdataSection)
+            parser.FireOnText(content);
         else
-            parser.FireOnText(buf);
+            parser._cdataSection.Append(content);
     }
 
-    static void CommentHandlerImpl(nint cls, XML_Char* str)
+    static void OnCommentCallback(IntPtr userData, IntPtr valuePtr)
     {
-        var parser = GetParser(cls);
-        parser.FireOnComment(new string(str));
-    }
-
-    static void PrologHandlerImpl(nint cls, XML_Char* version, XML_Char* encoding, int standalone)
-    {
-        var parser = GetParser(cls);
-
-        parser.FireOnProlog(
-            new string(version),
-            encoding != null ? new string(encoding) : string.Empty,
-            standalone == -1 ? null : standalone == 1);
-    }
-
-    static void ProcessingInstructionHandlerImpl(nint cls, XML_Char* target, XML_Char* data)
-    {
-        var parser = GetParser(cls);
-        parser.FireOnProcessingInstruction(new string(target), new string(data));
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    protected void ThrowIfDisposed()
-    {
-        if (_disposed)
-            throw new ObjectDisposedException(GetType().FullName);
+        var parser = (ExpatParser)GCHandle.FromIntPtr(userData).Target;
+        var value = Marshal.PtrToStringAnsi(valuePtr);
+        parser.FireOnComment(value);
     }
 
     public void Dispose()
@@ -229,88 +161,24 @@ public unsafe class ExpatParser : IDisposable
 
         _disposed = true;
 
-        _cdata?.Clear();
-        _cdata = null;
-
-        if (_class.IsAllocated)
+        if (_handle != IntPtr.Zero)
         {
-            _class.Free();
-            _class = default;
+            XML_ParserFree(_handle);
+            _handle = IntPtr.Zero;
         }
 
-        if (_cpointer != 0)
-        {
-            ParserFree(_cpointer);
-            _cpointer = 0;
-        }
+        if (_userData.IsAllocated)
+            _userData.Free();
+
+        _userData = default;
 
         GC.SuppressFinalize(this);
     }
 
-    public void Reset()
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    void ThrowIfDisposed()
     {
-        ThrowIfDisposed();
-
-        var status = ParserReset(_cpointer, _encodingName);
-
-        if (!status)
-            ThrowIfFailed(Status.Error, _cpointer);
-
-        Init();
-    }
-
-    static void ThrowIfFailed(Status s, nint ptr)
-    {
-        if (s == Status.Error)
-        {
-            var ex = new ExpatException(GetErrorCode(ptr));
-            ex.SetParserInfo(ptr);
-            throw ex;
-        }
-    }
-
-    public void Stop(bool resumable)
-    {
-        ThrowIfDisposed();
-
-        var status = StopParser(_cpointer, resumable);
-        ThrowIfFailed(status, _cpointer);
-    }
-
-    public void Resume()
-    {
-        var status = ResumeParser(_cpointer);
-        ThrowIfFailed(status, _cpointer);
-    }
-
-    public void Write(byte[] buffer, int count, bool isFinal = false)
-    {
-        ThrowIfDisposed();
-
-        var temp = new byte[count];
-        Buffer.BlockCopy(buffer, 0, temp, 0, count);
-        var status = Parse(_cpointer, temp, count, isFinal);
-        ThrowIfFailed(status, _cpointer);
-    }
-
-    public void WriteInplace(byte[] buffer, int count, bool isFinal = false)
-    {
-        ThrowIfDisposed();
-
-        var status = Parse(_cpointer, buffer, count, isFinal);
-        ThrowIfFailed(status, _cpointer);
-    }
-
-    internal void Init()
-    {
-        ThrowIfDisposed();
-
-        SetUserData(_cpointer, (nint)_class);
-        SetElementHandler(_cpointer, StartElementHandlerImpl, EndElementHandlerImpl);
-        SetCommentHandler(_cpointer, CommentHandlerImpl);
-        SetCdataSectionHandler(_cpointer, CdataStartHandlerImpl, CdataEndHandlerImpl);
-        SetCharacterDataHandler(_cpointer, CharacterDataHandlerImpl);
-        SetPrologHandler(_cpointer, PrologHandlerImpl);
-        SetProcessingInstructionHandler(_cpointer, ProcessingInstructionHandlerImpl);
+        if (_disposed)
+            throw new ObjectDisposedException(GetType().Name);
     }
 }

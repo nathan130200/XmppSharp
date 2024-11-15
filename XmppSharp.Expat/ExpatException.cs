@@ -1,50 +1,48 @@
-﻿using XmppSharp.Expat.Native;
+﻿#pragma warning disable
+
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using XmppSharp.Collections;
+using static XmppSharp.Expat.Native;
 
 namespace XmppSharp.Expat;
 
-using static PInvoke;
-
 public class ExpatException : Exception
 {
-    public long LineNumber { get; internal set; }
-    public long LinePosition { get; internal set; }
-    public int ByteIndex { get; internal set; }
-    public int ByteCount { get; internal set; }
-    public Error Code { get; init; }
+    private readonly string _errorMessage;
 
-    public ExpatException()
+    public Error Code { get; }
+
+    public int Line { get; }
+    public int Column { get; }
+
+    public override string Message => _errorMessage;
+
+    public ExpatException(ExpatParser parser) : base()
     {
-
+        if (!parser._disposed)
+        {
+            _errorMessage = XML_GetErrorCode(parser._handle).GetMessage();
+            Line = XML_GetCurrentLineNumber(parser._handle);
+            Column = XML_GetCurrentColumnNumber(parser._handle);
+        }
     }
 
-    internal unsafe void SetParserInfo(nint parser)
+    public ExpatException(ExpatParser parser, Error code) : base()
     {
-        if (parser == IntPtr.Zero)
-            return;
+        _errorMessage = code.GetMessage();
 
-        LineNumber = GetCurrentLineNumber(parser);
-        LinePosition = GetCurrentColumnNumber(parser);
-        ByteIndex = GetCurrentByteIndex(parser);
-        ByteCount = GetCurrentByteCount(parser);
+        if (!parser._disposed)
+        {
+            Line = XML_GetCurrentLineNumber(parser._handle);
+            Column = XML_GetCurrentColumnNumber(parser._handle);
+        }
     }
 
-    public ExpatException(string? message) : base(message)
+    public ExpatException(Error code) : base()
     {
-
-    }
-
-    public ExpatException(string? message, Exception? innerException) : base(message, innerException)
-    {
-
-    }
-
-    public ExpatException(Error code) : base(GetErrorString(code))
-    {
-        Code = code;
-    }
-
-    public ExpatException(Error code, Exception? innerException) : base(GetErrorString(code), innerException)
-    {
+        _errorMessage = code.GetMessage();
         Code = code;
     }
 }

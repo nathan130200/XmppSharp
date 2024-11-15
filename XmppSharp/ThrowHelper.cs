@@ -1,6 +1,20 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Text;
+using XmppSharp.Dom;
 
 namespace XmppSharp;
+
+public static class Helpers
+{
+    public static byte[] GetBytes(this string str, Encoding? encoding = default)
+        => (encoding ?? Encoding.UTF8).GetBytes(str);
+
+    public static string GetString(this byte[] bytes, Encoding? encoding = default)
+        => (encoding ?? Encoding.UTF8).GetString(bytes);
+
+    public static byte[] GetBytes(this Node node)
+        => node.ToString()!.GetBytes();
+}
 
 public static class ThrowHelper
 {
