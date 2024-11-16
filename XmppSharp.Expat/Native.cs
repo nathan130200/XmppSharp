@@ -40,6 +40,9 @@ public static class Native
 {
     const string LibraryName = "libexpat";
 
+    public static string GetMessage(this Error code)
+        => Marshal.PtrToStringAnsi(XML_ErrorString(code));
+
     [DllImport(LibraryName)]
     public static extern nint XML_ParserCreate(string encoding);
 
