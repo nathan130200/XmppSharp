@@ -7,22 +7,19 @@ namespace XmppSharp.Parser;
 
 public class ExpatXmppParser : XmppParser
 {
-    private ExpatParser _parser;
+    private ExpatParser _xmlParser;
     private Element? _current;
     private NamespaceStack _namespaces;
+    private volatile bool _isStreamOpen;
 
-#if NET9_0_OR_GREATER
-    private readonly Lock _syncRoot = new();
-#else
-    private readonly object _syncRoot = new();
-#endif
+    public ExpatParser XmlParser => _xmlParser;
 
     public ExpatXmppParser(ExpatEncoding encoding)
     {
         _namespaces = new NamespaceStack();
-        _parser = new ExpatParser(encoding);
+        _xmlParser = new ExpatParser(encoding);
 
-        _parser.OnStartTag += (name, attrs) =>
+        _xmlParser.OnStartTag += (name, attrs) =>
         {
             _namespaces.PushScope();
 
@@ -40,7 +37,13 @@ public class ExpatXmppParser : XmppParser
                 element.SetAttribute(key, value);
 
             if (element is StreamStream start)
-                FireOnStreamStart(start);
+            {
+                if (!_isStreamOpen)
+                {
+                    _isStreamOpen = true;
+                    FireOnStreamStart(start);
+                }
+            }
             else
             {
                 if (_current == null)
@@ -53,10 +56,16 @@ public class ExpatXmppParser : XmppParser
             }
         };
 
-        _parser.OnEndTag += name =>
+        _xmlParser.OnEndTag += name =>
         {
             if (name == "stream:stream")
-                FireOnStreamEnd();
+            {
+                if (_isStreamOpen)
+                {
+                    _isStreamOpen = false;
+                    FireOnStreamEnd();
+                }
+            }
             else
             {
                 var parent = _current.Parent;
@@ -70,15 +79,15 @@ public class ExpatXmppParser : XmppParser
             _namespaces.PopScope();
         };
 
-        _parser.OnText += value => _current?.AddChild(new Text(value));
-        _parser.OnComment += value => _current?.AddChild(new Comment(value));
-        _parser.OnCdata += value => _current?.AddChild(new Cdata(value));
+        _xmlParser.OnText += value => _current?.AddChild(new Text(value));
+        _xmlParser.OnComment += value => _current?.AddChild(new Comment(value));
+        _xmlParser.OnCdata += value => _current?.AddChild(new Cdata(value));
     }
 
     protected override void DisposeCore()
     {
-        _parser?.Dispose();
-        _parser = null;
+        _xmlParser?.Dispose();
+        _xmlParser = null;
     }
 
     public void Reset()
@@ -86,11 +95,12 @@ public class ExpatXmppParser : XmppParser
         ThrowIfDisposed();
         _current = null;
         _namespaces.Clear();
+        _isStreamOpen = false;
     }
 
     public void Write(byte[] buffer, int length, bool isFinal = false, bool throwOnError = true)
     {
         ThrowIfDisposed();
-        _parser.Write(buffer, length, isFinal, throwOnError);
+        _xmlParser.Write(buffer, length, isFinal, throwOnError);
     }
 }

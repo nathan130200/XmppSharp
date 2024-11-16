@@ -1,10 +1,7 @@
-﻿#pragma warning disable
+﻿#pragma warning disable CA1401
+#pragma warning disable CA2101
 
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
-using XmppSharp.Collections;
-using static XmppSharp.Expat.Native;
 
 namespace XmppSharp.Expat;
 
@@ -22,19 +19,6 @@ public delegate void XML_CommentHandler(IntPtr userData, IntPtr data);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void XML_CdataSectionHandler(IntPtr userData);
-
-[StructLayout(LayoutKind.Auto)]
-public struct ParserInterface
-{
-    public IntPtr userData;
-}
-
-public enum Status
-{
-    ERROR = 0,
-    OK = 1,
-    SUSPENDED = 2
-}
 
 public static class Native
 {
@@ -94,7 +78,4 @@ public static class Native
 
     [DllImport(LibraryName)]
     public static extern void XML_SetUserData(IntPtr parser, IntPtr userData);
-
-    public static unsafe IntPtr XML_GetUserData(IntPtr parser)
-        => ((ParserInterface*)parser)->userData;
 }

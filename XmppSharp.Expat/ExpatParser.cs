@@ -1,6 +1,4 @@
-﻿#pragma warning disable
-
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
@@ -15,6 +13,8 @@ public class ExpatParser : IDisposable, IXmlLineInfo
     internal volatile bool _disposed;
     internal ExpatEncoding _encoding;
     internal GCHandle _userData;
+    internal volatile bool _isCdataSection = false;
+    internal StringBuilder _cdataSection = new();
 
     private XML_StartElementHandler _onStartElementHandler;
     private XML_EndElementHandler _onEndElementHandler;
@@ -116,9 +116,6 @@ public class ExpatParser : IDisposable, IXmlLineInfo
                 ptr.Free();
         }
     }
-
-    volatile bool _isCdataSection = false;
-    StringBuilder _cdataSection = new StringBuilder();
 
     public event Action<XmppName, IReadOnlyDictionary<XmppName, string>> OnStartTag;
     public event Action<string> OnEndTag;
@@ -226,6 +223,9 @@ public class ExpatParser : IDisposable, IXmlLineInfo
         _onCdataEndHandler = null;
         _onCharacterDataHandler = null;
         _onCommentHandler = null;
+
+        _cdataSection?.Clear();
+        _cdataSection = null;
 
         GC.SuppressFinalize(this);
     }
