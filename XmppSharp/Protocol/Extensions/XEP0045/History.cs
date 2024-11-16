@@ -48,13 +48,11 @@ public class History : Element
         }
     }
 
-    static readonly string s_DateFormat = "yyyy-MM-dd'T'HH:mm:sszzz";
-
     public DateTime? Since
     {
         get
         {
-            if (DateTime.TryParseExact(GetAttribute("since"), s_DateFormat,
+            if (DateTime.TryParseExact(GetAttribute("since"), Xml.XMPP_TIMESTAMP_FORMAT,
                 CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
                 return result;
 
@@ -65,9 +63,7 @@ public class History : Element
             if (!value.HasValue)
                 RemoveAttribute("since");
             else
-            {
-                SetAttribute("since", ((DateTime)value).ToString(s_DateFormat));
-            }
+                SetAttribute("since", value.Value, Xml.XMPP_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture);
         }
     }
 }

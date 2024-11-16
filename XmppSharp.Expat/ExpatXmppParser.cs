@@ -1,81 +1,21 @@
-﻿using System.Collections;
-using XmppSharp.Dom;
+﻿using XmppSharp.Dom;
 using XmppSharp.Expat;
 using XmppSharp.Protocol.Base;
+using XmppSharp.Utilities;
 
 namespace XmppSharp.Parser;
-
-public class NamespaceStack
-{
-    private readonly Stack<Hashtable> _stack = new();
-    private readonly object _syncRoot = new();
-
-    public NamespaceStack()
-    {
-        PushScope();
-        AddNamespace("xml", Namespaces.Xml);
-        AddNamespace("xmlns", Namespaces.Xmlns);
-    }
-
-    public void PushScope()
-    {
-        lock (_syncRoot)
-            _stack.Push(new Hashtable());
-    }
-
-    public void PopScope()
-    {
-        lock (_syncRoot)
-        {
-            if (_stack.Count > 1)
-                _stack.Pop();
-        }
-    }
-
-    public void AddNamespace(string prefix, string uri)
-    {
-        lock (_syncRoot)
-        {
-            var dict = _stack.Peek();
-            dict.Add(prefix, uri);
-        }
-    }
-
-    public string? LookupNamespace(string? prefix)
-    {
-        prefix ??= string.Empty;
-
-        lock (_syncRoot)
-        {
-            foreach (var entry in _stack)
-            {
-                if (entry.ContainsKey(prefix))
-                    return (string)entry[prefix];
-            }
-        }
-
-        return null;
-    }
-
-    public void Clear()
-    {
-        lock (_syncRoot)
-        {
-            while (_stack.Count > 1)
-                _stack.Pop();
-        }
-    }
-
-    public string DefaultNamespace
-        => LookupNamespace(string.Empty);
-}
 
 public class ExpatXmppParser : XmppParser
 {
     private ExpatParser _parser;
     private Element? _current;
     private NamespaceStack _namespaces;
-    private volatile bool _streamOpen = false;
+
+#if NET9_0_OR_GREATER
+    private readonly Lock _syncRoot = new();
+#else
+    private readonly object _syncRoot = new();
+#endif
 
     public ExpatXmppParser(ExpatEncoding encoding)
     {
@@ -99,14 +39,8 @@ public class ExpatXmppParser : XmppParser
             foreach (var (key, value) in attrs)
                 element.SetAttribute(key, value);
 
-            if (element is StreamStream stream)
-            {
-                if (!_streamOpen)
-                {
-                    _streamOpen = true;
-                    AsyncHelper.RunAsync(FireOnStreamStart, stream);
-                }
-            }
+            if (element is StreamStream start)
+                FireOnStreamStart(start);
             else
             {
                 if (_current == null)
@@ -122,19 +56,13 @@ public class ExpatXmppParser : XmppParser
         _parser.OnEndTag += name =>
         {
             if (name == "stream:stream")
-            {
-                if (_streamOpen)
-                {
-                    AsyncHelper.RunAsync(FireOnStreamEnd);
-                    _streamOpen = false;
-                }
-            }
+                FireOnStreamEnd();
             else
             {
                 var parent = _current.Parent;
 
                 if (parent == null)
-                    AsyncHelper.RunAsync(FireOnStreamElement, _current);
+                    FireOnStreamElement(_current);
 
                 _current = parent;
             }
@@ -158,13 +86,11 @@ public class ExpatXmppParser : XmppParser
         ThrowIfDisposed();
         _current = null;
         _namespaces.Clear();
-        _streamOpen = false;
-        _parser.Reset();
     }
 
-    public void Write(byte[] buffer, int length, bool isFinal = false)
+    public void Write(byte[] buffer, int length, bool isFinal = false, bool throwOnError = true)
     {
         ThrowIfDisposed();
-        _parser.Write(buffer, length, isFinal);
+        _parser.Write(buffer, length, isFinal, throwOnError);
     }
 }

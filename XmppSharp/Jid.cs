@@ -18,7 +18,14 @@ public sealed record Jid :
     private string? _local, _resource;
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private string _domain;
+    private string _domain = default!;
+
+    public Jid(string? local, string domain, string? resource)
+    {
+        Local = local;
+        Domain = domain;
+        Resource = resource;
+    }
 
     public Jid(string jid)
     {

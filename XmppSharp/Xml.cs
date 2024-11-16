@@ -11,6 +11,7 @@ namespace XmppSharp;
 public static class Xml
 {
     public const string XMPP_STREAM_END = "</stream:stream>";
+    public const string XMPP_TIMESTAMP_FORMAT = "yyyy-MM-ddTHH:mm:ss.fffK";
 
 #if NET6_0
 

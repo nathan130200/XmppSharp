@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using XmppSharp.Protocol.Extensions.XEP0203;
 
 namespace XmppSharp.Protocol.Base;
 
@@ -10,7 +11,6 @@ public abstract class Stanza : DirectionalElement
 
     protected Stanza(string tagName, string? namespaceURI = null, object? value = null) : base(tagName, namespaceURI, value)
     {
-
     }
 
     public string? Id
@@ -41,6 +41,16 @@ public abstract class Stanza : DirectionalElement
         set
         {
             Child<StanzaError>()?.Remove();
+            AddChild(value);
+        }
+    }
+
+    public Delay? Delay
+    {
+        get => Child<Delay>();
+        set
+        {
+            Child<Delay>()?.Remove();
             AddChild(value);
         }
     }

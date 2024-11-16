@@ -9,25 +9,6 @@ using static XmppSharp.Expat.Native;
 
 namespace XmppSharp.Expat;
 
-public class ExpatEncoding
-{
-    public static ExpatEncoding ISO88591 = new("ISO-8859-1", Encoding.Latin1);
-    public static ExpatEncoding ASCII = new("US-ASCII", Encoding.ASCII);
-    public static ExpatEncoding UTF8 = new("UTF-8", Encoding.UTF8);
-    public static ExpatEncoding UTF16 = new("UTF-16", Encoding.Unicode);
-    public static ExpatEncoding UTF16BE = new("UTF-16BE", Encoding.BigEndianUnicode);
-    public static ExpatEncoding UTF16LE = new("UTF-16LE", Encoding.Unicode);
-
-    public string Name { get; }
-    public Encoding Encoding { get; }
-
-    ExpatEncoding(string name, Encoding enc)
-    {
-        Name = name;
-        Encoding = enc;
-    }
-}
-
 public class ExpatParser : IDisposable, IXmlLineInfo
 {
     internal IntPtr _parser;
@@ -35,11 +16,32 @@ public class ExpatParser : IDisposable, IXmlLineInfo
     internal ExpatEncoding _encoding;
     internal GCHandle _userData;
 
+    private XML_StartElementHandler _onStartElementHandler;
+    private XML_EndElementHandler _onEndElementHandler;
+    private XML_CdataSectionHandler _onCdataStartHandler;
+    private XML_CdataSectionHandler _onCdataEndHandler;
+    private XML_CharacterDataHandler _onCharacterDataHandler;
+    private XML_CommentHandler _onCommentHandler;
+
     public ExpatParser(ExpatEncoding? encoding = default)
     {
         _encoding = encoding ?? ExpatEncoding.UTF8;
         _userData = GCHandle.Alloc(this);
         _parser = XML_ParserCreate(_encoding.Name);
+
+        _onStartElementHandler = new(StartElementHandler);
+        _onEndElementHandler = new(EndElementHandler);
+        _onCdataStartHandler = new(CdataStartHandler);
+        _onCdataEndHandler = new(CdataEndHandler);
+        _onCharacterDataHandler = new(OnCharacterDataHandler);
+        _onCommentHandler = new(CommentHandler);
+
+        GC.KeepAlive(_onStartElementHandler);
+        GC.KeepAlive(_onEndElementHandler);
+        GC.KeepAlive(_onCdataStartHandler);
+        GC.KeepAlive(_onCdataEndHandler);
+        GC.KeepAlive(_onCharacterDataHandler);
+        GC.KeepAlive(_onCommentHandler);
 
         Setup();
     }
@@ -72,14 +74,14 @@ public class ExpatParser : IDisposable, IXmlLineInfo
 
     void Setup()
     {
-        XML_SetElementHandler(_parser, StartElementCallback, EndElementCallback);
-        XML_SetCdataSectionHandler(_parser, OnCdataStartCallback, OnCdataEndCallback);
-        XML_SetCharacterDataHandler(_parser, OnCharacterDataCallback);
-        XML_SetCommentHandler(_parser, OnCommentCallback);
+        XML_SetElementHandler(_parser, _onStartElementHandler, _onEndElementHandler);
+        XML_SetCdataSectionHandler(_parser, _onCdataStartHandler, _onCdataEndHandler);
+        XML_SetCharacterDataHandler(_parser, _onCharacterDataHandler);
+        XML_SetCommentHandler(_parser, _onCommentHandler);
         XML_SetUserData(_parser, (IntPtr)_userData);
     }
 
-    public unsafe void Write(byte[] buffer, int len, bool isFinal = false)
+    public unsafe void Write(byte[] buffer, int len, bool isFinal = false, bool throwOnError = true)
     {
         ThrowIfDisposed();
 
@@ -92,7 +94,21 @@ public class ExpatParser : IDisposable, IXmlLineInfo
             var result = XML_Parse(_parser, ptr.AddrOfPinnedObject(), len, isFinal);
 
             if (result != Status.OK)
-                throw new ExpatException(this);
+            {
+                if (result == Status.ERROR)
+                {
+                    if (!XML_ParserReset(_parser, _encoding.Name) && throwOnError) // ensure we can still use same parse instance later
+                    {
+                        throw new AggregateException(
+                            new ExpatException(this),
+                            new ExpatException("The parser returned an error and the attempt to reset its internal state also failed.", Error.ABORTED)
+                        );
+                    }
+                }
+
+                if (throwOnError)
+                    throw new ExpatException(this);
+            }
         }
         finally
         {
@@ -110,7 +126,7 @@ public class ExpatParser : IDisposable, IXmlLineInfo
     public event Action<string?>? OnCdata;
     public event Action<string?>? OnText;
 
-    static void StartElementCallback(IntPtr userData, IntPtr namePtr, IntPtr attrListPtr)
+    static void StartElementHandler(IntPtr userData, IntPtr namePtr, IntPtr attrListPtr)
     {
         var parser = (ExpatParser)GCHandle.FromIntPtr(userData).Target;
 
@@ -139,20 +155,20 @@ public class ExpatParser : IDisposable, IXmlLineInfo
         parser.OnStartTag?.Invoke(name, attributes);
     }
 
-    static void EndElementCallback(IntPtr userData, IntPtr namePtr)
+    static void EndElementHandler(IntPtr userData, IntPtr namePtr)
     {
         // name is C-style string.
         var parser = (ExpatParser)GCHandle.FromIntPtr(userData).Target;
         parser.OnEndTag?.Invoke(Marshal.PtrToStringAnsi(namePtr));
     }
 
-    static void OnCdataStartCallback(IntPtr userData)
+    static void CdataStartHandler(IntPtr userData)
     {
         var parser = (ExpatParser)GCHandle.FromIntPtr(userData).Target;
         parser._isCdataSection = true;
     }
 
-    static void OnCdataEndCallback(IntPtr userData)
+    static void CdataEndHandler(IntPtr userData)
     {
         var parser = (ExpatParser)GCHandle.FromIntPtr(userData).Target;
 
@@ -166,7 +182,7 @@ public class ExpatParser : IDisposable, IXmlLineInfo
         parser._isCdataSection = false;
     }
 
-    static unsafe void OnCharacterDataCallback(IntPtr userDara, IntPtr data, int size)
+    static unsafe void OnCharacterDataHandler(IntPtr userDara, IntPtr data, int size)
     {
         // data is not C-style string
         var parser = (ExpatParser)GCHandle.FromIntPtr(userDara).Target;
@@ -179,7 +195,7 @@ public class ExpatParser : IDisposable, IXmlLineInfo
             parser._cdataSection.Append(content);
     }
 
-    static void OnCommentCallback(IntPtr userData, IntPtr valuePtr)
+    static void CommentHandler(IntPtr userData, IntPtr valuePtr)
     {
         var parser = (ExpatParser)GCHandle.FromIntPtr(userData).Target;
         var value = Marshal.PtrToStringAnsi(valuePtr);
@@ -203,6 +219,13 @@ public class ExpatParser : IDisposable, IXmlLineInfo
             _userData.Free();
 
         _userData = default;
+
+        _onStartElementHandler = null;
+        _onEndElementHandler = null;
+        _onCdataStartHandler = null;
+        _onCdataEndHandler = null;
+        _onCharacterDataHandler = null;
+        _onCommentHandler = null;
 
         GC.SuppressFinalize(this);
     }

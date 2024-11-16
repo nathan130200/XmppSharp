@@ -1,14 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>annotations</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+		<TargetFramework>net6.0</TargetFramework>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Release'">
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+	</ItemGroup>
+
 	<PropertyGroup>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>XmppSharp.Expat</Title>
 		<Authors>nathan130200</Authors>
 		<Description>XMPP# expat parser implementation.</Description>

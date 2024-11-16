@@ -1,6 +1,6 @@
 using System.Text;
 using XmppSharp.Dom;
-using XmppSharp.Protocol;
+using XmppSharp.Protocol.Core;
 
 namespace XmppSharp;
 

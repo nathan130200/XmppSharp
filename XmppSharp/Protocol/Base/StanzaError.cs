@@ -27,6 +27,12 @@ public class StanzaError : Element
         }
     }
 
+    public string? By
+    {
+        get => GetAttribute("by");
+        set => SetAttribute("by", value);
+    }
+
     public StanzaErrorCondition? Condition
     {
         get

@@ -13,8 +13,11 @@ Lightweight XMPP library.
 - [XEP-0030](https://xmpp.org/extensions/xep-0030.html) - Service Discovery
 - [XEP-0045](https://xmpp.org/extensions/xep-0045.html) - Multi User Chat
 - [XEP-0047](https://xmpp.org/extensions/xep-0047.html) - In-Band Bytestreams
+- [XEP-0085](https://xmpp.org/extensions/xep-0085.html) - Chat States Notifications
+- [XEP-0172](https://xmpp.org/extensions/xep-0172.html) - User Nickname
 - [XEP-0199](https://xmpp.org/extensions/xep-0199.html) - Ping
 - [XEP-0202](https://xmpp.org/extensions/xep-0202.html) - Entity Time
+- [XEP-0203](https://xmpp.org/extensions/xep-0203.html) - Delayed Delivery
 
 <hr/>
 

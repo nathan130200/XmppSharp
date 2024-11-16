@@ -19,6 +19,12 @@ public class ExpatException : Exception
 
     public override string Message => _errorMessage;
 
+    public ExpatException(string message, Error code = Error.NONE)
+    {
+        _errorMessage = message;
+        Code = code;
+    }
+
     public ExpatException(ExpatParser parser) : base()
     {
         if (!parser._disposed)

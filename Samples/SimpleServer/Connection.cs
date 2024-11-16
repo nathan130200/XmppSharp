@@ -9,13 +9,13 @@ using XmppSharp.Collections;
 using XmppSharp.Dom;
 using XmppSharp.Expat;
 using XmppSharp.Parser;
-using XmppSharp.Protocol;
 using XmppSharp.Protocol.Base;
-using XmppSharp.Protocol.Client;
-using XmppSharp.Protocol.Extensions;
+using XmppSharp.Protocol.Core;
+using XmppSharp.Protocol.Core.Client;
+using XmppSharp.Protocol.Core.Sasl;
+using XmppSharp.Protocol.Core.Tls;
 using XmppSharp.Protocol.Extensions.XEP0030;
-using XmppSharp.Protocol.Sasl;
-using XmppSharp.Protocol.Tls;
+using XmppSharp.Protocol.Extensions.XEP0199;
 
 namespace SimpleServer;
 
@@ -24,14 +24,20 @@ public sealed class Connection : IDisposable
     private Socket? _socket;
     private Stream? _stream;
     private ExpatXmppParser? _parser;
-    private Jid? _jabberId = null;
+    public Jid Jid { get; private set; }
     private volatile bool _disposed;
-    private volatile FileAccess _access = FileAccess.ReadWrite;
+    private volatile FileAccess _access;
     private ConcurrentQueue<(string xml, byte[] buffer)> _writeQueue = [];
     private X509Certificate2? _cert;
+    private CancellationTokenSource? _cts = new();
+    private bool _isAuthenticated = false;
+    private Task? _receiveTask;
+    private Task? _sendTask;
 
     public Connection(Socket socket)
     {
+        Jid = new($"unknown@{Server.Hostname}");
+
         _stream = new NetworkStream(_socket = socket, false);
         _parser = new ExpatXmppParser(ExpatEncoding.UTF8);
         _parser.OnStreamStart += OnStreamStart;
@@ -39,100 +45,89 @@ public sealed class Connection : IDisposable
         _parser.OnStreamElement += OnStreamElement;
     }
 
-    internal async Task Initialize()
+    internal Task Initialize()
     {
-        await Task.WhenAll(
-            BeginSend(),
-            BeginReceive()
-        );
+        var tcs = new TaskCompletionSource();
+        _cts!.Token.Register(() => tcs.TrySetResult());
+        Reset();
+        return tcs.Task;
+    }
+
+    void Reset()
+    {
+        if (_cts == null || _cts.IsCancellationRequested)
+            return;
+
+        _parser?.Reset();
+        _access = FileAccess.ReadWrite;
+
+        if (_receiveTask == null || _receiveTask.IsCompleted)
+            _receiveTask = Task.Run(BeginReceive, _cts.Token);
+
+        if (_sendTask == null || _sendTask.IsCompleted)
+            _sendTask = Task.Run(BeginSend, _cts.Token);
     }
 
     async Task BeginSend()
     {
         try
         {
-            while (!_disposed)
+            while (_access.HasFlag(FileAccess.Write))
             {
+                if (_cts == null || _cts.IsCancellationRequested)
+                    break;
+
                 await Task.Delay(1);
 
-                while (!_access.HasFlag(FileAccess.Write))
-                {
-                    Console.WriteLine("write paused");
-
-                    if (_disposed)
-                    {
-                        Console.WriteLine("cancel write: disposed");
-                        return;
-                    }
-
-                    await Task.Delay(160);
-                }
-
-                if (_writeQueue.TryDequeue(out var entry))
+                while (_writeQueue.TryDequeue(out var entry))
                 {
                     if (_stream == null)
                         return;
 
                     await _stream.WriteAsync(entry.buffer);
 
-                    Console.WriteLine("send >>\n{0}\n", entry.xml);
+                    Console.WriteLine("<{0}> send >>\n{1}\n", Jid, entry.xml);
                 }
             }
         }
         catch (Exception ex)
         {
+            if (ex is not IOException)
+                Console.WriteLine(ex);
+
             _access &= ~FileAccess.Write;
-            Console.WriteLine(ex);
-        }
-        finally
-        {
+            _writeQueue.Clear();
+
             Dispose();
         }
     }
 
     async Task BeginReceive()
     {
-        var buf = new byte[256];
+        var buf = new byte[1024];
 
         try
         {
-            while (!_disposed)
+            while (_access.HasFlag(FileAccess.Read))
             {
-                await Task.Delay(16);
+                await Task.Delay(1);
 
-                while (!_access.HasFlag(FileAccess.Read))
-                {
-                    Console.WriteLine("read paused");
-
-                    if (_disposed)
-                    {
-                        Console.WriteLine("cancel read: disposed");
-                        return;
-                    }
-
-                    await Task.Delay(160);
-                }
-
-                if (_stream == null || _parser == null)
+                if (_cts == null || _cts.IsCancellationRequested)
                     break;
 
-                if (!_access.HasFlag(FileAccess.Read))
-                    continue;
-
-                var len = await _stream.ReadAsync(buf);
+                var len = await _stream!.ReadAsync(buf);
 
                 if (len <= 0)
                     break;
 
-                _parser?.Write(buf, len);
+                _parser!.Write(buf, len);
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex);
-        }
-        finally
-        {
+            if (ex is not IOException)
+                Console.WriteLine(ex);
+
             Dispose();
         }
     }
@@ -148,39 +143,38 @@ public sealed class Connection : IDisposable
 
         Send(Xml.XMPP_STREAM_END);
 
-        SpinWait sw = default;
-
-        while (!_writeQueue.IsEmpty)
-            sw.SpinOnce();
-
-        _access &= ~FileAccess.Write;
-        _stream?.Dispose();
-        _stream = null;
-
-        _cert?.Dispose();
-        _cert = null;
-
-        _socket?.Dispose();
-        _socket = null;
-
         _parser?.Dispose();
         _parser = null;
+
+        _ = Task.Delay(_writeQueue.IsEmpty ? 160 : 500)
+            .ContinueWith(_ =>
+            {
+                _access &= ~FileAccess.Write;
+
+                _stream?.Dispose();
+                _stream = null;
+
+                _cert?.Dispose();
+                _cert = null;
+
+                _cts?.Cancel();
+                _cts?.Dispose();
+                _cts = null;
+
+                _socket?.Dispose();
+                _socket = null;
+            });
     }
 
-    public void Send(object data)
-    {
-        if (data is not string s)
-            s = data.ToString()!;
+    public void Send(string xml)
+        => _writeQueue.Enqueue((xml, xml.GetBytes()));
 
-        _writeQueue.Enqueue((s, s.GetBytes()));
-    }
+    public void Send(Element e)
+        => _writeQueue.Enqueue((e.ToString(true), e.GetBytes()));
 
     void OnStreamStart(StreamStream e)
     {
-        Console.WriteLine("recv <<\n{0}\n", e.StartTag());
-
-        // in real scenario, its better to save Stream ID as unique identifier in connections.
-        // also XMPP components require stream ID to create handshake hash.
+        Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, e.StartTag());
 
         e.From = Server.Hostname;
         e.GenerateId(IdGenerator.Timestamp);
@@ -190,7 +184,7 @@ public sealed class Connection : IDisposable
 
         var features = new StreamFeatures();
 
-        if (_jabberId == null)
+        if (!_isAuthenticated)
         {
             if (_stream is not SslStream)
                 features.StartTls = new(StartTlsPolicy.Optional);
@@ -214,6 +208,7 @@ public sealed class Connection : IDisposable
 
     private void OnStreamEnd()
     {
+        Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, Xml.XMPP_STREAM_END);
         Send(Xml.XMPP_STREAM_END);
         Dispose();
     }
@@ -227,53 +222,46 @@ public sealed class Connection : IDisposable
         }
     }
 
-    async void OnStreamElement(Element e)
+    void OnStreamElement(Element e)
+        => AsyncHelper.RunSync(() => HandleStreamElement(e));
+
+    async Task HandleStreamElement(Element e)
     {
-        Console.WriteLine("recv <<\n{0}\n", e.ToString(true));
+        Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, e.ToString(true));
 
         if (e is StartTls)
         {
             _access &= ~FileAccess.Read;
 
-            await Task.Delay(100);
-
             Send(new Proceed());
 
             while (!_writeQueue.IsEmpty)
-                await Task.Delay(1000);
+                await Task.Delay(100);
 
             _access &= ~FileAccess.Write;
 
-            try
+            _ = Task.Run(async () =>
             {
-                var handshakeTask = Task.Run(async () =>
+                try
                 {
+                    Console.WriteLine("<{0}> Starting TLS handshake...", _socket!.RemoteEndPoint);
                     _cert = Server.GenerateCertificate();
+
                     _stream = new SslStream(_stream!, false);
-                    _parser!.Reset();
-
                     await ((SslStream)_stream).AuthenticateAsServerAsync(_cert);
-
-                    await Task.Delay(1000);
-
-                    _access = FileAccess.ReadWrite;
-                });
-
-                var result = await Task.WhenAny(handshakeTask, Task.Delay(2500));
-
-                if (result != handshakeTask)
-                    throw new TimeoutException("TLS handshake timeout!");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("TLS handshake failed: " + ex);
-                Dispose();
-            }
+                    Console.WriteLine("<{0}> TLS handshake completed!", _socket!.RemoteEndPoint);
+                    Reset();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("TLS handshake failed: " + ex);
+                    Dispose();
+                }
+            });
 
             return;
         }
-
-        if (e is Auth auth)
+        else if (e is Auth auth)
         {
             if (auth.Mechanism != "PLAIN")
             {
@@ -304,137 +292,148 @@ public sealed class Connection : IDisposable
                 return;
             }
 
-            _jabberId = new($"{user}@{Server.Hostname}");
+            Jid = new($"{user}@{Server.Hostname}");
+            _isAuthenticated = true;
             Send(new Success());
-
-            _access &= ~FileAccess.Read;
-            _parser!.Reset();
-            _access |= FileAccess.Read;
+            Reset();
         }
-        else if (e is Iq iq)
+        else if (e is Stanza stz)
         {
-            if (iq.FirstChild is Bind bind)
+            bool handled = false;
+
+            if (stz is Iq iq)
             {
-                iq.SwitchDirection();
-
-                string resource = bind.Resource ?? IdGenerator.Guid.Generate();
-
-                var search = _jabberId! with { Resource = resource };
-
-                if (Server.Connections.Any(x => FullJidComparer.Shared.Compare(x._jabberId, search) == 0))
+                if (iq.FirstChild is Bind bind)
                 {
-                    iq.Type = IqType.Error;
-
-                    iq.Error = new StanzaError
-                    {
-                        Type = StanzaErrorType.Cancel,
-                        Condition = StanzaErrorCondition.Conflict
-                    };
-
-                    Send(iq);
-
-                    return;
-                }
-                else
-                {
-                    _jabberId = _jabberId with { Resource = resource };
-                    iq.Type = IqType.Result;
-                    bind.Resource = null;
-                    bind.Jid = _jabberId;
-                    Send(iq);
-                }
-            }
-            else if (iq.FirstChild is Session)
-            {
-                iq.SwitchDirection();
-                iq.Type = IqType.Result;
-                Send(iq);
-                return;
-            }
-
-            if (iq.To == null || iq.To == Server.Hostname)
-            {
-                if (iq.FirstChild is DiscoInfo discoInfo)
-                {
-                    discoInfo.AddIdentity(Identities.Component.C2S);
-                    discoInfo.AddIdentity(Identities.Component.Router);
-                    discoInfo.AddIdentity(Identities.Component.Presence);
-                    discoInfo.AddIdentity(Identities.Server.IM);
-
-                    discoInfo.AddFeature(new Feature(Namespaces.DiscoInfo));
-                    discoInfo.AddFeature(new Feature(Namespaces.DiscoItems));
-                    discoInfo.AddFeature(new Feature(Namespaces.Ping));
-
                     iq.SwitchDirection();
-                    iq.Type = IqType.Result;
 
-                    Send(iq);
-                }
-                else if (iq.FirstChild is DiscoItems discoItems)
-                {
-                    foreach (var connection in Server.Connections.Where(x => x._jabberId != null))
+                    string resource = bind.Resource ?? IdGenerator.Guid.Generate();
+
+                    var search = Jid! with { Resource = resource };
+
+                    if (Server.Connections.Any(x => FullJidComparer.Shared.Compare(x.Jid, search) == 0))
                     {
-                        if (connection == this)
-                            continue;
+                        iq.Type = IqType.Error;
 
-                        discoItems.AddItem(new Item { Jid = connection._jabberId });
+                        iq.Error = new StanzaError
+                        {
+                            Type = StanzaErrorType.Cancel,
+                            Condition = StanzaErrorCondition.Conflict
+                        };
+
+                        Send(iq);
+                    }
+                    else
+                    {
+                        Jid = Jid with { Resource = resource };
+                        iq.Type = IqType.Result;
+                        bind.Resource = null;
+                        bind.Jid = Jid;
+                        Send(iq);
                     }
 
-                    iq.SwitchDirection();
-                    iq.Type = IqType.Result;
-                    Send(iq);
+                    handled = true;
                 }
-                else if (iq.FirstChild is Ping)
+                else if (iq.FirstChild is Session)
                 {
                     iq.SwitchDirection();
                     iq.Type = IqType.Result;
                     Send(iq);
-                }
-                else
-                {
-                    iq.SwitchDirection();
-                    iq.Type = IqType.Error;
 
-                    iq.Error = new StanzaError()
+                    handled = true;
+                }
+
+                if (iq.To == null || iq.To == Server.Hostname)
+                {
+                    if (iq.FirstChild is DiscoInfo discoInfo)
+                    {
+                        discoInfo.AddIdentity(Identities.Component.C2S);
+                        discoInfo.AddIdentity(Identities.Component.Router);
+                        discoInfo.AddIdentity(Identities.Component.Presence);
+                        discoInfo.AddIdentity(Identities.Server.IM);
+
+                        discoInfo.AddFeature(new Feature(Namespaces.DiscoInfo));
+                        discoInfo.AddFeature(new Feature(Namespaces.DiscoItems));
+                        discoInfo.AddFeature(new Feature(Namespaces.Ping));
+
+                        iq.SwitchDirection();
+                        iq.Type = IqType.Result;
+
+                        Send(iq);
+
+                        handled = true;
+                    }
+                    else if (iq.FirstChild is DiscoItems discoItems)
+                    {
+                        iq.SwitchDirection();
+                        iq.Type = IqType.Result;
+                        Send(iq);
+
+                        handled = true;
+                    }
+                    else if (iq.FirstChild is Roster roster)
+                    {
+                        iq.SwitchDirection();
+                        iq.Type = IqType.Result;
+
+                        foreach (var connection in Server.Connections.Where(x => x.Jid != null))
+                        {
+                            if (connection == this)
+                                continue;
+
+                            roster.AddRosterItem(connection.Jid, connection.Jid.Resource, RosterSubscriptionType.Both);
+                        }
+
+                        Send(iq);
+
+                        handled = true;
+                    }
+
+                    else if (iq.FirstChild is Ping)
+                    {
+                        iq.SwitchDirection();
+                        iq.Type = IqType.Result;
+                        Send(iq);
+
+                        handled = true;
+                    }
+                }
+
+                if (!handled)
+                {
+                    var targetConnection = Server.Connections.FirstOrDefault(x =>
+                        FullJidComparer.Shared.Compare(x.Jid, stz.To) == 0);
+
+                    if (targetConnection == null)
+                        goto _next;
+
+                    stz.From = Jid;
+                    targetConnection.Send(stz);
+                    handled = true;
+                }
+
+            _next:
+
+                if (!handled)
+                {
+                    stz.SwitchDirection();
+                    stz.Type = "error";
+
+                    stz.Error = new StanzaError()
                     {
                         Type = StanzaErrorType.Cancel,
                         Condition = StanzaErrorCondition.FeatureNotImplemented
                     };
 
-                    Send(iq);
+                    Send(stz);
 
                     return;
                 }
             }
-            else
-            {
-                var targetConnection = Server.Connections.FirstOrDefault(x => x._jabberId == iq.To);
 
-                if (targetConnection == null)
-                {
-                    iq.Type = IqType.Error;
-                    iq.SwitchDirection();
-                    iq.Error = new StanzaError
-                    {
-                        Type = StanzaErrorType.Wait,
-                        Condition = StanzaErrorCondition.RecipientUnavailable
-
-                    };
-
-                    Send(iq);
-                }
-                else
-                {
-                    //if (iq.To == null)
-                    //    iq.To = targetConnection._jabberId;
-
-                    if (iq.From == null)
-                        iq.From = _jabberId;
-
-                    targetConnection.Send(iq);
-                }
-            }
+            // Handle other XMPP stanzas.
         }
+
         // Handle other XMPP elements.
     }
 }

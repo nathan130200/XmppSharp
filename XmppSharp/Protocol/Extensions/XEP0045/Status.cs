@@ -13,8 +13,6 @@ public class Status : Element
 
     public Status(int code) : this()
     {
-        Children<Actor>();
-
         Code = code;
     }
 

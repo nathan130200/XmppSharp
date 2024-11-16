@@ -3,8 +3,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using XmppSharp.Attributes;
 using XmppSharp.Collections;
-using XmppSharp.Protocol;
 using XmppSharp.Protocol.Base;
+using XmppSharp.Protocol.Core;
 
 namespace XmppSharp.Dom;
 
