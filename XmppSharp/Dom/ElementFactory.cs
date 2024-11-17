@@ -25,8 +25,8 @@ public static class ElementFactory
     /// <remarks>
     /// The order of construction of Element Factory elements is outlined below:
     /// <list type="number">
-    /// <item>Elements registered with <see cref="RegisterAssembly"/> or <see cref="RegisterType"/></item>
     /// <item>Special elements such as <see cref="StreamStream"/>, <see cref="StreamError"/>, <see cref="Iq"/>, <see cref="Message"/> or <see cref="Presence"/>.</item>
+    /// <item>Elements registered with <see cref="RegisterAssembly"/> or <see cref="RegisterType"/></item>
     /// <item>Invoking the global event <see cref="ResolveElement"/> in the final attempt to construct the element.</item>
     /// </list>
     /// </remarks>
