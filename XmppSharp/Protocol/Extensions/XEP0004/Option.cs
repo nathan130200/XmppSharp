@@ -31,7 +31,7 @@ public class Option : Element
             RemoveTag("value");
 
             if (value != null)
-                SetTag("value", value);
+                SetTag("value", value: value);
         }
     }
 }

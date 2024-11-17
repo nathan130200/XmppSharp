@@ -59,7 +59,7 @@ public class Presence : Stanza
             RemoveTag("show");
 
             if (value.HasValue)
-                SetTag("show", XmppEnum.ToXml(value));
+                SetTag("show", value: XmppEnum.ToXml(value));
         }
     }
 

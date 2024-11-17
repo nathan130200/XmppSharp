@@ -375,22 +375,25 @@ public sealed class Connection : IDisposable
 
                         handled = true;
                     }
-                    //else if (iq.FirstChild is Roster roster)
-                    //{
-                    //    iq.SwitchDirection();
-                    //    iq.Type = IqType.Result;
+                    else if (iq.FirstChild is Roster roster)
+                    {
+                        iq.SwitchDirection();
+                        iq.Type = IqType.Result;
 
-                    //    var contacts = Server.Connections.Where(x => x._isAuthenticated)
-                    //        .Select(x => x.Jid)
-                    //        .Distinct();
+                        roster.Ver = IdGenerator.Timestamp.Generate();
 
-                    //    foreach (var contact in contacts)
-                    //        roster.AddRosterItem(contact, contact.Local, RosterSubscriptionType.Both);
+                        var contacts = Server.Connections.Where(x => x.IsAuthenticated)
+                            .Where(x => x != this)
+                            .Select(x => x.Jid.Bare)
+                            .Distinct();
 
-                    //    Send(iq);
+                        foreach (var j in contacts)
+                            roster.AddRosterItem(j, subscription: RosterSubscriptionType.Both);
 
-                    //    handled = true;
-                    //}
+                        Send(iq);
+
+                        handled = true;
+                    }
                     else if (iq.FirstChild is Ping)
                     {
                         iq.SwitchDirection();
@@ -457,14 +460,38 @@ public sealed class Connection : IDisposable
                 if (p.To?.Domain?.Contains("conference") == true)
                     goto _next;
 
-                foreach (var client in Server.Connections.Where(c => c.IsAuthenticated))
+                if (p.To == null || p.To == Server.Hostname)
                 {
-                    if (client == this) continue;
-
-                    client.Send(new Presence(p)
+                    foreach (var client in Server.Connections.Where(c => c.IsAuthenticated))
                     {
-                        From = Jid,
-                    });
+                        if (client == this) continue;
+
+                        client.Send(new Presence(p)
+                        {
+                            From = Jid,
+                        });
+                    }
+                }
+                else
+                {
+                    var client = Server.Connections.FirstOrDefault(x => x.IsAuthenticated && x.Jid.IsBareEquals(p.To));
+
+                    if (client == null)
+                    {
+                        p.Type = PresenceType.Error;
+                        p.Error = new StanzaError()
+                        {
+                            Type = StanzaErrorType.Wait,
+                            Condition = StanzaErrorCondition.RecipientUnavailable
+                        };
+                    }
+                    else
+                    {
+                        p.Type = PresenceType.Available;
+                        client.Route(p);
+                    }
+
+                    Send(p);
                 }
             }
 

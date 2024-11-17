@@ -19,7 +19,7 @@ public class Muc : Element
             RemoveTag("password");
 
             if (value != null)
-                SetTag("password", value);
+                SetTag("password", value: value);
         }
     }
 }
