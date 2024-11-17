@@ -16,6 +16,11 @@ public class Presence : Stanza
 
     }
 
+    public Presence(Presence other) : base(other)
+    {
+
+    }
+
     public Presence(PresenceType type, PresenceShow? show = default, byte? priority = default) : this()
     {
         Type = type;
@@ -31,7 +36,12 @@ public class Presence : Stanza
             if (value == PresenceType.Available)
                 base.Type = null;
             else
+            {
+                if (!Enum.IsDefined(value))
+                    throw new ArgumentException(default, nameof(Type));
+
                 base.Type = XmppEnum.ToXml(value);
+            }
         }
     }
 

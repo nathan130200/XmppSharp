@@ -1,7 +1,4 @@
-﻿#pragma warning disable CA1401
-#pragma warning disable CA2101
-
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace XmppSharp.Expat;
 

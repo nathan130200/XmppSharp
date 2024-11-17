@@ -12,7 +12,7 @@ public static class Server
     static readonly Socket s_Socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
     static readonly List<Connection> s_Connections = [];
     static byte[] s_CertData = default!;
-    static string s_CertPass = "localhost";
+    static readonly string s_CertPass = "localhost";
     public static readonly Jid Hostname = "localhost";
 
     public static IEnumerable<Connection> Connections

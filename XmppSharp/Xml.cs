@@ -78,6 +78,20 @@ public static class Xml
         return source;
     }
 
+    public static Element? Child(this Element parent, Func<Element, bool> predicate)
+    {
+        ThrowHelper.ThrowIfNull(parent);
+        ThrowHelper.ThrowIfNull(predicate);
+        return parent.Children().FirstOrDefault(predicate);
+    }
+
+    public static IEnumerable<Element> Children(this Element parent, Func<Element, bool> predicate)
+    {
+        ThrowHelper.ThrowIfNull(parent);
+        ThrowHelper.ThrowIfNull(predicate);
+        return parent.Children().Where(predicate);
+    }
+
     public static XmlWriter CreateWriter(TextWriter textWriter, XmlFormatting formatting, Encoding? encoding = default)
     {
         var isFragment = formatting.HasFlag(XmlFormatting.OmitXmlDeclaration);
@@ -101,12 +115,12 @@ public static class Xml
         });
     }
 
-    public static void Remove(this IEnumerable<Element> e)
+    public static void Remove(this IEnumerable<Element?> e)
     {
         if (e.Any())
         {
             foreach (var item in e)
-                item.Remove();
+                item?.Remove();
         }
     }
 

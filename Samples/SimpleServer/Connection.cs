@@ -27,7 +27,7 @@ public sealed class Connection : IDisposable
     public Jid Jid { get; private set; }
     private volatile bool _disposed;
     private volatile FileAccess _access;
-    private ConcurrentQueue<(string xml, byte[] buffer)> _writeQueue = [];
+    private readonly ConcurrentQueue<(string xml, byte[] buffer)> _writeQueue = [];
     private X509Certificate2? _cert;
     private CancellationTokenSource? _cts = new();
     private bool _isAuthenticated = false;
@@ -371,24 +371,22 @@ public sealed class Connection : IDisposable
 
                         handled = true;
                     }
-                    else if (iq.FirstChild is Roster roster)
-                    {
-                        iq.SwitchDirection();
-                        iq.Type = IqType.Result;
+                    //else if (iq.FirstChild is Roster roster)
+                    //{
+                    //    iq.SwitchDirection();
+                    //    iq.Type = IqType.Result;
 
-                        foreach (var connection in Server.Connections.Where(x => x.Jid != null))
-                        {
-                            if (connection == this)
-                                continue;
+                    //    var contacts = Server.Connections.Where(x => x._isAuthenticated)
+                    //        .Select(x => x.Jid)
+                    //        .Distinct();
 
-                            roster.AddRosterItem(connection.Jid, connection.Jid.Resource, RosterSubscriptionType.Both);
-                        }
+                    //    foreach (var contact in contacts)
+                    //        roster.AddRosterItem(contact, contact.Local, RosterSubscriptionType.Both);
 
-                        Send(iq);
+                    //    Send(iq);
 
-                        handled = true;
-                    }
-
+                    //    handled = true;
+                    //}
                     else if (iq.FirstChild is Ping)
                     {
                         iq.SwitchDirection();
@@ -411,24 +409,66 @@ public sealed class Connection : IDisposable
                     targetConnection.Send(stz);
                     handled = true;
                 }
+            }
 
-            _next:
-
-                if (!handled)
+            if (stz is Message m)
+            {
+                if (m.Type == MessageType.Chat)
                 {
-                    stz.SwitchDirection();
-                    stz.Type = "error";
+                    handled = true;
 
-                    stz.Error = new StanzaError()
+                    m.From = Jid;
+
+                    var client = Server.Connections.FirstOrDefault(x => x._isAuthenticated && x.Jid.IsBareEquals(m.To));
+
+                    if (client != null)
+                        client.Send(m);
+                    else
                     {
-                        Type = StanzaErrorType.Cancel,
-                        Condition = StanzaErrorCondition.FeatureNotImplemented
-                    };
+                        m.SwitchDirection();
+                        m.To = Jid;
+                        m.Type = MessageType.Error;
+                        m.Error = new StanzaError()
+                        {
+                            Type = StanzaErrorType.Wait,
+                            Condition = StanzaErrorCondition.RecipientUnavailable
+                        };
 
-                    Send(stz);
-
-                    return;
+                        Send(m);
+                    }
                 }
+            }
+
+            if (stz is Presence p)
+            {
+                var targetHost = p.To;
+
+                if (targetHost?.Domain?.Contains("conference") == true)
+                    goto _next;
+
+                foreach (var client in Server.Connections.Where(c => c._isAuthenticated))
+                {
+                    if (client == this) continue;
+                    client.Send(new Presence(p) { From = Jid });
+                }
+            }
+
+        _next:
+
+            if (!handled)
+            {
+                stz.SwitchDirection();
+                stz.Type = "error";
+
+                stz.Error = new StanzaError()
+                {
+                    Type = StanzaErrorType.Cancel,
+                    Condition = StanzaErrorCondition.FeatureNotImplemented
+                };
+
+                Send(stz);
+
+                return;
             }
 
             // Handle other XMPP stanzas.

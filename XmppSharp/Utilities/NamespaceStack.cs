@@ -1,23 +1,19 @@
-﻿using System.Collections;
-
-namespace XmppSharp.Utilities;
+﻿namespace XmppSharp.Utilities;
 
 public class NamespaceStack
 {
-    private readonly Stack<Hashtable> _stack = new();
+    private readonly Stack<Dictionary<string, string>> _stack = new();
     private readonly object _syncRoot = new();
 
     public NamespaceStack()
     {
-        PushScope();
-        AddNamespace("xml", Namespaces.Xml);
-        AddNamespace("xmlns", Namespaces.Xmlns);
+        Reset();
     }
 
     public void PushScope()
     {
         lock (_syncRoot)
-            _stack.Push(new Hashtable());
+            _stack.Push(new(StringComparer.Ordinal));
     }
 
     public void PopScope()
@@ -33,8 +29,7 @@ public class NamespaceStack
     {
         lock (_syncRoot)
         {
-            var dict = _stack.Peek();
-            dict.Add(prefix, uri);
+            _stack.Peek()[prefix] = uri;
         }
     }
 
@@ -47,22 +42,28 @@ public class NamespaceStack
             foreach (var entry in _stack)
             {
                 if (entry.ContainsKey(prefix))
-                    return (string)entry[prefix];
+                    return entry[prefix]!;
             }
         }
 
         return null;
     }
 
-    public void Clear()
+    public void Reset()
     {
         lock (_syncRoot)
         {
-            while (_stack.Count > 1)
-                _stack.Pop();
+            while (_stack.Count > 0)
+                _ = _stack.Pop();
+
+            _stack.Push(new()
+            {
+                ["xml"] = Namespaces.Xml,
+                ["xmlns"] = Namespaces.Xmlns
+            });
         }
     }
 
-    public string DefaultNamespace
+    public string? DefaultNamespace
         => LookupNamespace(string.Empty);
 }

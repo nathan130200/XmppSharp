@@ -9,7 +9,7 @@ public class ExpatXmppParser : XmppParser
 {
     private ExpatParser _xmlParser;
     private Element? _current;
-    private NamespaceStack _namespaces;
+    private NamespaceStack? _namespaces;
     private volatile bool _isStreamOpen;
 
     public ExpatParser XmlParser => _xmlParser;
@@ -31,7 +31,7 @@ public class ExpatXmppParser : XmppParser
                     _namespaces.AddNamespace(key.LocalName, value);
             }
 
-            var element = ElementFactory.CreateElement(name, _namespaces.LookupNamespace(name.Prefix));
+            var element = ElementFactory.CreateElement(name, _namespaces.LookupNamespace(name.Prefix), _current);
 
             foreach (var (key, value) in attrs)
                 element.SetAttribute(key, value);
@@ -76,7 +76,7 @@ public class ExpatXmppParser : XmppParser
                 _current = parent;
             }
 
-            _namespaces.PopScope();
+            _namespaces?.PopScope();
         };
 
         _xmlParser.OnText += value => _current?.AddChild(new Text(value));
@@ -86,6 +86,9 @@ public class ExpatXmppParser : XmppParser
 
     protected override void DisposeCore()
     {
+        _namespaces?.Reset();
+        _namespaces = null;
+
         _xmlParser?.Dispose();
         _xmlParser = null;
     }
@@ -94,7 +97,7 @@ public class ExpatXmppParser : XmppParser
     {
         ThrowIfDisposed();
         _current = null;
-        _namespaces.Clear();
+        _namespaces.Reset();
         _isStreamOpen = false;
     }
 

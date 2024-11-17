@@ -9,7 +9,7 @@ public class XmppStreamReader : XmppParser
     private Stream? _baseStream;
     private readonly bool _leaveOpen;
     private XmlReader? _reader;
-    private Element? current;
+    private Element? _current;
 
     public XmppStreamReader(Stream baseStream, int bufferSize = -1, bool leaveOpen = true)
     {
@@ -46,7 +46,7 @@ public class XmppStreamReader : XmppParser
         {
             case XmlNodeType.Element:
                 {
-                    var elem = ElementFactory.CreateElement(_reader.Name, _reader.NamespaceURI);
+                    var elem = ElementFactory.CreateElement(_reader.Name, _reader.NamespaceURI, _current);
 
                     if (_reader.HasAttributes)
                     {
@@ -62,15 +62,15 @@ public class XmppStreamReader : XmppParser
                     {
                         if (_reader.IsEmptyElement)
                         {
-                            if (current == null)
+                            if (_current == null)
                                 FireOnStreamElement(elem);
                             else
-                                current.AddChild(elem);
+                                _current.AddChild(elem);
                         }
                         else
                         {
-                            current?.AddChild(elem);
-                            current = elem;
+                            _current?.AddChild(elem);
+                            _current = elem;
                         }
                     }
                 }
@@ -78,29 +78,29 @@ public class XmppStreamReader : XmppParser
 
             case XmlNodeType.EndElement:
                 {
-                    if (current != null)
+                    if (_current != null)
                     {
-                        var parent = current.Parent;
+                        var parent = _current.Parent;
 
                         if (parent == null)
-                            FireOnStreamElement(current);
+                            FireOnStreamElement(_current);
 
-                        current = parent;
+                        _current = parent;
                     }
                 }
                 break;
 
             case XmlNodeType.Comment:
-                current?.AddChild(new Comment(_reader.Value));
+                _current?.AddChild(new Comment(_reader.Value));
                 break;
 
             case XmlNodeType.CDATA:
-                current?.AddChild(new Cdata(_reader.Value));
+                _current?.AddChild(new Cdata(_reader.Value));
                 break;
 
             case XmlNodeType.Text:
             case XmlNodeType.SignificantWhitespace:
-                current?.AddChild(new Text(_reader.Value));
+                _current?.AddChild(new Text(_reader.Value));
                 break;
         }
 

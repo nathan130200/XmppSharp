@@ -1,23 +1,17 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Text;
-using XmppSharp.Dom;
 
 namespace XmppSharp;
 
-public static class Helpers
-{
-    public static byte[] GetBytes(this string str, Encoding? encoding = default)
-        => (encoding ?? Encoding.UTF8).GetBytes(str);
-
-    public static string GetString(this byte[] bytes, Encoding? encoding = default)
-        => (encoding ?? Encoding.UTF8).GetString(bytes);
-
-    public static byte[] GetBytes(this Node node)
-        => node.ToString()!.GetBytes();
-}
-
 public static class ThrowHelper
 {
+    public static void ThrowIfNotEquals(string? expected, string? current,
+        StringComparison comparer = StringComparison.Ordinal,
+        [CallerArgumentExpression(nameof(current))] string paramName = default!)
+    {
+        if (string.Compare(expected, current, comparer) != 0)
+            throw new ArgumentException(default, paramName);
+    }
+
     public static void ThrowIfNull(object? obj, [CallerArgumentExpression(nameof(obj))] string? paramName = default)
     {
         if (obj is null)

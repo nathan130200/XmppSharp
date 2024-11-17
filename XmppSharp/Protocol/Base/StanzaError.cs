@@ -47,8 +47,8 @@ public class StanzaError : Element
         }
         set
         {
-            foreach (var name in XmppEnum.GetNames<StanzaErrorCondition>())
-                RemoveTag(name, Namespaces.Stanzas);
+            XmppEnum.GetNames<StanzaErrorCondition>()
+                .ForEach(x => Child(x, Namespaces.Stanzas)?.Remove());
 
             if (value.HasValue)
             {

@@ -24,9 +24,25 @@ public class Iq : Stanza
         Type = type;
     }
 
-    public new IqType? Type
+    public new IqType Type
     {
-        get => XmppEnum.FromXmlOrDefault<IqType>(base.Type);
-        set => base.Type = XmppEnum.ToXml(value);
+        get
+        {
+            return base.Type switch
+            {
+                "get" => IqType.Get,
+                "set" => IqType.Set,
+                "result" => IqType.Result,
+                "error" => IqType.Error,
+                _ => throw new ArgumentException(default, nameof(Type))
+            };
+        }
+        set
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentException(default, nameof(Type));
+
+            base.Type = XmppEnum.ToXml(value);
+        }
     }
 }
