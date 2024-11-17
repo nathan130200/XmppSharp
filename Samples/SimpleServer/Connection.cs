@@ -27,10 +27,10 @@ public sealed class Connection : IDisposable
     public Jid Jid { get; private set; }
     private volatile bool _disposed;
     private volatile FileAccess _access;
-    private readonly ConcurrentQueue<(string xml, byte[] buffer)> _writeQueue = [];
+    private readonly ConcurrentQueue<(string? xml, byte[] buffer)> _writeQueue = [];
     private X509Certificate2? _cert;
     private CancellationTokenSource? _cts = new();
-    private bool _isAuthenticated = false;
+    public bool IsAuthenticated { get; private set; }
     private Task? _receiveTask;
     private Task? _sendTask;
 
@@ -86,7 +86,8 @@ public sealed class Connection : IDisposable
 
                     await _stream.WriteAsync(entry.buffer);
 
-                    Console.WriteLine("<{0}> send >>\n{1}\n", Jid, entry.xml);
+                    if (entry.xml != null)
+                        Console.WriteLine("<{0}> send >>\n{1}\n", Jid, entry.xml);
                 }
             }
         }
@@ -172,6 +173,9 @@ public sealed class Connection : IDisposable
     public void Send(Element e)
         => _writeQueue.Enqueue((e.ToString(true), e.GetBytes()));
 
+    public void Route(Element e)
+        => _writeQueue.Enqueue((null, e.GetBytes()));
+
     void OnStreamStart(StreamStream e)
     {
         Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, e.StartTag());
@@ -184,7 +188,7 @@ public sealed class Connection : IDisposable
 
         var features = new StreamFeatures();
 
-        if (!_isAuthenticated)
+        if (!IsAuthenticated)
         {
             if (_stream is not SslStream)
                 features.StartTls = new(StartTlsPolicy.Optional);
@@ -293,7 +297,7 @@ public sealed class Connection : IDisposable
             }
 
             Jid = new($"{user}@{Server.Hostname}");
-            _isAuthenticated = true;
+            IsAuthenticated = true;
             Send(new Success());
             Reset();
         }
@@ -399,57 +403,68 @@ public sealed class Connection : IDisposable
 
                 if (!handled)
                 {
-                    var targetConnection = Server.Connections.FirstOrDefault(x =>
-                        FullJidComparer.Shared.Compare(x.Jid, stz.To) == 0);
+                    var client = Server.Connections.FirstOrDefault(x => x.Jid.IsFullEquals(stz.To));
 
-                    if (targetConnection == null)
-                        goto _next;
+                    if (client != null)
+                        stz.From = Jid;
+                    else
+                    {
+                        client = Server.Connections.FirstOrDefault(x => x.IsAuthenticated && x.Jid.IsBareEquals(stz.To));
 
-                    stz.From = Jid;
-                    targetConnection.Send(stz);
+                        if (client != null)
+                            stz.From = Jid.Bare;
+                        else
+                            goto _next;
+                    }
+
+                    client.Route(stz);
                     handled = true;
                 }
             }
 
             if (stz is Message m)
             {
-                if (m.Type == MessageType.Chat)
+                if (m.Type != MessageType.Chat || m.To?.ToString()?.Contains("conference") == true)
+                    goto _next;
+
+                handled = true;
+
+                m.From = Jid;
+
+                var client = Server.Connections.FirstOrDefault(x => x.IsAuthenticated && x.Jid.IsBareEquals(m.To));
+
+                if (client != null)
+                    client.Route(m);
+                else
                 {
-                    handled = true;
-
-                    m.From = Jid;
-
-                    var client = Server.Connections.FirstOrDefault(x => x._isAuthenticated && x.Jid.IsBareEquals(m.To));
-
-                    if (client != null)
-                        client.Send(m);
-                    else
+                    m.SwitchDirection();
+                    m.To = Jid;
+                    m.Type = MessageType.Error;
+                    m.Error = new StanzaError()
                     {
-                        m.SwitchDirection();
-                        m.To = Jid;
-                        m.Type = MessageType.Error;
-                        m.Error = new StanzaError()
-                        {
-                            Type = StanzaErrorType.Wait,
-                            Condition = StanzaErrorCondition.RecipientUnavailable
-                        };
+                        Type = StanzaErrorType.Wait,
+                        Condition = StanzaErrorCondition.RecipientUnavailable
+                    };
 
-                        Send(m);
-                    }
+                    Route(m);
                 }
             }
 
             if (stz is Presence p)
             {
-                var targetHost = p.To;
+                handled = true;
 
-                if (targetHost?.Domain?.Contains("conference") == true)
+                if (p.To?.Domain?.Contains("conference") == true)
                     goto _next;
 
-                foreach (var client in Server.Connections.Where(c => c._isAuthenticated))
+                foreach (var client in Server.Connections.Where(c => c.IsAuthenticated))
                 {
                     if (client == this) continue;
-                    client.Send(new Presence(p) { From = Jid });
+
+                    client.Send(new Presence(p)
+                    {
+                        From = Jid,
+                    });
                 }
             }
 
