@@ -57,6 +57,7 @@ public class Failure : Element
                 {
                     x.TagName = "text";
                     x.Namespace = Namespaces.Sasl;
+                    x.Value = value;
                 });
             }
         }

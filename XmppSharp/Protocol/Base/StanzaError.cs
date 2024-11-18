@@ -100,6 +100,7 @@ public class StanzaError : Element
                 {
                     x.TagName = "text";
                     x.Namespace = Namespaces.Stanzas;
+                    x.Value = value;
                 });
             }
         }
