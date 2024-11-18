@@ -496,8 +496,8 @@ public class Element : Node
     public string? GetTag(string tagName, string? namespaceURI = default)
         => Child(tagName, namespaceURI)?.Value;
 
-    public IEnumerable<string?> GetTags(string tagName, string? namespaceURI = default)
-        => Children(tagName, namespaceURI).Select(x => x.Value);
+    public IEnumerable<string> GetTags(string tagName, string? namespaceURI = default)
+        => Children(tagName, namespaceURI).Select(x => x.Value!);
 
     public T? Child<T>() where T : Element
         => Children().OfType<T>().FirstOrDefault();

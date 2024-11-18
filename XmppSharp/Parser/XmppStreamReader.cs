@@ -4,7 +4,17 @@ using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Parser;
 
-public class XmppStreamReader : XmppParser
+public interface IXmppStreamReader
+{
+    bool Advance();
+}
+
+public interface IXmppStreamTokenizer
+{
+    void Write(byte[] buffer, int length);
+}
+
+public class XmppStreamReader : XmppParser, IXmppStreamReader
 {
     private Stream? _baseStream;
     private readonly bool _leaveOpen;
@@ -29,11 +39,12 @@ public class XmppStreamReader : XmppParser
             XmlResolver = XmlResolver.ThrowingResolver
 #endif
         });
+
     }
 
     public virtual bool Advance()
     {
-        if (Disposed)
+        if (isDisposed)
             return false;
 
         if (_reader == null)

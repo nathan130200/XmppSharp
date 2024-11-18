@@ -5,7 +5,7 @@ using XmppSharp.Utilities;
 
 namespace XmppSharp.Parser;
 
-public class ExpatXmppParser : XmppParser
+public class ExpatXmppParser : XmppParser, IXmppStreamTokenizer
 {
     private ExpatParser _xmlParser;
     private Element? _current;
@@ -106,4 +106,7 @@ public class ExpatXmppParser : XmppParser
         ThrowIfDisposed();
         _xmlParser.Write(buffer, length, isFinal, throwOnError);
     }
+
+    void IXmppStreamTokenizer.Write(byte[] buffer, int length)
+        => Write(buffer, length, false);
 }

@@ -6,22 +6,20 @@ namespace XmppSharp.Parser;
 
 public abstract class XmppParser : IDisposable
 {
-    private volatile bool _disposed;
-
-    protected bool Disposed => _disposed;
+    protected volatile bool isDisposed;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     protected void ThrowIfDisposed()
     {
-        if (_disposed)
+        if (isDisposed)
             throw new ObjectDisposedException(GetType().FullName);
     }
 
     public void Dispose()
     {
-        if (!_disposed)
+        if (!isDisposed)
         {
-            _disposed = true;
+            isDisposed = true;
             DisposeCore();
         }
 

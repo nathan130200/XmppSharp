@@ -1,9 +1,27 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace XmppSharp;
 
 public static class ThrowHelper
 {
+    [StackTraceHidden]
+    public static Exception Rethrow(Exception ex)
+    {
+        Exception result;
+
+        try
+        {
+            throw ex;
+        }
+        catch (Exception after)
+        {
+            result = after;
+        }
+
+        return result;
+    }
+
     public static void ThrowIfNotEquals(string? expected, string? current,
         StringComparison comparer = StringComparison.Ordinal,
         [CallerArgumentExpression(nameof(current))] string paramName = default!)
