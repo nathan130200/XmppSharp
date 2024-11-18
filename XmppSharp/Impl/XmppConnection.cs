@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
@@ -13,16 +12,14 @@ namespace XmppSharp;
 
 public abstract class XmppConnection : IDisposable
 {
-    public Jid? Jid { get; set; }
+    public Jid Jid { get; set; } = default!;
     public XmppConnectionState State => _connectionState;
+    public StanzaGrabber? StanzaGrabber { get; private set; }
 
     internal readonly bool _leaveSocketOpen = false;
     internal Socket? _socket;
     internal Stream? _stream;
     internal volatile ConcurrentQueue<(string xml, byte[] bytes)>? _sendQueue;
-    internal StanzaGrabber<Iq>? _iqGrabber;
-    internal StanzaGrabber<Message>? _messageGrabber;
-    internal StanzaGrabber<Presence>? _presenceGrabber;
     internal volatile XmppConnectionState _connectionState;
     internal volatile XmppSocketState _socketState;
     internal XmppParser? _parser;
@@ -41,14 +38,14 @@ public abstract class XmppConnection : IDisposable
 
     public void SetParser(XmppParser newParser)
     {
+        if (_connectionState != XmppConnectionState.Disconnected)
+            throw new InvalidOperationException("Unable to change parser while connection is active.");
+
         if (_parser != null)
         {
             _parser.Dispose();
             _parser = null;
         }
-
-        if (_connectionState != XmppConnectionState.Disconnected)
-            throw new InvalidOperationException("Unable to change parser while connection is active.");
 
         ThrowHelper.ThrowIfNull(newParser);
 
@@ -124,14 +121,14 @@ public abstract class XmppConnection : IDisposable
         }
     }
 
-    static int s_DefaultBufferSize = 1024;
+    static int s_DefaultBufferSize = 4096;
 
     public static int DefaultBufferSize
     {
         set
         {
             if (value <= 0)
-                value = 1024;
+                value = 4096;
 
             s_DefaultBufferSize = value;
         }
@@ -139,7 +136,7 @@ public abstract class XmppConnection : IDisposable
 
     async Task TokenizeXmlAsync(IXmppStreamTokenizer tokenizer)
     {
-        var buf = ArrayPool<byte>.Shared.Rent(s_DefaultBufferSize);
+        var buf = new byte[s_DefaultBufferSize];
 
         try
         {
@@ -168,7 +165,7 @@ public abstract class XmppConnection : IDisposable
         finally
         {
             Disconnect();
-            ArrayPool<byte>.Shared.Return(buf);
+            buf = null;
         }
     }
 
@@ -193,7 +190,7 @@ public abstract class XmppConnection : IDisposable
             {
                 await _socket.ConnectAsync(endpoint);
                 _stream = new NetworkStream(_socket, false);
-                OnSocketConnected();
+                Initialize();
             }
             catch (Exception ex)
             {
@@ -207,6 +204,7 @@ public abstract class XmppConnection : IDisposable
         });
     }
 
+    public event Action<(XmppConnectionState Before, XmppConnectionState After)>? OnStateChanged;
     public event Action<Iq>? OnIq;
     public event Action<Message>? OnMessage;
     public event Action<Presence>? OnPresence;
@@ -254,16 +252,7 @@ public abstract class XmppConnection : IDisposable
         _sendQueue?.Enqueue((e.ToString(true), e.GetBytes()));
     }
 
-    ~XmppConnection()
-    {
-        _stream = null;
-        _socket = null;
-        _parser = null;
-        _sendQueue = null;
-        _iqGrabber = null;
-        _messageGrabber = null;
-        _presenceGrabber = null;
-    }
+    static int s_DefaultSendTimeout = 10_000;
 
     public void Dispose()
     {
@@ -276,18 +265,36 @@ public abstract class XmppConnection : IDisposable
         if (!_leaveSocketOpen)
             _socket?.Shutdown(SocketShutdown.Receive);
 
-        _iqGrabber?.Dispose();
-        _messageGrabber?.Dispose();
-        _presenceGrabber?.Dispose();
+        GC.SuppressFinalize(this);
+
+        StanzaGrabber?.Dispose();
 
         _parser?.Dispose();
 
         _ = Task.Run(async () =>
         {
-            // wait for pending data
+            // wait until pending data is sent
 
-            while (_sendQueue != null && !_sendQueue.IsEmpty)
-                await Task.Delay(160);
+            Task? _waitTask = null;
+
+            if (_sendQueue != null)
+            {
+                if (!_sendQueue.IsEmpty)
+                    _waitTask = Task.Delay(s_DefaultSendTimeout);
+
+                while (true)
+                {
+                    // to avoid deadlock, just wait untill timeout or queue is empty.
+
+                    if (_sendQueue != null && _sendQueue.IsEmpty)
+                        break;
+
+                    if (_waitTask?.IsCompleted == true)
+                        break;
+
+                    await Task.Delay(160);
+                }
+            }
 
             _socketState &= ~XmppSocketState.Writable;
             _socketState |= XmppSocketState.Disposed;
@@ -296,12 +303,19 @@ public abstract class XmppConnection : IDisposable
                 _socket?.Dispose();
 
             _stream?.Dispose();
-        });
 
-        GC.SuppressFinalize(this);
+            Cleanup();
+        });
     }
 
-    public event Action<XmppConnection, (XmppConnectionState Before, XmppConnectionState After)>? OnStateChanged;
+    void Cleanup()
+    {
+        _stream = null;
+        _socket = null;
+        _parser = null;
+        _sendQueue = null;
+        StanzaGrabber = null;
+    }
 
     protected void ChangeState(XmppConnectionState newState, bool replace = false)
     {
@@ -312,17 +326,17 @@ public abstract class XmppConnection : IDisposable
         else
             _connectionState |= newState;
 
-        OnStateChanged?.Invoke(this, (oldState, newState));
+        OnStateChanged?.Invoke((oldState, newState));
     }
 
-    protected virtual void OnSocketConnected()
+    public void Initialize()
     {
         _connectTask = null;
 
         try
         {
-            InitParser();
             ChangeState(XmppConnectionState.Connected, true);
+            InitParser();
             SendStreamHeader();
         }
         catch (Exception ex)
@@ -332,7 +346,7 @@ public abstract class XmppConnection : IDisposable
         }
     }
 
-    public string StreamId
+    public string? StreamId
     {
         get;
         protected set;
@@ -343,7 +357,7 @@ public abstract class XmppConnection : IDisposable
         var cultureName = CultureInfo.CurrentCulture.Name;
 
         if (string.IsNullOrWhiteSpace(cultureName))
-            cultureName = "en";
+            cultureName = null;
 
         var header = new StreamStream
         {
@@ -358,7 +372,7 @@ public abstract class XmppConnection : IDisposable
     protected virtual Task HandleStreamStart(StreamStream e)
     {
         if (string.IsNullOrWhiteSpace(e.Id))
-            Disconnect(StreamErrorCondition.UnsupportedStanzaType);
+            Disconnect(StreamErrorCondition.InvalidXml);
         else
             StreamId = e.Id;
 
