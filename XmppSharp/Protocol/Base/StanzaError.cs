@@ -53,7 +53,12 @@ public class StanzaError : Element
             if (value.HasValue)
             {
                 var name = XmppEnum.ToXml((StanzaErrorCondition)value)!;
-                SetTag(name, Namespaces.Stanzas);
+
+                SetTag(x =>
+                {
+                    x.TagName = name;
+                    x.Namespace = Namespaces.Stanzas;
+                });
             }
         }
     }
@@ -90,7 +95,13 @@ public class StanzaError : Element
             RemoveTag("text", Namespaces.Stanzas);
 
             if (value != null)
-                SetTag("text", Namespaces.Stanzas, value);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "text";
+                    x.Namespace = Namespaces.Stanzas;
+                });
+            }
         }
     }
 }

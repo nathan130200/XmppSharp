@@ -10,8 +10,12 @@ namespace XmppSharp;
 
 public static class Xml
 {
-    public const string XMPP_STREAM_END = "</stream:stream>";
-    public const string XMPP_TIMESTAMP_FORMAT = "yyyy-MM-ddTHH:mm:ss.fffK";
+    public const string XmppStreamEnd = "</stream:stream>";
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public const string XmppTimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffK";
 
 #if NET6_0
 
@@ -38,7 +42,7 @@ public static class Xml
     {
         get
         {
-            s_NewLineChars ??= "\n";
+            s_NewLineChars ??= Environment.NewLine;
             return s_NewLineChars;
         }
     }
@@ -47,7 +51,7 @@ public static class Xml
     {
         get
         {
-            s_IndentChars ??= "  ";
+            s_IndentChars ??= "\t";
             return s_IndentChars;
         }
     }

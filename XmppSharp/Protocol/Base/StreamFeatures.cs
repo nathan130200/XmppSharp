@@ -44,7 +44,13 @@ public class StreamFeatures : Element
             RemoveTag("bind", Namespaces.Bind);
 
             if (value)
-                SetTag("bind", Namespaces.Bind);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "bind";
+                    x.Namespace = Namespaces.Bind;
+                });
+            }
         }
     }
 
@@ -56,7 +62,13 @@ public class StreamFeatures : Element
             RemoveTag("session", Namespaces.Session);
 
             if (value)
-                SetTag("session", Namespaces.Session);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "session";
+                    x.Namespace = Namespaces.Session;
+                });
+            }
         }
     }
 }

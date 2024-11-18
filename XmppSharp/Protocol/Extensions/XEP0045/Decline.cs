@@ -19,7 +19,13 @@ public class Decline : DirectionalElement
             RemoveTag("reason");
 
             if (value != null)
-                SetTag("reason", value: value);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "reason";
+                    x.Value = value;
+                });
+            }
         }
     }
 }

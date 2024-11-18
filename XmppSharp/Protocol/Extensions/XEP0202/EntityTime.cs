@@ -19,7 +19,13 @@ public class EntityTime : Element
             RemoveTag("utc");
 
             if (value != null)
-                SetTag("utc", value: value);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "utc";
+                    x.Value = value;
+                });
+            }
         }
     }
 
@@ -31,7 +37,13 @@ public class EntityTime : Element
             RemoveTag("tzo");
 
             if (value != null)
-                SetTag("tzo", value: value);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "tzo";
+                    x.Value = value;
+                });
+            }
         }
     }
 }

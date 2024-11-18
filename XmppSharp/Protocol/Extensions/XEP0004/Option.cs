@@ -31,7 +31,13 @@ public class Option : Element
             RemoveTag("value");
 
             if (value != null)
-                SetTag("value", value: value);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "value";
+                    x.Value = value;
+                });
+            }
         }
     }
 }

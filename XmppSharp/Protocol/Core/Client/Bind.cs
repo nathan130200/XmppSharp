@@ -25,7 +25,13 @@ public class Bind : Element
             RemoveTag("resource");
 
             if (value != null)
-                SetTag("resource", value: value);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "resource";
+                    x.Value = value;
+                });
+            }
         }
     }
 
@@ -37,7 +43,13 @@ public class Bind : Element
             RemoveTag("jid");
 
             if (value != null)
-                SetTag("jid", value: value.ToString());
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "jid";
+                    x.Value = value;
+                });
+            }
         }
     }
 }

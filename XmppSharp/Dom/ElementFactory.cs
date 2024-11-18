@@ -126,8 +126,13 @@ public static class ElementFactory
 
         var search = new XmppTag(tagName, namespaceURI);
 
-        return s_ElementTypes.FirstOrDefault(xe =>
-            xe.Value.Any(xt => xt == search)).Key;
+        foreach (var (type, tags) in s_ElementTypes)
+        {
+            if (tags.Any(t => t == search))
+                return type;
+        }
+
+        return null;
     }
 
     static Element? TryResolveElement(string tagName, string? namespaceURI, Element? context = default)

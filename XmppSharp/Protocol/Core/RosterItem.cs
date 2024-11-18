@@ -25,8 +25,14 @@ public class RosterItem : Element
         {
             Children("group").Remove();
 
-            foreach (var item in value.Where(x => x != null))
-                SetTag("group", value: item);
+            foreach (var groupName in value)
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "group";
+                    x.Value = groupName;
+                });
+            }
         }
     }
 

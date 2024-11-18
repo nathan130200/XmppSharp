@@ -52,7 +52,7 @@ public class History : Element
     {
         get
         {
-            if (DateTime.TryParseExact(GetAttribute("since"), Xml.XMPP_TIMESTAMP_FORMAT,
+            if (DateTime.TryParseExact(GetAttribute("since"), Xml.XmppTimestampFormat,
                 CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
                 return result;
 
@@ -63,7 +63,7 @@ public class History : Element
             if (!value.HasValue)
                 RemoveAttribute("since");
             else
-                SetAttribute("since", value.Value, Xml.XMPP_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture);
+                SetAttribute("since", value.Value, Xml.XmppTimestampFormat, CultureInfo.InvariantCulture);
         }
     }
 }

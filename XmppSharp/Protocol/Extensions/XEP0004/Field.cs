@@ -59,7 +59,13 @@ public class Field : Element
             RemoveTag("desc");
 
             if (value != null)
-                SetTag("desc", value: value);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "desc";
+                    x.Value = value;
+                });
+            }
         }
     }
 
@@ -71,7 +77,7 @@ public class Field : Element
             if (!value)
                 RemoveTag("required");
             else
-                SetTag("required");
+                SetTag(x => x.TagName = "required");
         }
     }
 
@@ -85,7 +91,14 @@ public class Field : Element
             if (value?.Any() == true)
             {
                 foreach (var item in value)
-                    SetTag("value", Namespaces.DataForms, item);
+                {
+                    SetTag(x =>
+                    {
+                        x.TagName = "value";
+                        x.Namespace = Namespaces.DataForms;
+                        x.Value = item;
+                    });
+                }
             }
         }
     }
@@ -105,10 +118,16 @@ public class Field : Element
         }
     }
 
-    public void AddValue(object value)
+    public void AddValue(object value, IFormatProvider? ifp = default)
     {
         ThrowHelper.ThrowIfNull(value);
-        SetTag("value", Namespaces.DataForms, value);
+
+        SetTag(x =>
+        {
+            x.TagName = "value";
+            x.Namespace = Namespaces.DataForms;
+            x.SetValue(value, ifp);
+        });
     }
 
     public void AddOption(Option option)

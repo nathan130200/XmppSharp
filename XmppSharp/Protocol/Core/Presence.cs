@@ -59,7 +59,13 @@ public class Presence : Stanza
             RemoveTag("show");
 
             if (value.HasValue)
-                SetTag("show", value: XmppEnum.ToXml(value));
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "show";
+                    x.Value = XmppEnum.ToXml(value);
+                });
+            }
         }
     }
 
@@ -77,7 +83,13 @@ public class Presence : Stanza
             RemoveTag("priority");
 
             if (value.HasValue)
-                SetTag("priority", value: value);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "priority";
+                    x.Value = Convert.ToString((byte)value);
+                });
+            }
         }
     }
 
@@ -89,7 +101,13 @@ public class Presence : Stanza
             RemoveTag("status");
 
             if (value != null)
-                SetTag("status", value: value);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "status";
+                    x.Value = value;
+                });
+            }
         }
     }
 

@@ -25,7 +25,13 @@ public class Destroy : Element
             RemoveTag("password");
 
             if (value != null)
-                SetTag("password", value: value);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "password";
+                    x.Value = value;
+                });
+            }
         }
     }
 
@@ -37,7 +43,13 @@ public class Destroy : Element
             RemoveTag("reason");
 
             if (value != null)
-                SetTag("reason", value: value);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "reason";
+                    x.Value = value;
+                });
+            }
         }
     }
 }

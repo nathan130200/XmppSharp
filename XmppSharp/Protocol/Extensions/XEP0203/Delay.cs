@@ -33,7 +33,7 @@ public class Delay : Element
             if (value == null)
                 return null;
 
-            if (DateTimeOffset.TryParseExact(value, Xml.XMPP_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
+            if (DateTimeOffset.TryParseExact(value, Xml.XmppTimestampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
                 return result;
 
             return default;
@@ -43,7 +43,7 @@ public class Delay : Element
             if (!value.HasValue)
                 RemoveAttribute("stamp");
             else
-                SetAttribute("stamp", value.Value, Xml.XMPP_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture);
+                SetAttribute("stamp", value.Value, Xml.XmppTimestampFormat, CultureInfo.InvariantCulture);
         }
     }
 }

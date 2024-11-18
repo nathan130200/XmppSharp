@@ -35,7 +35,12 @@ public class Failure : Element
                 RemoveTag(name, Namespaces.Sasl);
 
             if (value.HasValue)
-                SetTag(XmppEnum.ToXml(value)!, Namespaces.Sasl);
+                SetTag(x =>
+                {
+                    x.TagName = XmppEnum.ToXml(value)!;
+                    x.Namespace = Namespaces.Sasl;
+                });
+
         }
     }
 
@@ -47,7 +52,13 @@ public class Failure : Element
             RemoveTag("text", Namespaces.Sasl);
 
             if (value != null)
-                SetTag("text", Namespaces.Sasl);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "text";
+                    x.Namespace = Namespaces.Sasl;
+                });
+            }
         }
     }
 }

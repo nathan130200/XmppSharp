@@ -61,7 +61,13 @@ public class MucUser : Element
             RemoveTag("password");
 
             if (value != null)
-                SetTag("password", value: value);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = "password";
+                    x.Value = value;
+                });
+            }
         }
     }
 

@@ -86,7 +86,7 @@ public sealed class Connection : IDisposable
 
                     await _stream.WriteAsync(entry.buffer);
 
-                    if (entry.xml != null)
+                    if (!string.IsNullOrEmpty(entry.xml))
                         Console.WriteLine("<{0}> send >>\n{1}\n", Jid, entry.xml);
                 }
             }
@@ -142,7 +142,7 @@ public sealed class Connection : IDisposable
         _access &= ~FileAccess.Read;
         _socket?.Shutdown(SocketShutdown.Receive);
 
-        Send(Xml.XMPP_STREAM_END);
+        Send(Xml.XmppStreamEnd);
 
         _parser?.Dispose();
         _parser = null;
@@ -212,8 +212,8 @@ public sealed class Connection : IDisposable
 
     private void OnStreamEnd()
     {
-        Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, Xml.XMPP_STREAM_END);
-        Send(Xml.XMPP_STREAM_END);
+        Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, Xml.XmppStreamEnd);
+        Send(Xml.XmppStreamEnd);
         Dispose();
     }
 
@@ -307,7 +307,7 @@ public sealed class Connection : IDisposable
 
             if (stz is Iq iq)
             {
-                if (iq.FirstChild is Bind bind)
+                if (iq.Query is Bind bind)
                 {
                     iq.SwitchDirection();
 
@@ -338,7 +338,7 @@ public sealed class Connection : IDisposable
 
                     handled = true;
                 }
-                else if (iq.FirstChild is Session)
+                else if (iq.Query is Session)
                 {
                     iq.SwitchDirection();
                     iq.Type = IqType.Result;
@@ -349,7 +349,7 @@ public sealed class Connection : IDisposable
 
                 if (iq.To == null || iq.To == Server.Hostname)
                 {
-                    if (iq.FirstChild is DiscoInfo discoInfo)
+                    if (iq.Query is DiscoInfo discoInfo)
                     {
                         discoInfo.AddIdentity(Identities.Component.C2S);
                         discoInfo.AddIdentity(Identities.Component.Router);
@@ -367,7 +367,7 @@ public sealed class Connection : IDisposable
 
                         handled = true;
                     }
-                    else if (iq.FirstChild is DiscoItems discoItems)
+                    else if (iq.Query is DiscoItems discoItems)
                     {
                         iq.SwitchDirection();
                         iq.Type = IqType.Result;
@@ -394,7 +394,7 @@ public sealed class Connection : IDisposable
 
                         handled = true;
                     }
-                    else if (iq.FirstChild is Ping)
+                    else if (iq.Query is Ping)
                     {
                         iq.SwitchDirection();
                         iq.Type = IqType.Result;

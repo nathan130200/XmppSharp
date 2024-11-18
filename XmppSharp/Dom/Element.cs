@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using System.Xml;
 
@@ -7,6 +8,7 @@ namespace XmppSharp.Dom;
 
 [DebuggerDisplay("{StartTag(),nq}")]
 [DebuggerTypeProxy(typeof(ElementTypeProxy))]
+[DefaultMember("TagName")]
 public class Element : Node
 {
     #region Debugger Type Proxy
@@ -61,6 +63,12 @@ public class Element : Node
         _parent = null;
     }
 
+    Element()
+    {
+        _children = new();
+        _attributes = new();
+    }
+
     public Element(string tagName, string? namespaceURI = default, object? value = default)
     {
         _children = new();
@@ -76,8 +84,7 @@ public class Element : Node
                 SetNamespace(namespaceURI);
         }
 
-        if (value != null)
-            Value = Convert.ToString(value, CultureInfo.InvariantCulture);
+        SetValue(value);
     }
 
     public Element(Element other)
@@ -106,12 +113,30 @@ public class Element : Node
 
     public string? Value
     {
-        get => string.Concat(Nodes().OfType<Text>());
+        get
+        {
+            var nodes = Nodes()
+                .OfType<Text>()
+                .Select(x => x.Value);
+
+            if (!nodes.Any())
+                return null;
+
+            return string.Concat(nodes);
+        }
         set
         {
             RemoveAllChildNodes();
             AddChild(new Text(value));
         }
+    }
+
+    public void SetValue(object? content, IFormatProvider? format = default)
+    {
+        format ??= CultureInfo.InvariantCulture;
+
+        if (content != null)
+            Value = Convert.ToString(content, format);
     }
 
     public string? Prefix
@@ -142,6 +167,65 @@ public class Element : Node
                 Prefix = value[0..ofs];
 
             LocalName = value[(ofs + 1)..];
+        }
+    }
+
+    public void InsertBefore(Node newNode, Node referenceNode)
+    {
+        ThrowHelper.ThrowIfNull(newNode);
+        ThrowHelper.ThrowIfNull(referenceNode);
+
+        if (newNode._parent is not null)
+            newNode = newNode.Clone();
+
+        lock (_children)
+        {
+            var ofs = _children.IndexOf(referenceNode);
+
+            if (ofs > 0)
+                ofs--;
+
+            _children.Insert(ofs, newNode);
+            newNode._parent = this;
+        }
+    }
+
+    public void InsertAfter(Node newNode, Node referenceNode)
+    {
+        ThrowHelper.ThrowIfNull(newNode);
+        ThrowHelper.ThrowIfNull(referenceNode);
+
+        if (newNode._parent is not null)
+            newNode = newNode.Clone();
+
+        lock (_children)
+        {
+            var ofs = _children.IndexOf(referenceNode);
+
+            if (ofs == _children.Count - 1)
+                _children.Add(newNode);
+            else
+                _children.Insert(ofs + 1, newNode);
+
+            newNode._parent = this;
+        }
+    }
+
+    public void ReplaceWith(Node newNode)
+    {
+        ThrowHelper.ThrowIfNull(newNode);
+
+        if (_parent is null) return;
+
+        if (newNode._parent is not null)
+            newNode = newNode.Clone();
+
+        lock (_parent._children)
+        {
+            var ofs = _parent._children.IndexOf(this);
+            _parent._children[ofs] = newNode;
+            newNode._parent = _parent;
+            _parent = null;
         }
     }
 
@@ -391,12 +475,16 @@ public class Element : Node
         return ChildrenInternal(tagName, namespaceURI, true).Any();
     }
 
-    public Element SetTag(string tagName, string? namespaceURI = default, object? value = default)
+    public void SetTag(Action<Element> action)
     {
-        ThrowHelper.ThrowIfNullOrWhiteSpace(tagName);
-        var el = new Element(tagName, namespaceURI, value);
-        AddChild(el);
-        return el;
+        ThrowHelper.ThrowIfNull(action);
+
+        var element = new Element();
+        action(element);
+
+        ThrowHelper.ThrowIfNullOrWhiteSpace(element.TagName);
+
+        AddChild(element);
     }
 
     public void RemoveTag(string tagName, string? namespaceURI = default)
@@ -407,6 +495,9 @@ public class Element : Node
 
     public string? GetTag(string tagName, string? namespaceURI = default)
         => Child(tagName, namespaceURI)?.Value;
+
+    public IEnumerable<string?> GetTags(string tagName, string? namespaceURI = default)
+        => Children(tagName, namespaceURI).Select(x => x.Value);
 
     public T? Child<T>() where T : Element
         => Children().OfType<T>().FirstOrDefault();

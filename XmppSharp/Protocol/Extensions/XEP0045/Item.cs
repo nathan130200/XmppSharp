@@ -72,7 +72,7 @@ public class Item : Element
             if (!value)
                 RemoveTag("continue");
             else
-                SetTag("continue");
+                SetTag(x => x.TagName = "continue");
         }
     }
 }

@@ -79,7 +79,13 @@ public class Message : Stanza
             this.Children(e => e.Namespace == Namespaces.ChatStates).Remove();
 
             if (value.HasValue)
-                SetTag(XmppEnum.ToXml(value)!, Namespaces.ChatStates);
+            {
+                SetTag(x =>
+                {
+                    x.TagName = XmppEnum.ToXml(value)!;
+                    x.Namespace = Namespaces.ChatStates;
+                });
+            }
         }
     }
 

@@ -34,10 +34,13 @@ public class StartTls : Element
             RemoveTag("optional");
             RemoveTag("required");
 
-            if (value == StartTlsPolicy.Required)
-                SetTag("required", Namespaces.Tls);
-            else
-                SetTag("optional", Namespaces.Tls);
+            string tagName = value == StartTlsPolicy.Required ? "required" : "optional";
+
+            SetTag(x =>
+            {
+                x.TagName = tagName;
+                x.Namespace = Namespaces.Tls;
+            });
         }
     }
 }
