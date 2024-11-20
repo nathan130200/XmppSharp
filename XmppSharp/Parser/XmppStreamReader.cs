@@ -4,16 +4,39 @@ using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Parser;
 
+/// <summary>
+/// Interface to abstract xmpp parser APIs based on <see cref="XmlReader" /> or that need a constant stream.
+/// </summary>
 public interface IXmppStreamProcessor
 {
+    /// <summary>
+    /// Tells underlying xml reader to proceed with reading XML chars and processing XML tokens.
+    /// </summary>
+    /// <returns>
+    /// Returns <see langword="true"/> if the parser was able to move forward and processed something; <see langword="false" /> if you were unable to read it or if an error occurred.
+    /// <para>
+    /// Note that this function will block until it has enough data for the reader to process the XML.
+    /// </para>
+    /// </returns>
     bool Advance();
 }
 
+/// <summary>
+/// Interface to abstract xmpp parser APIs based on dynamic byte streams.
+/// </summary>
 public interface IXmppChunkedParser
 {
+    /// <summary>
+    /// Tells the underlying parser to add bytes for XML processing.
+    /// </summary>
+    /// <param name="buffer">Buffer containing possible XML tokens to be processed.</param>
+    /// <param name="length">Amount of bytes to process from <paramref name="buffer"/>.</param>
     void Write(byte[] buffer, int length);
 }
 
+/// <summary>
+/// XMPP parser implementation based on .NET's <see cref="XmlReader" />.
+/// </summary>
 public class XmppStreamReader : XmppParser, IXmppStreamProcessor
 {
     private Stream? _baseStream;
@@ -21,6 +44,12 @@ public class XmppStreamReader : XmppParser, IXmppStreamProcessor
     private XmlReader? _reader;
     private Element? _current;
 
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="baseStream">Stream that will be used to read the XML.</param>
+    /// <param name="bufferSize">Buffer size (in characters) for reading.</param>
+    /// <param name="leaveOpen">Determines whether to keep the <paramref name="baseStream"/> open when this parser is to be disposed.</param>
     public XmppStreamReader(Stream baseStream, int bufferSize = -1, bool leaveOpen = true)
     {
         _baseStream = baseStream;
@@ -44,7 +73,7 @@ public class XmppStreamReader : XmppParser, IXmppStreamProcessor
 
     public virtual bool Advance()
     {
-        if (isDisposed)
+        if (_disposed)
             return false;
 
         if (_reader == null)

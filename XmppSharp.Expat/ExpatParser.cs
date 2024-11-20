@@ -7,6 +7,9 @@ using static XmppSharp.Expat.Native;
 
 namespace XmppSharp.Expat;
 
+/// <summary>
+/// XML parser based on the expat library - <a href="https://libexpat.github.io">https://libexpat.github.io</a>
+/// </summary>
 public class ExpatParser : IDisposable, IXmlLineInfo
 {
     internal IntPtr _parser;

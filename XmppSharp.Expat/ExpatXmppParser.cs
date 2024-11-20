@@ -5,6 +5,9 @@ using XmppSharp.Utilities;
 
 namespace XmppSharp.Parser;
 
+/// <summary>
+/// XMPP parser implementation based on <see cref="ExpatParser"/>.
+/// </summary>
 public class ExpatXmppParser : XmppParser, IXmppChunkedParser
 {
     private ExpatParser _xmlParser;
