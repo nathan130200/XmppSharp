@@ -25,23 +25,32 @@ public class JabberException : Exception
 
 public class JabberStreamException : JabberException
 {
-    public StreamError Element { get; }
-    public StreamErrorCondition? Condition => Element.Condition;
-    public string? Text => Element.Text;
+    public StreamErrorCondition? Condition { get; }
 
-    public JabberStreamException(StreamError element) : base()
+    public JabberStreamException(StreamErrorCondition condition) : base()
     {
-        Element = element;
+        Condition = condition;
+    }
+
+    public JabberStreamException(StreamError error) : base(error.Text)
+    {
+        Data.Add("Element", error);
+        Condition = error.Condition;
     }
 }
 
 public class JabberSaslException : JabberException
 {
-    public Failure Element { get; }
-    public FailureCondition? Condition => Element.Condition;
+    public FailureCondition? Condition { get; }
 
-    public JabberSaslException(Failure element)
+    public JabberSaslException(FailureCondition? condition)
     {
-        Element = element;
+        Condition = condition;
+    }
+
+    public JabberSaslException(Failure failure) : base(failure.Text ?? "Authentication failed")
+    {
+        Data.Add("Element", failure);
+        Condition = failure.Condition;
     }
 }

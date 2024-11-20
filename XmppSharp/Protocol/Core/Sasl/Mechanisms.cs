@@ -33,6 +33,9 @@ public class Mechanisms : Element
         }
     }
 
+    public bool HasMechanism(string name)
+        => SupportedMechanisms.Any(x => x.Value == name);
+
     public void AddMechanism(string name)
         => AddChild(new Mechanism(name));
 }

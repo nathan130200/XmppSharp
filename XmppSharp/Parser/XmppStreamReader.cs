@@ -4,17 +4,17 @@ using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Parser;
 
-public interface IXmppStreamReader
+public interface IXmppStreamProcessor
 {
     bool Advance();
 }
 
-public interface IXmppStreamTokenizer
+public interface IXmppChunkedParser
 {
     void Write(byte[] buffer, int length);
 }
 
-public class XmppStreamReader : XmppParser, IXmppStreamReader
+public class XmppStreamReader : XmppParser, IXmppStreamProcessor
 {
     private Stream? _baseStream;
     private readonly bool _leaveOpen;
