@@ -36,7 +36,7 @@ public class StreamError : Element
             if (value.HasValue)
             {
                 var name = XmppEnum.ToXml((StreamErrorCondition)value)!;
-                SetTag(x => x.Namespace = name);
+                SetTag(x => x.TagName = name);
             }
         }
     }
@@ -52,7 +52,7 @@ public class StreamError : Element
             {
                 SetTag(x =>
                 {
-                    x.Namespace = "text";
+                    x.TagName = "text";
                     x.Namespace = Namespaces.Streams;
                     x.Value = value;
                 });
