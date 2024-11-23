@@ -16,7 +16,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
-		<TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net8.0;net9.0</TargetFrameworks>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(Configuration)' == 'Release'">
@@ -38,14 +38,14 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="$(SolutionDir)LICENSE">
+		<None Include="..\LICENSE">
 			<Pack>True</Pack>
 			<PackagePath>/</PackagePath>
 		</None>
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="$(SolutionDir)README.md">
+		<None Include="..\README.md">
 			<Pack>True</Pack>
 			<PackagePath>/</PackagePath>
 		</None>
