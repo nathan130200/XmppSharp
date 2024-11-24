@@ -480,6 +480,7 @@ public class Element : Node
         ThrowHelper.ThrowIfNull(action);
 
         var element = new Element();
+
         action(element);
 
         ThrowHelper.ThrowIfNullOrWhiteSpace(element.TagName);

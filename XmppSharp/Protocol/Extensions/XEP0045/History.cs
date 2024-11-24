@@ -48,11 +48,11 @@ public class History : Element
         }
     }
 
-    public DateTime? Since
+    public DateTimeOffset? Since
     {
         get
         {
-            if (DateTime.TryParseExact(GetAttribute("since"), Xml.XmppTimestampFormat,
+            if (DateTimeOffset.TryParseExact(GetAttribute("since"), Xml.XmppTimestampFormat,
                 CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
                 return result;
 
@@ -63,7 +63,7 @@ public class History : Element
             if (!value.HasValue)
                 RemoveAttribute("since");
             else
-                SetAttribute("since", value.Value, Xml.XmppTimestampFormat, CultureInfo.InvariantCulture);
+                SetAttribute("since", (DateTimeOffset)value, Xml.XmppTimestampFormat, CultureInfo.InvariantCulture);
         }
     }
 }

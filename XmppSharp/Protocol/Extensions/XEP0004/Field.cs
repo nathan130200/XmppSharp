@@ -26,7 +26,7 @@ public class Field : Element
             if (!HasAttribute("type"))
                 return null;
 
-            return XmppEnum.FromXml(GetAttribute("type"), FieldType.TextSingle);
+            return XmppEnum.FromXmlOrDefault(GetAttribute("type"), FieldType.TextSingle);
         }
         set
         {

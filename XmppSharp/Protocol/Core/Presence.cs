@@ -30,7 +30,7 @@ public class Presence : Stanza
 
     public new PresenceType Type
     {
-        get => XmppEnum.FromXml(base.Type, PresenceType.Available);
+        get => XmppEnum.FromXmlOrDefault(base.Type, PresenceType.Available);
         set
         {
             if (value == PresenceType.Available)
@@ -52,7 +52,7 @@ public class Presence : Stanza
             if (!HasTag("show"))
                 return null;
 
-            return XmppEnum.FromXmlOrDefault<PresenceShow>(GetTag("show"));
+            return XmppEnum.FromXml<PresenceShow>(GetTag("show"));
         }
         set
         {
@@ -69,12 +69,16 @@ public class Presence : Stanza
         }
     }
 
-    public byte? Priority
+    // priority: -1, 0~255
+    // where -1 exclude from bare JID routing
+    // 0~255 client priority in bare JID routing
+
+    public int? Priority
     {
         get
         {
-            if (byte.TryParse(GetTag("priority"), out var result))
-                return result;
+            if (int.TryParse(GetTag("priority"), out var result))
+                return Math.Clamp(result, -1, 255);
 
             return null;
         }
@@ -84,10 +88,12 @@ public class Presence : Stanza
 
             if (value.HasValue)
             {
+                var priority = Math.Clamp((int)value, -1, 255);
+
                 SetTag(x =>
                 {
                     x.TagName = "priority";
-                    x.Value = Convert.ToString((byte)value);
+                    x.SetValue(priority);
                 });
             }
         }

@@ -17,7 +17,7 @@ public class StanzaError : Element
 
     public StanzaErrorType? Type
     {
-        get => XmppEnum.FromXmlOrDefault<StanzaErrorType>(GetAttribute("type"));
+        get => XmppEnum.FromXml<StanzaErrorType>(GetAttribute("type"));
         set
         {
             if (!value.HasValue)

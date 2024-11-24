@@ -35,7 +35,19 @@ public static class XmppEnum
         return entry.Key;
     }
 
-    public static T FromXml<T>(string? str, T defaultValue) where T : struct, Enum
+    public static T FromXmlOrThrow<T>(string? s) where T : struct, Enum
+    {
+        ThrowHelper.ThrowIfNullOrWhiteSpace(s);
+
+        var result = FromXml<T>(s);
+
+        if (!result.HasValue)
+            throw new ArgumentOutOfRangeException(nameof(s));
+
+        return result.Value;
+    }
+
+    public static T FromXmlOrDefault<T>(string? str, T defaultValue) where T : struct, Enum
     {
         if (string.IsNullOrWhiteSpace(str))
             return defaultValue;
@@ -46,7 +58,7 @@ public static class XmppEnum
         return defaultValue;
     }
 
-    public static T? FromXmlOrDefault<T>(string? str) where T : struct, Enum
+    public static T? FromXml<T>(string? str) where T : struct, Enum
     {
         if (string.IsNullOrWhiteSpace(str))
             return default;

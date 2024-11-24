@@ -18,7 +18,7 @@ public class Form : Element
 
     public FormType Type
     {
-        get => XmppEnum.FromXml(GetAttribute("type"), FormType.Prompt);
+        get => XmppEnum.FromXmlOrDefault(GetAttribute("type"), FormType.Prompt);
         set
         {
             if (!Enum.IsDefined(value))

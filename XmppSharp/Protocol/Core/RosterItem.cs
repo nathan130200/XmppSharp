@@ -50,14 +50,20 @@ public class RosterItem : Element
 
     public RosterSubscriptionType? Subscription
     {
-        get => XmppEnum.FromXml(GetAttribute("subscription"), RosterSubscriptionType.None);
+        get => XmppEnum.FromXmlOrDefault(GetAttribute("subscription"), RosterSubscriptionType.None);
         set => SetAttribute("subscription", XmppEnum.ToXml(value));
     }
 
     public bool? Approved
     {
         get => this.GetAttribute<bool>("approved");
-        set => SetAttribute("approved", value);
+        set
+        {
+            if (!value.HasValue)
+                RemoveAttribute("approved");
+            else
+                SetAttribute("approved", (bool)value ? 1 : 0);
+        }
     }
 
     public bool Ask

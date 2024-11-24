@@ -14,7 +14,7 @@ public class Item : Element
 
     public Affiliation? Affiliation
     {
-        get => XmppEnum.FromXmlOrDefault<Affiliation>(GetAttribute("affiliation"));
+        get => XmppEnum.FromXml<Affiliation>(GetAttribute("affiliation"));
         set
         {
             if (!value.HasValue)
@@ -38,7 +38,7 @@ public class Item : Element
 
     public Role? Role
     {
-        get => XmppEnum.FromXmlOrDefault<Role>(GetAttribute("role"));
+        get => XmppEnum.FromXml<Role>(GetAttribute("role"));
         set
         {
             if (!value.HasValue)

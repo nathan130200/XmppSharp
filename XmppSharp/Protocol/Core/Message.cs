@@ -1,5 +1,4 @@
 ﻿using XmppSharp.Attributes;
-using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Extensions.XEP0085;
 
@@ -16,49 +15,15 @@ public class Message : Stanza
 
     }
 
-    public string? Content
-    {
-        get => Body?.Value;
-        set
-        {
-            Body?.Remove();
-
-            if (value != null)
-            {
-                Body = new Element("body")
-                {
-                    Namespace = DefaultNamespace,
-                    Value = value
-                };
-            }
-        }
-    }
-
     public new MessageType Type
     {
-        get => XmppEnum.FromXml(base.Type, MessageType.Normal);
+        get => XmppEnum.FromXmlOrDefault(base.Type, MessageType.Normal);
         set
         {
             if (!Enum.IsDefined(value))
                 throw new ArgumentException(null, nameof(Type));
 
             base.Type = XmppEnum.ToXml(value);
-        }
-    }
-
-    public Element? Subject
-    {
-        get => this.Child(e => e.TagName == "subject" && !e.HasAttribute("xml:lang"));
-        set
-        {
-            Subject?.Remove();
-
-            if (value != null)
-            {
-                ThrowHelper.ThrowIfNotEquals("subject", value.TagName);
-                value.Namespace ??= DefaultNamespace;
-                AddChild(value);
-            }
         }
     }
 
@@ -89,34 +54,20 @@ public class Message : Stanza
         }
     }
 
-    public Element? Body
+    public string? Body
     {
-        get => this.Child(e => e.TagName == "body" && !e.HasAttribute("xml:lang"));
+        get => GetTag("body");
         set
         {
-            Body?.Remove();
+            RemoveTag("body");
 
             if (value != null)
             {
-                ThrowHelper.ThrowIfNotEquals(value.TagName, "body");
-                value.Namespace ??= DefaultNamespace;
-                AddChild(value);
-            }
-        }
-    }
-
-    public Element? Thread
-    {
-        get => this.Child(e => e.TagName == "thread" && !e.HasAttribute("xml:lang"));
-        set
-        {
-            Thread?.Remove();
-
-            if (value != null)
-            {
-                ThrowHelper.ThrowIfNotEquals(value.TagName, "thread");
-                value.Namespace ??= DefaultNamespace;
-                AddChild(value);
+                SetTag(x =>
+                {
+                    x.TagName = "body";
+                    x.Value = value;
+                });
             }
         }
     }

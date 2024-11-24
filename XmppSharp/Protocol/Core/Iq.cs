@@ -29,17 +29,7 @@ public class Iq : Stanza
 
     public new IqType Type
     {
-        get
-        {
-            return base.Type switch
-            {
-                "get" => IqType.Get,
-                "set" => IqType.Set,
-                "result" => IqType.Result,
-                "error" => IqType.Error,
-                _ => throw new ArgumentException(default, nameof(Type))
-            };
-        }
+        get => XmppEnum.FromXmlOrThrow<IqType>(base.Type);
         set
         {
             if (!Enum.IsDefined(value))
@@ -79,7 +69,7 @@ public class Iq : Stanza
     /// </summary>
     /// <param name="tagName">Qualified tag name of the element.</param>
     /// <param name="namespaceURI">Namespace URI of the element.</param>
-    public static void AddKnownQuery(string tagName, string namespaceURI)
+    public static void RegisterKnownQuery(string tagName, string namespaceURI)
     {
         ThrowHelper.ThrowIfNullOrWhiteSpace(tagName);
         ThrowHelper.ThrowIfNullOrWhiteSpace(namespaceURI);
