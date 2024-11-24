@@ -56,33 +56,44 @@ public static class XmppEnum
 
         return default;
     }
+
+    public static IEnumerable<Attribute> GetCustomAttributes<T>() where T : struct, Enum
+        => XmppEnum<T>.CustomAttributes;
+
+    public static IEnumerable<Attribute> GetMemberCustomAttributes<T>(T member) where T : struct, Enum
+        => XmppEnum<T>.MemberCustomAttributes[member];
 }
-public sealed class XmppEnum<T> where T : struct, Enum
+public static class XmppEnum<T> where T : struct, Enum
 {
     public static IEnumerable<T> Members { get; private set; }
     public static IReadOnlyDictionary<string, T> NameToMember { get; private set; }
-    public static IReadOnlyDictionary<T, IEnumerable<Attribute>> CustomAttributes { get; private set; }
+    public static IEnumerable<Attribute> CustomAttributes { get; private set; }
+    public static IReadOnlyDictionary<T, IEnumerable<Attribute>> MemberCustomAttributes { get; private set; }
     public static IReadOnlyDictionary<string, T> XmlToMember { get; private set; }
     public static EqualityComparer<T> EqualityContract { get; set; }
 
     static XmppEnum()
     {
-        if (typeof(T).GetCustomAttribute<XmppEnumAttribute>() == null)
-            throw new InvalidOperationException();
+        var thisType = typeof(T);
+
+        if (thisType.GetCustomAttribute<XmppEnumAttribute>() == null)
+            throw new InvalidOperationException($"Type '{thisType.FullName}' is not valid xmpp enum type.");
 
         EqualityContract = EqualityComparer<T>.Default;
 
         Members = Enum.GetValues<T>();
+        CustomAttributes = thisType.GetCustomAttributes();
 
         var fields = from field in typeof(T).GetFields()
                      where field.FieldType == typeof(T)
-                     let attribute = field.GetCustomAttribute<XmppMemberAttribute>()
+                     let attributes = field.GetCustomAttributes()
+                     let memberAttribute = attributes.OfType<XmppMemberAttribute>().FirstOrDefault()
                      select new
                      {
                          field.Name,
                          Value = (T)field.GetValue(null)!,
-                         XmlName = attribute?.Value,
-                         Attributes = field.GetCustomAttributes().Where(xa => xa is not XmppMemberAttribute)
+                         XmlName = memberAttribute?.Value,
+                         Attributes = attributes
                      };
 
         NameToMember = fields.ToDictionary(x => x.Name, x => x.Value);
@@ -90,6 +101,6 @@ public sealed class XmppEnum<T> where T : struct, Enum
         XmlToMember = fields.Where(x => x.XmlName != null)
             .ToDictionary(x => x.XmlName, x => x.Value);
 
-        CustomAttributes = fields.ToDictionary(x => x.Value, x => x.Attributes);
+        MemberCustomAttributes = fields.ToDictionary(x => x.Value, x => x.Attributes);
     }
 }
