@@ -215,7 +215,8 @@ public class Element : Node
     {
         ThrowHelper.ThrowIfNull(newNode);
 
-        if (_parent is null) return;
+        if (_parent is null)
+            throw new InvalidOperationException("The current node does not belong to a parent node.");
 
         if (newNode._parent is not null)
             newNode = newNode.Clone();
