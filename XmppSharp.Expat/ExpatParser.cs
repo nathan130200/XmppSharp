@@ -36,7 +36,7 @@ public class ExpatParser : IDisposable, IXmlLineInfo
         _onEndElementHandler = new(EndElementHandler);
         _onCdataStartHandler = new(CdataStartHandler);
         _onCdataEndHandler = new(CdataEndHandler);
-        _onCharacterDataHandler = new(OnCharacterDataHandler);
+        _onCharacterDataHandler = new(CharacterDataHandler);
         _onCommentHandler = new(CommentHandler);
 
         GC.KeepAlive(_onStartElementHandler);
@@ -98,18 +98,7 @@ public class ExpatParser : IDisposable, IXmlLineInfo
 
             if (result != Status.OK)
             {
-                if (result == Status.ERROR)
-                {
-                    if (!XML_ParserReset(_parser, _encoding.Name) && throwOnError) // ensure we can still use same parse instance later
-                    {
-                        throw new AggregateException(
-                            new ExpatException(this),
-                            new ExpatException("The parser returned an error and the attempt to reset its internal state also failed.", Error.ABORTED)
-                        );
-                    }
-                }
-
-                if (throwOnError)
+                if (result == Status.ERROR && throwOnError)
                     throw new ExpatException(this);
             }
         }
@@ -121,7 +110,7 @@ public class ExpatParser : IDisposable, IXmlLineInfo
     }
 
     public event Action<XmppName, IReadOnlyDictionary<XmppName, string>> OnStartTag;
-    public event Action<string> OnEndTag;
+    public event Action<XmppName> OnEndTag;
     public event Action<string?>? OnComment;
     public event Action<string?>? OnCdata;
     public event Action<string?>? OnText;
@@ -182,17 +171,16 @@ public class ExpatParser : IDisposable, IXmlLineInfo
         parser._isCdataSection = false;
     }
 
-    static unsafe void OnCharacterDataHandler(IntPtr userDara, IntPtr data, int size)
+    static unsafe void CharacterDataHandler(IntPtr userDara, IntPtr data, int size)
     {
         // data is not C-style string
         var parser = (ExpatParser)GCHandle.FromIntPtr(userDara).Target;
-
         var content = parser._encoding.Encoding.GetString((byte*)data, size);
 
-        if (!parser._isCdataSection)
-            parser.OnText?.Invoke(content);
-        else
+        if (parser._isCdataSection)
             parser._cdataSection.Append(content);
+        else
+            parser.OnText?.Invoke(content);
     }
 
     static void CommentHandler(IntPtr userData, IntPtr valuePtr)
@@ -229,6 +217,8 @@ public class ExpatParser : IDisposable, IXmlLineInfo
 
         _cdataSection?.Clear();
         _cdataSection = null;
+
+        _encoding = null;
 
         GC.SuppressFinalize(this);
     }

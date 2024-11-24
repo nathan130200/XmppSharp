@@ -5,53 +5,20 @@ namespace XmppSharp;
 
 public static class XmppEnum
 {
-    class Cache<T> where T : struct, Enum
-    {
-        public static readonly IEnumerable<T> s_Values;
-        public static readonly Dictionary<string, T> s_NameToValue;
-        public static readonly Dictionary<string, T> s_XmlToValue;
-        public static readonly EqualityComparer<T> s_EqualityContract;
-
-        static Cache()
-        {
-            if (typeof(T).GetCustomAttribute<XmppEnumAttribute>() == null)
-                throw new InvalidOperationException();
-
-            s_EqualityContract = EqualityComparer<T>.Default;
-
-            s_Values = Enum.GetValues<T>();
-
-            var fields = from field in typeof(T).GetFields()
-                         where field.FieldType == typeof(T)
-                         let attribute = field.GetCustomAttribute<XmppMemberAttribute>()
-                         select new
-                         {
-                             field.Name,
-                             Value = (T)field.GetValue(null)!,
-                             XmlName = attribute?.Value
-                         };
-
-            s_NameToValue = fields.ToDictionary(x => x.Name, x => x.Value);
-
-            s_XmlToValue = fields.Where(x => x.XmlName != null)
-                .ToDictionary(x => x.XmlName, x => x.Value);
-        }
-    }
-
-    public static IEnumerable<T> GetValues<T>() where T : struct, Enum
-        => Cache<T>.s_Values;
+    public static IEnumerable<T> GetMembers<T>() where T : struct, Enum
+        => XmppEnum<T>.Members;
 
     public static IEnumerable<string> GetNames<T>() where T : struct, Enum
-        => Cache<T>.s_NameToValue.Select(x => x.Key);
+        => XmppEnum<T>.NameToMember.Select(x => x.Key);
 
     public static IEnumerable<string> GetXmlNames<T>() where T : struct, Enum
-        => Cache<T>.s_XmlToValue.Select(x => x.Key);
+        => XmppEnum<T>.XmlToMember.Select(x => x.Key);
 
     public static IReadOnlyDictionary<string, T> GetNameMapping<T>() where T : struct, Enum
-        => Cache<T>.s_NameToValue;
+        => XmppEnum<T>.NameToMember;
 
     public static IReadOnlyDictionary<string, T> GetXmlMapping<T>() where T : struct, Enum
-        => Cache<T>.s_XmlToValue;
+        => XmppEnum<T>.XmlToMember;
 
     public static string? ToXml<T>(T? value) where T : struct, Enum
     {
@@ -63,8 +30,8 @@ public static class XmppEnum
 
     public static string? ToXml<T>(T value) where T : struct, Enum
     {
-        var contract = Cache<T>.s_EqualityContract;
-        var entry = Cache<T>.s_XmlToValue.FirstOrDefault(x => contract.Equals(x.Value, value));
+        var contract = XmppEnum<T>.EqualityContract;
+        var entry = XmppEnum<T>.XmlToMember.FirstOrDefault(x => contract.Equals(x.Value, value));
         return entry.Key;
     }
 
@@ -73,7 +40,7 @@ public static class XmppEnum
         if (string.IsNullOrWhiteSpace(str))
             return defaultValue;
 
-        if (Cache<T>.s_XmlToValue.TryGetValue(str, out var result))
+        if (XmppEnum<T>.XmlToMember.TryGetValue(str, out var result))
             return result;
 
         return defaultValue;
@@ -84,9 +51,45 @@ public static class XmppEnum
         if (string.IsNullOrWhiteSpace(str))
             return default;
 
-        if (Cache<T>.s_XmlToValue.TryGetValue(str, out var result))
+        if (XmppEnum<T>.XmlToMember.TryGetValue(str, out var result))
             return result;
 
         return default;
+    }
+}
+public sealed class XmppEnum<T> where T : struct, Enum
+{
+    public static IEnumerable<T> Members { get; private set; }
+    public static IReadOnlyDictionary<string, T> NameToMember { get; private set; }
+    public static IReadOnlyDictionary<T, IEnumerable<Attribute>> CustomAttributes { get; private set; }
+    public static IReadOnlyDictionary<string, T> XmlToMember { get; private set; }
+    public static EqualityComparer<T> EqualityContract { get; set; }
+
+    static XmppEnum()
+    {
+        if (typeof(T).GetCustomAttribute<XmppEnumAttribute>() == null)
+            throw new InvalidOperationException();
+
+        EqualityContract = EqualityComparer<T>.Default;
+
+        Members = Enum.GetValues<T>();
+
+        var fields = from field in typeof(T).GetFields()
+                     where field.FieldType == typeof(T)
+                     let attribute = field.GetCustomAttribute<XmppMemberAttribute>()
+                     select new
+                     {
+                         field.Name,
+                         Value = (T)field.GetValue(null)!,
+                         XmlName = attribute?.Value,
+                         Attributes = field.GetCustomAttributes().Where(xa => xa is not XmppMemberAttribute)
+                     };
+
+        NameToMember = fields.ToDictionary(x => x.Name, x => x.Value);
+
+        XmlToMember = fields.Where(x => x.XmlName != null)
+            .ToDictionary(x => x.XmlName, x => x.Value);
+
+        CustomAttributes = fields.ToDictionary(x => x.Value, x => x.Attributes);
     }
 }

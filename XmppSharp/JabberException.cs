@@ -1,4 +1,4 @@
-﻿using System.Runtime.Serialization;
+﻿using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Core.Sasl;
 
@@ -6,6 +6,8 @@ namespace XmppSharp;
 
 public class JabberException : Exception
 {
+    public Element? Element { get; protected set; }
+
     public JabberException()
     {
     }
@@ -15,10 +17,6 @@ public class JabberException : Exception
     }
 
     public JabberException(string? message, Exception? innerException) : base(message, innerException)
-    {
-    }
-
-    protected JabberException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
     }
 }
@@ -32,10 +30,10 @@ public class JabberStreamException : JabberException
         Condition = condition;
     }
 
-    public JabberStreamException(StreamError error) : base(error.Text)
+    public JabberStreamException(StreamError element) : base()
     {
-        Data.Add("Element", error);
-        Condition = error.Condition;
+        Element = element;
+        Condition = element.Condition;
     }
 }
 
@@ -43,14 +41,14 @@ public class JabberSaslException : JabberException
 {
     public FailureCondition? Condition { get; }
 
-    public JabberSaslException(FailureCondition? condition)
+    public JabberSaslException(FailureCondition? condition) : base()
     {
         Condition = condition;
     }
 
-    public JabberSaslException(Failure failure) : base(failure.Text ?? "Authentication failed")
+    public JabberSaslException(Failure element) : base(element.Text ?? "Authentication failed")
     {
-        Data.Add("Element", failure);
-        Condition = failure.Condition;
+        Element = element;
+        Condition = element.Condition;
     }
 }

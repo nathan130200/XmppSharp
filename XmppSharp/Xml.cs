@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Security;
 using System.Text;
 using System.Web;
@@ -42,7 +43,7 @@ public static class Xml
     {
         get
         {
-            s_NewLineChars ??= Environment.NewLine;
+            s_NewLineChars ??= "\n";
             return s_NewLineChars;
         }
     }
@@ -51,7 +52,7 @@ public static class Xml
     {
         get
         {
-            s_IndentChars ??= "\t";
+            s_IndentChars ??= "  ";
             return s_IndentChars;
         }
     }
@@ -82,6 +83,26 @@ public static class Xml
         return source;
     }
 
+    public static bool FindChild(this Element parent, string tagName, string? namespaceURI, [NotNullWhen(true)] out Element? result)
+    {
+        ThrowHelper.ThrowIfNull(parent);
+        ThrowHelper.ThrowIfNullOrWhiteSpace(tagName);
+
+        result = parent.Child(tagName, namespaceURI);
+
+        return result != null;
+    }
+
+    public static bool FindChild(this Element parent, string tagName, [NotNullWhen(true)] out Element? result)
+    {
+        ThrowHelper.ThrowIfNull(parent);
+        ThrowHelper.ThrowIfNullOrWhiteSpace(tagName);
+
+        result = parent.Child(tagName);
+
+        return result != null;
+    }
+
     public static Element? Child(this Element parent, Func<Element, bool> predicate)
     {
         ThrowHelper.ThrowIfNull(parent);
@@ -94,6 +115,22 @@ public static class Xml
         ThrowHelper.ThrowIfNull(parent);
         ThrowHelper.ThrowIfNull(predicate);
         return parent.Children().Where(predicate);
+    }
+
+    public static Element C(this Element parent, string tagName, string? namespaceURI = default, object? value = default)
+    {
+        ThrowHelper.ThrowIfNull(parent);
+
+        var child = ElementFactory.CreateElement(tagName, namespaceURI, parent);
+        child.SetValue(value);
+        parent.AddChild(child);
+        return child;
+    }
+
+    public static Element? Up(this Element child)
+    {
+        ThrowHelper.ThrowIfNull(child);
+        return child.Parent;
     }
 
     public static XmlWriter CreateWriter(TextWriter textWriter, XmlFormatting formatting, Encoding? encoding = default)

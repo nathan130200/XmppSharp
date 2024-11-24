@@ -5,36 +5,6 @@ using XmppSharp.Protocol.Base;
 namespace XmppSharp.Parser;
 
 /// <summary>
-/// Interface to abstract xmpp parser APIs based on <see cref="XmlReader" /> or that need a constant stream.
-/// </summary>
-public interface IXmppStreamProcessor
-{
-    /// <summary>
-    /// Tells underlying xml reader to proceed with reading XML chars and processing XML tokens.
-    /// </summary>
-    /// <returns>
-    /// Returns <see langword="true"/> if the parser was able to move forward and processed something; <see langword="false" /> if you were unable to read it or if an error occurred.
-    /// <para>
-    /// Note that this function will block until it has enough data for the reader to process the XML.
-    /// </para>
-    /// </returns>
-    bool Advance();
-}
-
-/// <summary>
-/// Interface to abstract xmpp parser APIs based on dynamic byte streams.
-/// </summary>
-public interface IXmppChunkedParser
-{
-    /// <summary>
-    /// Tells the underlying parser to add bytes for XML processing.
-    /// </summary>
-    /// <param name="buffer">Buffer containing possible XML tokens to be processed.</param>
-    /// <param name="length">Amount of bytes to process from <paramref name="buffer"/>.</param>
-    void Write(byte[] buffer, int length);
-}
-
-/// <summary>
 /// XMPP parser implementation based on .NET's <see cref="XmlReader" />.
 /// </summary>
 public class XmppStreamReader : XmppParser, IXmppStreamProcessor
@@ -79,8 +49,26 @@ public class XmppStreamReader : XmppParser, IXmppStreamProcessor
         if (_reader == null)
             return false;
 
-        if (!_reader.Read())
-            return false;
+        try
+        {
+            if (!_reader.Read())
+                return false;
+        }
+        catch
+        {
+            // only throw if not disposed yet (eg: some I/O operation failed,
+            // invalid XML token is found, otherwise just return). This is
+            // useeful because XmlReader.Read() is blocking if underlying
+            // stream is blocking too, so if we dispose XmlReader Read
+            // will throw (eg: Reset parser state to receive stream:stream
+            // again), just supress this exception.
+            if (_disposed)
+                return false;
+
+            throw;
+        }
+
+        // at this point enough XML tokens was processed and may not throw.
 
         switch (_reader.NodeType)
         {
@@ -160,9 +148,8 @@ public class XmppStreamReader : XmppParser, IXmppStreamProcessor
         }
 
         if (!_leaveOpen)
-        {
             _baseStream?.Dispose();
-            _baseStream = null;
-        }
+
+        _baseStream = null;
     }
 }
