@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageId>XmppSharp.Tokenizer</PackageId>
+		<PackageVersion>$(XmppSharpTokenizerVersion)</PackageVersion>
+		<PackageTags>xmpp, xmpp client, xmpp server, xmpp component, jabber, xml</PackageTags>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<PackageOutputPath>$(SolutionDir)Packages</PackageOutputPath>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<Authors>nathan130200</Authors>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<DebugType>portable</DebugType>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Release'">
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\LICENSE">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+			<Visible>false</Visible>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Include="..\XmppSharp\ThrowHelper.cs" />
+		<Compile Include="..\XmppSharp\Namespaces.cs" />
+		<Compile Include="..\XmppSharp\Collections\XmppName.cs" LinkBase="Collections" />
+		<Compile Include="..\XmppSharp\Utilities\NamespaceStack.cs" LinkBase="Utilities" />
+	</ItemGroup>
+
+</Project>

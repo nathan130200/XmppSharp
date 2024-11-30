@@ -3,7 +3,11 @@ Lightweight XMPP library.
 
 [![nuget](https://img.shields.io/badge/XmppSharp-1?style=plastic&logo=nuget&label=NuGet&color=blue)](https://www.nuget.org/packages/XmppSharp/)
 
-<hr/>
+[![nuget-expat](https://img.shields.io/badge/XmppSharp.Expat-1?style=plastic&logo=nuget&label=NuGet&color=green)](https://www.nuget.org/packages/XmppSharp.Expat/)
+
+[![nuget-tokenizer](https://img.shields.io/badge/XmppSharp.Tokenizer-1?style=plastic&logo=nuget&label=NuGet&color=orange)](https://www.nuget.org/packages/XmppSharp.Tokenizer/)
+
+____
 
 #### Supported features
 
@@ -19,7 +23,7 @@ Lightweight XMPP library.
 - [XEP-0202](https://xmpp.org/extensions/xep-0202.html) - Entity Time
 - [XEP-0203](https://xmpp.org/extensions/xep-0203.html) - Delayed Delivery
 
-<hr/>
+____
 
 #### Parsing
 The lib uses `XmlReader` as a base to read and tokenize the XML stream for the XMPP protocol. It can control and maintain the XML state in a stable and secure way.
@@ -39,9 +43,9 @@ Consider the example table below demonstrating how this mapping works:
 
 | Qualified Tag Name | Namespace(s) | Mapped Class |
 | ------------------ | ------------ | ------------ |
-iq|*see below*|XmppSharp.Protocol.Iq
-message|*see below*|XmppSharp.Protocol.Iq
-presence|*see below*|XmppSharp.Protocol.Iq
+iq|*see below*|XmppSharp.Protocol.Core.Iq
+message|*see below*|XmppSharp.Protocol.Core.Message
+presence|*see below*|XmppSharp.Protocol.Core.Presence
 error|*see below*|XmppSharp.Protocol.Base.StanzaError
 starttls|urn:ietf:params:xml:ns:xmpp-tls|XmppSharp.Protocol.Tls.StartTls
 success|urn:ietf:params:xml:ns:xmpp-sasl|XmppSharp.Protocol.Sasl.Success
@@ -66,3 +70,8 @@ public class Bind : Element
     }
 }
 ```
+
+____
+
+Notes:
+- We introduced again XMPP# tokenizer package as separated package for handling chunked xmpp bytes.
