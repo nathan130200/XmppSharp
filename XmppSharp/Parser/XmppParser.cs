@@ -26,7 +26,7 @@ public abstract class XmppParser : IDisposable
         if (!_disposed)
         {
             _disposed = true;
-            DisposeCore();
+            Disposing();
         }
 
         GC.SuppressFinalize(this);
@@ -35,7 +35,7 @@ public abstract class XmppParser : IDisposable
     /// <summary>
     /// Helper function to free resources allocated by the parser implementation.
     /// </summary>
-    protected virtual void DisposeCore()
+    protected virtual void Disposing()
     {
 
     }

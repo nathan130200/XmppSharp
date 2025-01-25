@@ -1,4 +1,6 @@
-﻿namespace XmppSharp.XpNet;
+﻿#nullable enable annotations
+
+namespace XmppSharp.XpNet;
 
 public sealed class BufferAggregate : IDisposable
 {

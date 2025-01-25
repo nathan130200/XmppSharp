@@ -7,7 +7,7 @@ namespace XmppSharp.Parser;
 /// <summary>
 /// XMPP parser implementation based on .NET's <see cref="XmlReader" />.
 /// </summary>
-public class XmppStreamReader : XmppParser, IXmppStreamProcessor
+public class XmppStreamReader : XmppParser
 {
     private Stream? _baseStream;
     private readonly bool _leaveOpen;
@@ -135,7 +135,7 @@ public class XmppStreamReader : XmppParser, IXmppStreamProcessor
         return true;
     }
 
-    protected override void DisposeCore()
+    protected override void Disposing()
     {
         try
         {

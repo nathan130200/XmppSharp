@@ -1,4 +1,6 @@
-﻿using XmppSharp.Expat;
+﻿#nullable enable annotations
+
+using Expat;
 
 namespace XmppSharp;
 
@@ -14,9 +16,9 @@ public class ExpatParsingTests
             commentContent = default,
             cdataContent = null;
 
-        using (var parser = new ExpatParser())
+        using var parser = new ExpatParser();
         {
-            parser.OnStartTag += (name, attrs) =>
+            parser.OnStartElement += (name, attrs) =>
             {
                 Console.WriteLine("tag name: " + name);
                 Console.WriteLine("attr count: " + attrs.Count);
@@ -48,7 +50,7 @@ public class ExpatParsingTests
 
             var xml = "<foo xmlns='bar'>my text<![CDATA[my cdata]]><!--my comment--></foo>".GetBytes();
 
-            parser.Write(xml, xml.Length);
+            parser.Parse(xml, xml.Length);
         }
 
         Assert.AreEqual("foo", tagName);

@@ -1,5 +1,6 @@
-﻿using XmppSharp.Dom;
-using XmppSharp.Expat;
+﻿using Expat;
+using XmppSharp.Collections;
+using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Utilities;
 
@@ -8,7 +9,7 @@ namespace XmppSharp.Parser;
 /// <summary>
 /// XMPP parser implementation based on <see cref="ExpatParser"/>.
 /// </summary>
-public class ExpatXmppParser : XmppParser, IXmppChunkedParser
+public class ExpatXmppParser : XmppParser
 {
     private ExpatParser _xmlParser;
     private Element? _current;
@@ -17,24 +18,28 @@ public class ExpatXmppParser : XmppParser, IXmppChunkedParser
 
     public ExpatParser XmlParser => _xmlParser;
 
-    public ExpatXmppParser(ExpatEncoding encoding)
+    public ExpatXmppParser(ExpatEncoding encoding, bool strict = true)
     {
-        _namespaces = new NamespaceStack();
-        _xmlParser = new ExpatParser(encoding);
+        _xmlParser = new ExpatParser(encoding, strict);
 
-        _xmlParser.OnStartTag += (name, attrs) =>
+        _xmlParser.OnStartElement += (name, attrs) =>
         {
             _namespaces.PushScope();
+
+            XmppName tagName = name;
 
             foreach (var (key, value) in attrs)
             {
                 if (key == "xmlns")
                     _namespaces.AddNamespace(string.Empty, value);
-                else if (key.Prefix == "xmlns")
-                    _namespaces.AddNamespace(key.LocalName, value);
+                else if (key.StartsWith("xmlns:"))
+                {
+                    var prefix = key[key.IndexOf(':')..];
+                    _namespaces.AddNamespace(prefix, value);
+                }
             }
 
-            var element = ElementFactory.CreateElement(name, _namespaces.LookupNamespace(name.Prefix), _current);
+            var element = ElementFactory.CreateElement(tagName, _namespaces.LookupNamespace(tagName.Prefix), _current);
 
             foreach (var (key, value) in attrs)
                 element.SetAttribute(key, value);
@@ -59,7 +64,7 @@ public class ExpatXmppParser : XmppParser, IXmppChunkedParser
             }
         };
 
-        _xmlParser.OnEndTag += name =>
+        _xmlParser.OnEndElement += name =>
         {
             if (name == "stream:stream")
             {
@@ -87,7 +92,7 @@ public class ExpatXmppParser : XmppParser, IXmppChunkedParser
         _xmlParser.OnCdata += value => _current?.AddChild(new Cdata(value));
     }
 
-    protected override void DisposeCore()
+    protected override void Disposing()
     {
         _namespaces?.Reset();
         _namespaces = null;
@@ -96,20 +101,23 @@ public class ExpatXmppParser : XmppParser, IXmppChunkedParser
         _xmlParser = null;
     }
 
-    public void Reset()
+    public void Reset(bool resetParser = false)
     {
         ThrowIfDisposed();
         _current = null;
         _namespaces.Reset();
         _isStreamOpen = false;
+
+        if (resetParser)
+            _xmlParser.Reset();
     }
 
-    public void Write(byte[] buffer, int length, bool isFinal = false, bool throwOnError = true)
+    public bool TryParse(byte[] buffer, int length, out ExpatParserError error, bool isFinalBlock = false)
+        => _xmlParser.TryParse(buffer, length, out error, isFinalBlock);
+
+    public void Parse(byte[] buffer, int length, bool isFinalBlock = false)
     {
         ThrowIfDisposed();
-        _xmlParser.Write(buffer, length, isFinal, throwOnError);
+        _xmlParser.Parse(buffer, length, isFinalBlock);
     }
-
-    void IXmppChunkedParser.Write(byte[] buffer, int length)
-        => Write(buffer, length, false);
 }

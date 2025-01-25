@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using Expat;
+using System.Collections.Concurrent;
 using System.Data;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -7,7 +8,6 @@ using System.Text;
 using XmppSharp;
 using XmppSharp.Collections;
 using XmppSharp.Dom;
-using XmppSharp.Expat;
 using XmppSharp.Parser;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Core;
@@ -121,7 +121,7 @@ public sealed class Connection : IDisposable
                 if (len <= 0)
                     break;
 
-                _parser!.Write(buf, len);
+                _parser!.Parse(buf, len);
             }
         }
         catch (Exception ex)

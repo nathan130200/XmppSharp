@@ -10,14 +10,7 @@
 		<Description>Lightweight XMPP library.</Description>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<TargetFrameworks>net6.0;net8.0</TargetFrameworks>
-	</PropertyGroup>
 
-	<ItemGroup Condition="'$(Configuration)' == 'Release'">
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-	</ItemGroup>
-
-	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageId>XmppSharp</PackageId>
 		<PackageVersion>$(XmppSharpVersion)</PackageVersion>
 		<PackageTags>xmpp, xmpp client, xmpp server, xmpp component, jabber, xml</PackageTags>
@@ -28,6 +21,14 @@
 		<Authors>nathan130200</Authors>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Release'">
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+	</ItemGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	</PropertyGroup>
 
 	<ItemGroup>
