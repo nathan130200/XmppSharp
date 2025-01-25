@@ -12,10 +12,4 @@
 		<ProjectReference Include="..\..\XmppSharp\XmppSharp.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <None Update="libexpat.dll">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
-	</ItemGroup>
-
 </Project>

@@ -25,11 +25,10 @@ public sealed class Connection : IDisposable
     private Stream? _stream;
     private ExpatXmppParser? _parser;
     public Jid Jid { get; private set; }
-    private volatile bool _disposed;
+    private volatile byte _disposed;
     private volatile FileAccess _access;
     private readonly ConcurrentQueue<(string? xml, byte[] buffer)> _writeQueue = [];
     private X509Certificate2? _cert;
-    private CancellationTokenSource? _cts = new();
     public bool IsAuthenticated { get; private set; }
     private Task? _receiveTask;
     private Task? _sendTask;
@@ -45,37 +44,30 @@ public sealed class Connection : IDisposable
         _parser.OnStreamElement += OnStreamElement;
     }
 
-    internal Task Initialize()
+    internal async Task StartAsync()
     {
-        var tcs = new TaskCompletionSource();
-        _cts!.Token.Register(() => tcs.TrySetResult());
+        _access = FileAccess.ReadWrite;
         Reset();
-        return tcs.Task;
+        await Task.WhenAll(BeginReceive(), BeginSend());
     }
 
     void Reset()
     {
-        if (_cts == null || _cts.IsCancellationRequested)
+        if (_disposed > 0)
             return;
 
         _parser?.Reset();
         _access = FileAccess.ReadWrite;
-
-        if (_receiveTask == null || _receiveTask.IsCompleted)
-            _receiveTask = Task.Run(BeginReceive, _cts.Token);
-
-        if (_sendTask == null || _sendTask.IsCompleted)
-            _sendTask = Task.Run(BeginSend, _cts.Token);
     }
 
     async Task BeginSend()
     {
         try
         {
-            while (_access.HasFlag(FileAccess.Write))
+            while (_disposed < 2)
             {
-                if (_cts == null || _cts.IsCancellationRequested)
-                    break;
+                if (!_access.HasFlag(FileAccess.Write))
+                    continue;
 
                 await Task.Delay(1);
 
@@ -93,9 +85,7 @@ public sealed class Connection : IDisposable
         }
         catch (Exception ex)
         {
-            if (ex is not IOException)
-                Console.WriteLine(ex);
-
+            Console.WriteLine(ex);
             _access &= ~FileAccess.Write;
             _writeQueue.Clear();
 
@@ -109,36 +99,36 @@ public sealed class Connection : IDisposable
 
         try
         {
-            while (_access.HasFlag(FileAccess.Read))
+            while (_disposed < 1)
             {
                 await Task.Delay(1);
 
-                if (_cts == null || _cts.IsCancellationRequested)
-                    break;
+                if (!_access.HasFlag(FileAccess.Read))
+                    continue;
 
                 var len = await _stream!.ReadAsync(buf);
 
                 if (len <= 0)
                     break;
 
+                Console.WriteLine("push to parser {0} byte(s)", len);
+
                 _parser!.Parse(buf, len);
             }
         }
         catch (Exception ex)
         {
-            if (ex is not IOException)
-                Console.WriteLine(ex);
-
+            Console.WriteLine(ex);
             Dispose();
         }
     }
 
     public void Dispose()
     {
-        if (_disposed)
+        if (_disposed > 0)
             return;
 
-        _disposed = true;
+        _disposed++;
         _access &= ~FileAccess.Read;
         _socket?.Shutdown(SocketShutdown.Receive);
 
@@ -150,6 +140,7 @@ public sealed class Connection : IDisposable
         _ = Task.Delay(_writeQueue.IsEmpty ? 160 : 500)
             .ContinueWith(_ =>
             {
+                _disposed++;
                 _access &= ~FileAccess.Write;
 
                 _stream?.Dispose();
@@ -157,10 +148,6 @@ public sealed class Connection : IDisposable
 
                 _cert?.Dispose();
                 _cert = null;
-
-                _cts?.Cancel();
-                _cts?.Dispose();
-                _cts = null;
 
                 _socket?.Dispose();
                 _socket = null;
@@ -182,8 +169,6 @@ public sealed class Connection : IDisposable
 
         e.From = Server.Hostname;
         e.GenerateId(IdGenerator.Timestamp);
-        e.SwitchDirection();
-
         Send(e.StartTag());
 
         var features = new StreamFeatures();
@@ -219,11 +204,11 @@ public sealed class Connection : IDisposable
 
     public void Disconnect(Element e)
     {
-        if (!_disposed)
-        {
-            Send(e);
-            Dispose();
-        }
+        if (!(_disposed < 2))
+            return;
+
+        Send(e);
+        Dispose();
     }
 
     void OnStreamElement(Element e)

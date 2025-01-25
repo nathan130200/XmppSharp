@@ -19,6 +19,8 @@ public class ExpatXmppParser : XmppParser
 
     public ExpatXmppParser(ExpatEncoding encoding, bool strict = true)
     {
+        _namespaces = new();
+
         _xmlParser = new ExpatParser(encoding, strict);
 
         _xmlParser.OnStartElement += (name, attrs) =>
@@ -29,13 +31,12 @@ public class ExpatXmppParser : XmppParser
 
             foreach (var (key, value) in attrs)
             {
-                if (key == "xmlns")
+                XmppName attrName = key;
+
+                if (attrName == "xmlns")
                     _namespaces.AddNamespace(string.Empty, value);
-                else if (key.StartsWith("xmlns:"))
-                {
-                    var prefix = key[key.IndexOf(':')..];
-                    _namespaces.AddNamespace(prefix, value);
-                }
+                else if (attrName.Prefix == "xmlns")
+                    _namespaces.AddNamespace(attrName.LocalName, value);
             }
 
             var element = ElementFactory.CreateElement(tagName, _namespaces.LookupNamespace(tagName.Prefix), _current);
@@ -53,13 +54,8 @@ public class ExpatXmppParser : XmppParser
             }
             else
             {
-                if (_current == null)
-                    _current = element;
-                else
-                {
-                    _current.AddChild(element);
-                    _current = element;
-                }
+                _current?.AddChild(element);
+                _current = element;
             }
         };
 
@@ -100,15 +96,12 @@ public class ExpatXmppParser : XmppParser
         _xmlParser = null;
     }
 
-    public void Reset(bool resetParser = false)
+    public void Reset()
     {
         ThrowIfDisposed();
         _current = null;
         _namespaces.Reset();
         _isStreamOpen = false;
-
-        if (resetParser)
-            _xmlParser.Reset();
     }
 
     public bool TryParse(byte[] buffer, int length, out ExpatParserError error, bool isFinalBlock = false)

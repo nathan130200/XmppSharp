@@ -85,9 +85,11 @@ public static class Server
         lock (s_Connections)
             s_Connections.Add(connection);
 
+        Console.WriteLine("client connected: " + s.RemoteEndPoint);
+
         try
         {
-            await connection.Initialize();
+            await connection.StartAsync();
         }
         catch (Exception ex)
         {
@@ -96,5 +98,7 @@ public static class Server
 
         lock (s_Connections)
             s_Connections.Remove(connection);
+
+        Console.WriteLine("client disconnected: " + s.RemoteEndPoint);
     }
 }
