@@ -2,7 +2,6 @@
 using XmppSharp.Collections;
 using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
-using XmppSharp.Utilities;
 
 namespace XmppSharp.Parser;
 

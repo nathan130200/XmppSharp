@@ -40,11 +40,6 @@
 		</None>
 	</ItemGroup>
 
-	<ItemGroup>
-		<Compile Include="..\XmppSharp\ThrowHelper.cs" />
-		<Compile Include="..\XmppSharp\Namespaces.cs" />
-		<Compile Include="..\XmppSharp\Collections\XmppName.cs" LinkBase="Collections" />
-		<Compile Include="..\XmppSharp\Utilities\NamespaceStack.cs" LinkBase="Utilities" />
-	</ItemGroup>
+	<Import Project="..\XmppSharp.Shared\XmppSharp.Shared.projitems" Label="Shared" />
 
 </Project>

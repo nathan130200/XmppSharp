@@ -2,7 +2,6 @@
 using System.Text;
 using System.Xml;
 using XmppSharp.Collections;
-using XmppSharp.Utilities;
 using XmppSharp.XpNet;
 using TOK = XmppSharp.XpNet.TokenType;
 

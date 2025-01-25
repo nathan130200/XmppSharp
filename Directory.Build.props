@@ -1,11 +1,11 @@
 <Project>
 	<PropertyGroup>
-		<XmppSharpVersion>5.0.2</XmppSharpVersion>
+		<XmppSharpVersion>5.1.0</XmppSharpVersion>
 		<XmppSharpExpatVersion>3.0.0</XmppSharpExpatVersion>
-		<XmppSharpTokenizerVersion>2.0</XmppSharpTokenizerVersion>
+		<XmppSharpTokenizerVersion>2.1.0</XmppSharpTokenizerVersion>
 	</PropertyGroup>
 	
 	<PropertyGroup>
-		<NoWarn>CS1591;IDE0290;IDE0305;CA1513;IDE0130;IDE0330;IDE0028;CA1859;IDE0301;IDE00444;IDE0079;CA1401;CA2101</NoWarn>
+		<NoWarn>CS8632;CS1591;IDE0290;IDE0305;CA1513;IDE0130;IDE0330;IDE0028;CA1859;IDE0301;IDE00444;IDE0079;CA1401;CA2101</NoWarn>
 	</PropertyGroup>
 </Project>

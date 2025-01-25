@@ -45,4 +45,6 @@
 		</None>
 	</ItemGroup>
 
+	<Import Project="..\XmppSharp.Shared\XmppSharp.Shared.projitems" Label="Shared" />
+
 </Project>

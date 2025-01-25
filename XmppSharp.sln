@@ -22,6 +22,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "XmppSharp.Shared", "XmppSharp.Shared\XmppSharp.Shared.shproj", "{17A76AD2-A335-492D-9C46-F3CA18C57FEB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -54,5 +56,13 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{21428C8E-6A14-44C9-B1E2-8F8937B126D4} = {1AB3B21B-C9BF-4C82-87CC-536DBB2E81F4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D3A7843F-5A53-4FFB-B341-7AFF34BDFFAC}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		XmppSharp.Shared\XmppSharp.Shared.projitems*{17a76ad2-a335-492d-9c46-f3ca18c57feb}*SharedItemsImports = 13
+		XmppSharp.Shared\XmppSharp.Shared.projitems*{35185376-fd6c-491f-9cb9-02b70508ea49}*SharedItemsImports = 5
+		XmppSharp.Shared\XmppSharp.Shared.projitems*{e2dd206f-bf4c-4964-a9b3-f4471b0209b6}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

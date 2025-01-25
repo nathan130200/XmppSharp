@@ -4,6 +4,9 @@ using Expat;
 
 namespace XmppSharp;
 
+// Pra ser sincero esse codigo nem deveria estar aqui mais, afinal
+// a lib Expat.Net já tem testes também (que estão passando).
+
 [TestClass]
 public class ExpatParsingTests
 {

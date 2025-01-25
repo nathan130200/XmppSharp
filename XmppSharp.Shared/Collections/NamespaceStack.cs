@@ -1,4 +1,4 @@
-﻿namespace XmppSharp.Utilities;
+﻿namespace XmppSharp.Collections;
 
 public class NamespaceStack
 {
