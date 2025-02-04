@@ -144,23 +144,18 @@ public static class XmppElementFactory
     {
         ThrowHelper.ThrowIfNullOrWhiteSpace(tagName);
 
-        XmppElement? result = null;
-
         var type = ResolveType(tagName, namespaceURI);
 
         if (type is not null)
         {
-            if (Activator.CreateInstance(type) is XmppElement elem)
-                result = elem;
+            if (Activator.CreateInstance(type) is XmppElement self)
+                return self;
         }
 
-        if (result is null)
-        {
-            result = TryResolveElement(tagName, namespaceURI, context);
+        var result = TryResolveElement(tagName, namespaceURI, context);
 
-            if (result != null)
-                return result;
-        }
+        if (result != null)
+            return result;
 
         if (result == null)
             result = new XmppElement(tagName, namespaceURI);

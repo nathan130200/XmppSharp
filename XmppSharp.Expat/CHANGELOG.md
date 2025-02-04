@@ -1,2 +1,0 @@
-# Xmpp Sharp: Expat
-This package implements the expat parser in [Xmpp Sharp](https://github.com/nathan130200/XmppSharp) library using [Expat.Net](https://www.nuget.org/packages/Expat.Net/) bindings wrapper.
