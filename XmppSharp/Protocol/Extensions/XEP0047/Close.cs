@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0047;
 
 [XmppTag("close", Namespaces.Ibb)]
-public class Close : Element
+public class Close : XmppElement
 {
     public Close() : base("close", Namespaces.Ibb)
     {

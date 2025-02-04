@@ -7,13 +7,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmppSharp", "XmppSharp\Xmpp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmppSharp.Test", "XmppSharp.Test\XmppSharp.Test.csproj", "{2097B849-7974-4E17-AD3C-C3237E7E2B02}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmppSharp.Expat", "XmppSharp.Expat\XmppSharp.Expat.csproj", "{4FB37BEB-BFF1-442B-98F5-904DDAA9EA49}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{1AB3B21B-C9BF-4C82-87CC-536DBB2E81F4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleServer", "Samples\SimpleServer\SimpleServer.csproj", "{21428C8E-6A14-44C9-B1E2-8F8937B126D4}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmppSharp.Tokenizer", "XmppSharp.Tokenizer\XmppSharp.Tokenizer.csproj", "{E2DD206F-BF4C-4964-A9B3-F4471B0209B6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{AF696287-7BD0-4B2E-AC35-59FE569A1C0A}"
 	ProjectSection(SolutionItems) = preProject
@@ -21,8 +17,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution 
 		LICENSE = LICENSE
 		README.md = README.md
 	EndProjectSection
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "XmppSharp.Shared", "XmppSharp.Shared\XmppSharp.Shared.shproj", "{17A76AD2-A335-492D-9C46-F3CA18C57FEB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,18 +32,10 @@ Global
 		{2097B849-7974-4E17-AD3C-C3237E7E2B02}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2097B849-7974-4E17-AD3C-C3237E7E2B02}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2097B849-7974-4E17-AD3C-C3237E7E2B02}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4FB37BEB-BFF1-442B-98F5-904DDAA9EA49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4FB37BEB-BFF1-442B-98F5-904DDAA9EA49}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4FB37BEB-BFF1-442B-98F5-904DDAA9EA49}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4FB37BEB-BFF1-442B-98F5-904DDAA9EA49}.Release|Any CPU.Build.0 = Release|Any CPU
 		{21428C8E-6A14-44C9-B1E2-8F8937B126D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{21428C8E-6A14-44C9-B1E2-8F8937B126D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{21428C8E-6A14-44C9-B1E2-8F8937B126D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{21428C8E-6A14-44C9-B1E2-8F8937B126D4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E2DD206F-BF4C-4964-A9B3-F4471B0209B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E2DD206F-BF4C-4964-A9B3-F4471B0209B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E2DD206F-BF4C-4964-A9B3-F4471B0209B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E2DD206F-BF4C-4964-A9B3-F4471B0209B6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -59,10 +45,5 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D3A7843F-5A53-4FFB-B341-7AFF34BDFFAC}
-	EndGlobalSection
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		XmppSharp.Shared\XmppSharp.Shared.projitems*{17a76ad2-a335-492d-9c46-f3ca18c57feb}*SharedItemsImports = 13
-		XmppSharp.Shared\XmppSharp.Shared.projitems*{35185376-fd6c-491f-9cb9-02b70508ea49}*SharedItemsImports = 5
-		XmppSharp.Shared\XmppSharp.Shared.projitems*{e2dd206f-bf4c-4964-a9b3-f4471b0209b6}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

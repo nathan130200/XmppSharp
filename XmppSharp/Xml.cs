@@ -78,80 +78,80 @@ public static class Xml
         return source;
     }
 
-    public static bool FindChild(this Element parent, string tagName, string? namespaceURI, [NotNullWhen(true)] out Element? result)
+    public static bool FindChild(this XmppElement parent, string tagName, string? namespaceURI, [NotNullWhen(true)] out XmppElement? result)
     {
         ThrowHelper.ThrowIfNull(parent);
         ThrowHelper.ThrowIfNullOrWhiteSpace(tagName);
 
-        result = parent.Child(tagName, namespaceURI);
+        result = parent.Element(tagName, namespaceURI);
 
         return result != null;
     }
 
-    public static bool FindChild(this Element parent, string tagName, [NotNullWhen(true)] out Element? result)
+    public static bool FindChild(this XmppElement parent, string tagName, [NotNullWhen(true)] out XmppElement? result)
     {
         ThrowHelper.ThrowIfNull(parent);
         ThrowHelper.ThrowIfNullOrWhiteSpace(tagName);
 
-        result = parent.Child(tagName);
+        result = parent.Element(tagName);
 
         return result != null;
     }
 
-    public static Element? Child(this Element parent, Func<Element, bool> predicate)
+    public static XmppElement? Child(this XmppElement parent, Func<XmppElement, bool> predicate)
     {
         ThrowHelper.ThrowIfNull(parent);
         ThrowHelper.ThrowIfNull(predicate);
-        return parent.Children().FirstOrDefault(predicate);
+        return parent.Elements().FirstOrDefault(predicate);
     }
 
-    public static IEnumerable<Element> Children(this Element parent, Func<Element, bool> predicate)
+    public static IEnumerable<XmppElement> Elements(this XmppElement parent, Func<XmppElement, bool> predicate)
     {
         ThrowHelper.ThrowIfNull(parent);
         ThrowHelper.ThrowIfNull(predicate);
-        return parent.Children().Where(predicate);
+        return parent.Elements().Where(predicate);
     }
 
-    public static Element C(this Element parent, string tagName, string? namespaceURI = default, object? value = default)
+    public static XmppElement C(this XmppElement parent, string tagName, string? namespaceURI = default, object? value = default)
     {
         ThrowHelper.ThrowIfNull(parent);
 
-        var child = ElementFactory.CreateElement(tagName, namespaceURI, parent);
+        var child = XmppElementFactory.Create(tagName, namespaceURI, parent);
         child.SetValue(value);
         parent.AddChild(child);
         return child;
     }
 
-    public static Element? Up(this Element child)
+    public static XmppElement? Up(this XmppElement child)
     {
         ThrowHelper.ThrowIfNull(child);
         return child.Parent;
     }
 
-    public static XmlWriter CreateWriter(TextWriter textWriter, XmlFormatting formatting, Encoding? encoding = default)
+    public static XmlWriter CreateWriter(TextWriter textWriter, XmppFormatting formatting, Encoding? encoding = default)
     {
-        var isFragment = formatting.HasFlag(XmlFormatting.OmitXmlDeclaration);
+        var isFragment = formatting.HasFlag(XmppFormatting.OmitXmlDeclaration);
 
         return XmlWriter.Create(textWriter, new XmlWriterSettings()
         {
-            Indent = formatting.HasFlag(XmlFormatting.Indented),
+            Indent = formatting.HasFlag(XmppFormatting.Indented),
             IndentChars = IndentChars,
             ConformanceLevel = isFragment ? ConformanceLevel.Fragment : ConformanceLevel.Document,
             CloseOutput = false,
             Encoding = encoding ?? Encoding.UTF8,
-            NamespaceHandling = formatting.HasFlag(XmlFormatting.OmitDuplicatedNamespaces)
+            NamespaceHandling = formatting.HasFlag(XmppFormatting.OmitDuplicatedNamespaces)
                 ? NamespaceHandling.OmitDuplicates
                 : NamespaceHandling.Default,
 
-            OmitXmlDeclaration = formatting.HasFlag(XmlFormatting.OmitXmlDeclaration),
+            OmitXmlDeclaration = formatting.HasFlag(XmppFormatting.OmitXmlDeclaration),
             NewLineChars = NewLineChars,
-            NewLineOnAttributes = formatting.HasFlag(XmlFormatting.NewLineOnAttributes),
-            DoNotEscapeUriAttributes = formatting.HasFlag(XmlFormatting.DoNotEscapeUriAttributes),
-            CheckCharacters = formatting.HasFlag(XmlFormatting.CheckCharacters),
+            NewLineOnAttributes = formatting.HasFlag(XmppFormatting.NewLineOnAttributes),
+            DoNotEscapeUriAttributes = formatting.HasFlag(XmppFormatting.DoNotEscapeUriAttributes),
+            CheckCharacters = formatting.HasFlag(XmppFormatting.CheckCharacters),
         });
     }
 
-    public static void Remove(this IEnumerable<Element?> e)
+    public static void Remove(this IEnumerable<XmppElement?> e)
     {
         if (e.Any())
         {
@@ -160,7 +160,7 @@ public static class Xml
         }
     }
 
-    public static void WriteTree(Element e, XmlWriter xw)
+    public static void WriteTree(XmppElement e, XmlWriter xw)
     {
         var skipAttribute = e.Prefix == null ? "xmlns" : $"xmlns:{e.Prefix}";
         xw.WriteStartElement(e.Prefix, e.LocalName, e.Namespace);
@@ -187,13 +187,13 @@ public static class Xml
 
         foreach (var node in e.Nodes())
         {
-            if (node is Element child)
+            if (node is XmppElement child)
                 WriteTree(child, xw);
-            else if (node is Text text)
+            else if (node is XmppText text)
                 xw.WriteValue(text.Value);
-            else if (node is Comment comment)
+            else if (node is XmppComment comment)
                 xw.WriteComment(comment.Value);
-            else if (node is Cdata cdata)
+            else if (node is XmppCdata cdata)
                 xw.WriteCData(cdata.Value);
         }
 

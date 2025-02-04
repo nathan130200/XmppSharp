@@ -37,20 +37,20 @@ public abstract class Stanza : DirectionalElement
 
     public StanzaError? Error
     {
-        get => Child<StanzaError>();
+        get => Element<StanzaError>();
         set
         {
-            Child<StanzaError>()?.Remove();
+            Element<StanzaError>()?.Remove();
             AddChild(value);
         }
     }
 
     public Delay? Delay
     {
-        get => Child<Delay>();
+        get => Element<Delay>();
         set
         {
-            Child<Delay>()?.Remove();
+            Element<Delay>()?.Remove();
             AddChild(value);
         }
     }

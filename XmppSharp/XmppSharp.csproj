@@ -45,6 +45,8 @@
 		</None>
 	</ItemGroup>
 
-	<Import Project="..\XmppSharp.Shared\XmppSharp.Shared.projitems" Label="Shared" />
+	<ItemGroup>
+	  <PackageReference Include="Expat.Net" Version="1.0.1" />
+	</ItemGroup>
 
 </Project>

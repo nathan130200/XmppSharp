@@ -4,7 +4,7 @@ using XmppSharp.Protocol.Core.Tls;
 
 namespace XmppSharp.Protocol.Base;
 
-public class StreamFeatures : Element
+public class StreamFeatures : XmppElement
 {
     public StreamFeatures(StreamFeatures other) : base(other)
     {
@@ -18,20 +18,20 @@ public class StreamFeatures : Element
 
     public StartTls? StartTls
     {
-        get => Child<StartTls>();
+        get => Element<StartTls>();
         set
         {
-            Child<StartTls>()?.Remove();
+            Element<StartTls>()?.Remove();
             AddChild(value);
         }
     }
 
     public Mechanisms? Mechanisms
     {
-        get => Child<Mechanisms>();
+        get => Element<Mechanisms>();
         set
         {
-            Child<Mechanisms>()?.Remove();
+            Element<Mechanisms>()?.Remove();
             AddChild(value);
         }
     }
@@ -44,13 +44,7 @@ public class StreamFeatures : Element
             RemoveTag("bind", Namespaces.Bind);
 
             if (value)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "bind";
-                    x.Namespace = Namespaces.Bind;
-                });
-            }
+                SetTag("bind", Namespaces.Bind);
         }
     }
 
@@ -62,13 +56,7 @@ public class StreamFeatures : Element
             RemoveTag("session", Namespaces.Session);
 
             if (value)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "session";
-                    x.Namespace = Namespaces.Session;
-                });
-            }
+                SetTag("session", Namespaces.Session);
         }
     }
 }

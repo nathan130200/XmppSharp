@@ -20,7 +20,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\XmppSharp.Expat\XmppSharp.Expat.csproj" />
 		<ProjectReference Include="..\XmppSharp\XmppSharp.csproj" />
 	</ItemGroup>
 

@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [XmppTag("x", Namespaces.MucUser)]
-public class MucUser : Element
+public class MucUser : XmppElement
 {
     public MucUser() : base("x", Namespaces.MucUser)
     {
@@ -13,30 +13,30 @@ public class MucUser : Element
 
     public Decline? Decline
     {
-        get => Child<Decline>();
+        get => Element<Decline>();
         set
         {
-            Child<Decline>()?.Remove();
+            Element<Decline>()?.Remove();
             AddChild(value);
         }
     }
 
     public Destroy? Destroy
     {
-        get => Child<Destroy>();
+        get => Element<Destroy>();
         set
         {
-            Child<Destroy>()?.Remove();
+            Element<Destroy>()?.Remove();
             AddChild(value);
         }
     }
 
     public IEnumerable<Invite> Invites
     {
-        get => Children<Invite>();
+        get => Elements<Invite>();
         set
         {
-            Children<Invite>().Remove();
+            Elements<Invite>().Remove();
 
             foreach (var item in value)
                 AddChild(item);
@@ -45,10 +45,10 @@ public class MucUser : Element
 
     public Item? Item
     {
-        get => Child<Item>();
+        get => Element<Item>();
         set
         {
-            Child<Item>()?.Remove();
+            Element<Item>()?.Remove();
             AddChild(value);
         }
     }
@@ -61,22 +61,16 @@ public class MucUser : Element
             RemoveTag("password");
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "password";
-                    x.Value = value;
-                });
-            }
+                SetTag("password", value: value);
         }
     }
 
     public IEnumerable<Status> Statuses
     {
-        get => Children<Status>();
+        get => Elements<Status>();
         set
         {
-            Children<Status>().Remove();
+            Elements<Status>().Remove();
 
             if (value?.Any() == true)
             {

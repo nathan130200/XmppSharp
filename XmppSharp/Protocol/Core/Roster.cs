@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Core;
 
 [XmppTag("query", Namespaces.IqRoster)]
-public class Roster : Element
+public class Roster : XmppElement
 {
     public Roster() : base("query", Namespaces.IqRoster)
     {
@@ -13,10 +13,10 @@ public class Roster : Element
 
     public IEnumerable<RosterItem> Items
     {
-        get => Children<RosterItem>();
+        get => Elements<RosterItem>();
         set
         {
-            Children<RosterItem>().Remove();
+            Elements<RosterItem>().Remove();
 
             foreach (var item in value)
                 AddChild(item);

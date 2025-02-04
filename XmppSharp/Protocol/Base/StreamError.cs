@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Base;
 
 [XmppTag("stream:error", Namespaces.Stream)]
-public class StreamError : Element
+public class StreamError : XmppElement
 {
     public StreamError() : base("stream:error", Namespaces.Stream)
     {
@@ -36,7 +36,7 @@ public class StreamError : Element
             if (value.HasValue)
             {
                 var name = XmppEnum.ToXml((StreamErrorCondition)value)!;
-                SetTag(x => x.TagName = name);
+                SetTag(name);
             }
         }
     }
@@ -49,14 +49,7 @@ public class StreamError : Element
             RemoveTag("text", Namespaces.Streams);
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "text";
-                    x.Namespace = Namespaces.Streams;
-                    x.Value = value;
-                });
-            }
+                SetTag("text", Namespaces.Streams, value);
         }
     }
 }

@@ -3,7 +3,7 @@
 namespace XmppSharp.Dom;
 
 [DebuggerDisplay("Text: {Value,nq}")]
-public class Text : Node
+public class XmppText : XmppNode
 {
     public string? Value
     {
@@ -11,12 +11,12 @@ public class Text : Node
         set;
     }
 
-    public Text()
+    public XmppText()
     {
 
     }
 
-    public Text(string? value)
+    public XmppText(string? value)
     {
         Value = value;
     }
@@ -24,14 +24,14 @@ public class Text : Node
     public override string ToString()
         => Value ?? string.Empty;
 
-    public override Node Clone()
-        => new Text(Value);
+    public override XmppNode Clone()
+        => new XmppText(Value);
 }
 
 // ---------------------------------------------------- //
 
 [DebuggerDisplay("Comment: {Value,nq}")]
-public class Comment : Node
+public class XmppComment : XmppNode
 {
     public string? Value
     {
@@ -39,12 +39,12 @@ public class Comment : Node
         set;
     }
 
-    public Comment()
+    public XmppComment()
     {
 
     }
 
-    public Comment(string? value)
+    public XmppComment(string? value)
     {
         Value = value;
     }
@@ -52,14 +52,14 @@ public class Comment : Node
     public override string ToString()
         => $"<!--{Value}-->";
 
-    public override Node Clone()
-        => new Comment(Value);
+    public override XmppNode Clone()
+        => new XmppComment(Value);
 }
 
 // ---------------------------------------------------- //
 
 [DebuggerDisplay("Cdata: {Value,nq}")]
-public class Cdata : Node
+public class XmppCdata : XmppNode
 {
     public string? Value
     {
@@ -67,12 +67,12 @@ public class Cdata : Node
         set;
     }
 
-    public Cdata()
+    public XmppCdata()
     {
 
     }
 
-    public Cdata(string? value)
+    public XmppCdata(string? value)
     {
         Value = value;
     }
@@ -80,6 +80,6 @@ public class Cdata : Node
     public override string ToString()
         => $"<![CDATA[{Value}]]>";
 
-    public override Node Clone()
-        => new Cdata(Value);
+    public override XmppNode Clone()
+        => new XmppCdata(Value);
 }

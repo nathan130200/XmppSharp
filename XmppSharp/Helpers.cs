@@ -13,7 +13,7 @@ public static class Helpers
     public static string GetString(this byte[] bytes, Encoding? encoding = default)
         => (encoding ?? Encoding.UTF8).GetString(bytes);
 
-    public static byte[] GetBytes(this Node node)
+    public static byte[] GetBytes(this XmppNode node)
         => node.ToString()!.GetBytes();
 
     public static bool IsBareEquals(this Jid? jid, Jid? other)
@@ -142,13 +142,13 @@ public static class Helpers
         return (T)temp;
     }
 
-    public static T GetAttributeEnum<T>(this Element e, string name, T defaultValue, bool ignoreCase = true) where T : struct, Enum
+    public static T GetAttributeEnum<T>(this XmppElement e, string name, T defaultValue, bool ignoreCase = true) where T : struct, Enum
     {
         var result = e.GetAttributeEnum<T>(name, ignoreCase);
         return result ?? defaultValue;
     }
 
-    public static T? GetAttributeEnum<T>(this Element e, string name, bool ignoreCase = true) where T : struct, Enum
+    public static T? GetAttributeEnum<T>(this XmppElement e, string name, bool ignoreCase = true) where T : struct, Enum
     {
         var str = e.GetAttribute(name);
 
@@ -172,15 +172,15 @@ public static class Helpers
 
 #if NET6_0
 
-    public static T GetAttribute<T>(this Element e, string name, T defaultValue)
+    public static T GetAttribute<T>(this XmppElement e, string name, T defaultValue)
         => ParseValueOrDefault(e.GetAttribute(name), defaultValue);
 
-    public static T? GetAttribute<T>(this Element e, string name) where T : struct
+    public static T? GetAttribute<T>(this XmppElement e, string name) where T : struct
         => ParseValue<T>(e.GetAttribute(name));
 
 #elif NET7_0_OR_GREATER
 
-    public static T GetAttribute<T>(this Element e, string name, T defaultValue, IFormatProvider? formatter = default) where T : IParsable<T>
+    public static T GetAttribute<T>(this XmppElement e, string name, T defaultValue, IFormatProvider? formatter = default) where T : IParsable<T>
     {
         formatter ??= CultureInfo.InvariantCulture;
 
@@ -192,7 +192,7 @@ public static class Helpers
         return result;
     }
 
-    public static T? GetAttribute<T>(this Element e, string name, IFormatProvider? formatter = default) where T : struct, IParsable<T>
+    public static T? GetAttribute<T>(this XmppElement e, string name, IFormatProvider? formatter = default) where T : struct, IParsable<T>
     {
         formatter ??= CultureInfo.InvariantCulture;
 

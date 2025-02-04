@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace XmppSharp;
 
-public static class ThrowHelper
+internal static class ThrowHelper
 {
     [StackTraceHidden]
     public static Exception Rethrow(Exception ex)

@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0030;
 
 [XmppTag("feature", Namespaces.DiscoInfo)]
-public class Feature : Element
+public class Feature : XmppElement
 {
     public Feature() : base("feature", Namespaces.DiscoInfo)
     {

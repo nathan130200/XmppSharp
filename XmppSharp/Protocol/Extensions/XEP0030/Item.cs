@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0030;
 
 [XmppTag("item", Namespaces.DiscoItems)]
-public class Item : Element
+public class Item : XmppElement
 {
     public Item() : base("item", Namespaces.DiscoItems)
     {
@@ -17,7 +17,7 @@ public class Item : Element
         set => SetAttribute("jid", value);
     }
 
-    public string? Name
+    public string? ItemName
     {
         get => GetAttribute("name");
         set => SetAttribute("name", value);

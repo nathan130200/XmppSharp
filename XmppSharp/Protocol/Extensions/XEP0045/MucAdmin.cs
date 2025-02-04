@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [XmppTag("query", Namespaces.MucAdmin)]
-public class MucAdmin : Element
+public class MucAdmin : XmppElement
 {
     public MucAdmin() : base("query", Namespaces.MucAdmin)
     {
@@ -13,10 +13,10 @@ public class MucAdmin : Element
 
     public IEnumerable<Item> Items
     {
-        get => Children<Item>();
+        get => Elements<Item>();
         set
         {
-            Children<Item>()?.Remove();
+            Elements<Item>()?.Remove();
 
             if (value?.Any() == true)
             {

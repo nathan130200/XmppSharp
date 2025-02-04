@@ -1,10 +1,11 @@
-﻿using XmppSharp.Attributes;
+﻿using System.Globalization;
+using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Extensions.XEP0004;
 
 [XmppTag("field", Namespaces.DataForms)]
-public class Field : Element
+public class Field : XmppElement
 {
     public Field() : base("field", Namespaces.DataForms)
     {
@@ -59,13 +60,7 @@ public class Field : Element
             RemoveTag("desc");
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "desc";
-                    x.Value = value;
-                });
-            }
+                SetTag("desc", value: value);
         }
     }
 
@@ -77,38 +72,31 @@ public class Field : Element
             if (!value)
                 RemoveTag("required");
             else
-                SetTag(x => x.TagName = "required");
+                SetTag("required");
         }
     }
 
     public IEnumerable<string?> Values
     {
-        get => Children("value").Select(x => x.Value);
+        get => Elements("value").Select(x => x.Value);
         set
         {
-            Children("value")?.Remove();
+            Elements("value")?.Remove();
 
             if (value?.Any() == true)
             {
                 foreach (var item in value)
-                {
-                    SetTag(x =>
-                    {
-                        x.TagName = "value";
-                        x.Namespace = Namespaces.DataForms;
-                        x.Value = item;
-                    });
-                }
+                    SetTag("value", Namespaces.DataForms, item);
             }
         }
     }
 
     public IEnumerable<Option> Options
     {
-        get => Children<Option>();
+        get => Elements<Option>();
         set
         {
-            Children<Option>().Remove();
+            Elements<Option>().Remove();
 
             if (value?.Any() == true)
             {
@@ -122,11 +110,9 @@ public class Field : Element
     {
         ThrowHelper.ThrowIfNull(value);
 
-        SetTag(x =>
+        AddChild(new XmppElement("value", Namespaces.DataForms)
         {
-            x.TagName = "value";
-            x.Namespace = Namespaces.DataForms;
-            x.SetValue(value, ifp);
+            Value = Convert.ToString(value, ifp ?? CultureInfo.InvariantCulture)
         });
     }
 

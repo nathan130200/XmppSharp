@@ -5,7 +5,7 @@ namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [XmppTag("actor", Namespaces.MucUser)]
 [XmppTag("actor", Namespaces.MucAdmin)]
-public class Actor : Element
+public class Actor : XmppElement
 {
     public Actor() : base("actor")
     {

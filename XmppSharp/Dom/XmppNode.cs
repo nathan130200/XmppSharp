@@ -2,16 +2,16 @@
 
 namespace XmppSharp.Dom;
 
-public abstract class Node : ICloneable
+public abstract class XmppNode : ICloneable
 {
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    internal Element? _parent;
+    internal XmppElement? _parent;
 
-    public abstract Node Clone();
+    public abstract XmppNode Clone();
 
     object ICloneable.Clone() => Clone();
 
-    public Element? Parent
+    public XmppElement? Parent
     {
         get => _parent;
         set

@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [XmppTag("x", Namespaces.Muc)]
-public class Muc : Element
+public class Muc : XmppElement
 {
     public Muc() : base("x", Namespaces.Muc)
     {
@@ -19,13 +19,7 @@ public class Muc : Element
             RemoveTag("password");
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "password";
-                    x.Value = value;
-                });
-            }
+                SetTag("password", value: value);
         }
     }
 }

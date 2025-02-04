@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [XmppTag("destroy", Namespaces.MucOwner)]
-public class Destroy : Element
+public class Destroy : XmppElement
 {
     public Destroy() : base("destroy", Namespaces.MucOwner)
     {
@@ -25,13 +25,7 @@ public class Destroy : Element
             RemoveTag("password");
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "password";
-                    x.Value = value;
-                });
-            }
+                SetTag("password", value: value);
         }
     }
 
@@ -43,13 +37,7 @@ public class Destroy : Element
             RemoveTag("reason");
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "reason";
-                    x.Value = value;
-                });
-            }
+                SetTag("reason", value: value);
         }
     }
 }

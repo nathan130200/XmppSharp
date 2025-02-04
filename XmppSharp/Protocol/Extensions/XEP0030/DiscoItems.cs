@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0030;
 
 [XmppTag("query", Namespaces.DiscoItems)]
-public class DiscoItems : Element
+public class DiscoItems : XmppElement
 {
     public DiscoItems() : base("query", Namespaces.DiscoItems)
     {
@@ -13,10 +13,10 @@ public class DiscoItems : Element
 
     public IEnumerable<Item> Items
     {
-        get => Children<Item>();
+        get => Elements<Item>();
         set
         {
-            Children<Item>()?.Remove();
+            Elements<Item>()?.Remove();
 
             if (value?.Any() == true)
             {

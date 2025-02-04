@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [XmppTag("status", Namespaces.MucUser)]
-public class Status : Element
+public class Status : XmppElement
 {
     public Status() : base("status", Namespaces.MucUser)
     {

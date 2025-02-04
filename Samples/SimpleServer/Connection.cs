@@ -1,10 +1,10 @@
-﻿using Expat;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Data;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Expat;
 using XmppSharp;
 using XmppSharp.Collections;
 using XmppSharp.Dom;
@@ -30,8 +30,8 @@ public sealed class Connection : IDisposable
     private readonly ConcurrentQueue<(string? xml, byte[] buffer)> _writeQueue = [];
     private X509Certificate2? _cert;
     public bool IsAuthenticated { get; private set; }
-    private Task? _receiveTask;
-    private Task? _sendTask;
+    private readonly Task? _receiveTask;
+    private readonly Task? _sendTask;
 
     public Connection(Socket socket)
     {
@@ -111,7 +111,7 @@ public sealed class Connection : IDisposable
                 if (len <= 0)
                     break;
 
-                Console.WriteLine("push to parser {0} byte(s)", len);
+                //Console.WriteLine("push to parser {0} byte(s)", len);
 
                 _parser!.Parse(buf, len);
             }
@@ -157,10 +157,10 @@ public sealed class Connection : IDisposable
     public void Send(string xml)
         => _writeQueue.Enqueue((xml, xml.GetBytes()));
 
-    public void Send(Element e)
+    public void Send(XmppElement e)
         => _writeQueue.Enqueue((e.ToString(true), e.GetBytes()));
 
-    public void Route(Element e)
+    public void Route(XmppElement e)
         => _writeQueue.Enqueue((null, e.GetBytes()));
 
     void OnStreamStart(StreamStream e)
@@ -202,7 +202,7 @@ public sealed class Connection : IDisposable
         Dispose();
     }
 
-    public void Disconnect(Element e)
+    public void Disconnect(XmppElement e)
     {
         if (!(_disposed < 2))
             return;
@@ -211,10 +211,10 @@ public sealed class Connection : IDisposable
         Dispose();
     }
 
-    void OnStreamElement(Element e)
+    void OnStreamElement(XmppElement e)
         => AsyncHelper.RunSync(() => HandleStreamElement(e));
 
-    async Task HandleStreamElement(Element e)
+    async Task HandleStreamElement(XmppElement e)
     {
         Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, e.ToString(true));
 
@@ -292,7 +292,7 @@ public sealed class Connection : IDisposable
 
             if (stz is Iq iq)
             {
-                if (iq.Query is Bind bind)
+                if (iq.FirstChild is Bind bind)
                 {
                     iq.SwitchDirection();
 
@@ -323,7 +323,7 @@ public sealed class Connection : IDisposable
 
                     handled = true;
                 }
-                else if (iq.Query is Session)
+                else if (iq.FirstChild is Session)
                 {
                     iq.SwitchDirection();
                     iq.Type = IqType.Result;
@@ -334,7 +334,7 @@ public sealed class Connection : IDisposable
 
                 if (iq.To == null || iq.To == Server.Hostname)
                 {
-                    if (iq.Query is DiscoInfo discoInfo)
+                    if (iq.FirstChild is DiscoInfo discoInfo)
                     {
                         discoInfo.AddIdentity(Identities.Component.C2S);
                         discoInfo.AddIdentity(Identities.Component.Router);
@@ -352,7 +352,7 @@ public sealed class Connection : IDisposable
 
                         handled = true;
                     }
-                    else if (iq.Query is DiscoItems discoItems)
+                    else if (iq.FirstChild is DiscoItems discoItems)
                     {
                         iq.SwitchDirection();
                         iq.Type = IqType.Result;
@@ -379,7 +379,7 @@ public sealed class Connection : IDisposable
 
                         handled = true;
                     }
-                    else if (iq.Query is Ping)
+                    else if (iq.FirstChild is Ping)
                     {
                         iq.SwitchDirection();
                         iq.Type = IqType.Result;

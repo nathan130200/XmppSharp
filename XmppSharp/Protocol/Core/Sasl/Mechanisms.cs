@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Core.Sasl;
 
 [XmppTag("mechanisms", Namespaces.Sasl)]
-public class Mechanisms : Element
+public class Mechanisms : XmppElement
 {
     public Mechanisms(Mechanisms other) : base(other)
     {
@@ -18,12 +18,12 @@ public class Mechanisms : Element
 
     public IEnumerable<Mechanism> SupportedMechanisms
     {
-        get => Children<Mechanism>();
+        get => Elements<Mechanism>();
         set
         {
             ThrowHelper.ThrowIfNull(value);
 
-            Children<Mechanism>()?.Remove();
+            Elements<Mechanism>()?.Remove();
 
             if (value?.Any() == true)
             {

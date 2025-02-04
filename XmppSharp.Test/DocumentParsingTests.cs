@@ -12,7 +12,7 @@ public class DocumentParsingTests
     [TestMethod]
     public void ParseFromString()
     {
-        var doc = new Document();
+        var doc = new XmppDocument();
         doc.Parse(SampleXml);
 
         Assert.IsNotNull(doc.RootElement);
@@ -35,7 +35,7 @@ public class DocumentParsingTests
     {
         var xml = "<iq xmlns='jabber:client' type='result'><query xmlns='urn:cryonline:k01'><setserver master_node='localhost' /></query></iq>";
 
-        var doc = new Document().Parse(xml);
+        var doc = new XmppDocument().Parse(xml);
 
         Assert.IsInstanceOfType<Iq>(doc.RootElement);
 
@@ -61,7 +61,7 @@ public class DocumentParsingTests
     [TestMethod]
     public void ParseFromStream()
     {
-        var doc = new Document();
+        var doc = new XmppDocument();
 
         {
             var buffer = Encoding.UTF8.GetBytes(SampleXml);
@@ -89,7 +89,7 @@ public class DocumentParsingTests
     public void ParseComment()
     {
         var xml = "<foo><!--this is a comment--></foo>";
-        var doc = new Document().Parse(xml);
+        var doc = new XmppDocument().Parse(xml);
 
         var el = doc.RootElement;
         Assert.IsNotNull(el);
@@ -97,15 +97,15 @@ public class DocumentParsingTests
         Assert.AreEqual("foo", el.TagName);
 
         var child = el.FirstNode;
-        Assert.IsInstanceOfType<Comment>(child);
-        Assert.AreEqual("this is a comment", ((Comment)child).Value);
+        Assert.IsInstanceOfType<XmppComment>(child);
+        Assert.AreEqual("this is a comment", ((XmppComment)child).Value);
     }
 
     [TestMethod]
     public void ParseCdata()
     {
         var xml = "<foo><![CDATA[this is CDATA section <>]]></foo>";
-        var doc = new Document().Parse(xml);
+        var doc = new XmppDocument().Parse(xml);
 
         var el = doc.RootElement;
         Assert.IsNotNull(el);
@@ -113,8 +113,8 @@ public class DocumentParsingTests
         Assert.AreEqual("foo", el.TagName);
 
         var child = el.FirstNode;
-        Assert.IsInstanceOfType<Cdata>(child);
-        Assert.AreEqual("this is CDATA section <>", ((Cdata)child).Value);
+        Assert.IsInstanceOfType<XmppCdata>(child);
+        Assert.AreEqual("this is CDATA section <>", ((XmppCdata)child).Value);
 
         Console.WriteLine(doc.ToString(true));
     }

@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Core;
 
 [XmppTag("item", Namespaces.IqRoster)]
-public class RosterItem : Element
+public class RosterItem : XmppElement
 {
     public RosterItem() : base("item", Namespaces.IqRoster)
     {
@@ -20,19 +20,13 @@ public class RosterItem : Element
 
     public IEnumerable<string> Groups
     {
-        get => Children("group").Select(x => x.Value!);
+        get => Elements("group").Select(x => x.Value!);
         set
         {
-            Children("group").Remove();
+            Elements("group").Remove();
 
             foreach (var groupName in value)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "group";
-                    x.Value = groupName;
-                });
-            }
+                SetTag("group", value: groupName);
         }
     }
 
@@ -42,7 +36,7 @@ public class RosterItem : Element
         set => SetAttribute("jid", value);
     }
 
-    public string? Name
+    public string? ItemName
     {
         get => GetAttribute("name");
         set => SetAttribute("name", value);

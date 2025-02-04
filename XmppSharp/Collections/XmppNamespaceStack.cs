@@ -1,24 +1,23 @@
 ﻿namespace XmppSharp.Collections;
 
-public class NamespaceStack
+public class XmppNamespaceStack
 {
     private readonly Stack<Dictionary<string, string>> _stack = new();
-    private readonly object _syncRoot = new();
 
-    public NamespaceStack()
+    public XmppNamespaceStack()
     {
         Reset();
     }
 
     public void PushScope()
     {
-        lock (_syncRoot)
+        lock (_stack)
             _stack.Push(new(StringComparer.Ordinal));
     }
 
     public void PopScope()
     {
-        lock (_syncRoot)
+        lock (_stack)
         {
             if (_stack.Count > 1)
                 _stack.Pop();
@@ -27,7 +26,10 @@ public class NamespaceStack
 
     public void AddNamespace(string prefix, string uri)
     {
-        lock (_syncRoot)
+        if (prefix == "xmlns" || prefix == "xml")
+            throw new InvalidOperationException("Reserved XML prefixes cannot be redefined.");
+
+        lock (_stack)
         {
             _stack.Peek()[prefix] = uri;
         }
@@ -37,12 +39,12 @@ public class NamespaceStack
     {
         prefix ??= string.Empty;
 
-        lock (_syncRoot)
+        lock (_stack)
         {
             foreach (var entry in _stack)
             {
-                if (entry.ContainsKey(prefix))
-                    return entry[prefix]!;
+                if (entry.TryGetValue(prefix, out var result))
+                    return result;
             }
         }
 
@@ -51,7 +53,7 @@ public class NamespaceStack
 
     public void Reset()
     {
-        lock (_syncRoot)
+        lock (_stack)
         {
             while (_stack.Count > 0)
                 _ = _stack.Pop();

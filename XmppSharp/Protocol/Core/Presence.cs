@@ -59,13 +59,7 @@ public class Presence : Stanza
             RemoveTag("show");
 
             if (value.HasValue)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "show";
-                    x.Value = XmppEnum.ToXml(value);
-                });
-            }
+                SetTag("show", value: XmppEnum.ToXml(value));
         }
     }
 
@@ -89,12 +83,7 @@ public class Presence : Stanza
             if (value.HasValue)
             {
                 var priority = Math.Clamp((int)value, -1, 255);
-
-                SetTag(x =>
-                {
-                    x.TagName = "priority";
-                    x.SetValue(priority);
-                });
+                SetTag("priority", value: priority);
             }
         }
     }
@@ -107,32 +96,26 @@ public class Presence : Stanza
             RemoveTag("status");
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "status";
-                    x.Value = value;
-                });
-            }
+                SetTag("status", value: value);
         }
     }
 
     public MucUser? User
     {
-        get => Child<MucUser>();
+        get => Element<MucUser>();
         set
         {
-            Child<MucUser>()?.Remove();
+            Element<MucUser>()?.Remove();
             AddChild(value);
         }
     }
 
     public Nickname? Nickname
     {
-        get => Child<Nickname>();
+        get => Element<Nickname>();
         set
         {
-            Child<Nickname>()?.Remove();
+            Element<Nickname>()?.Remove();
             AddChild(value);
         }
     }

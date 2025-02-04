@@ -5,7 +5,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [XmppTag("history", Namespaces.Muc)]
-public class History : Element
+public class History : XmppElement
 {
     public History() : base("history", Namespaces.Muc)
     {

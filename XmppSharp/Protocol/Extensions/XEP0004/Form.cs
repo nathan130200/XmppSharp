@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0004;
 
 [XmppTag("x", Namespaces.DataForms)]
-public class Form : Element
+public class Form : XmppElement
 {
     public Form() : base("x", Namespaces.DataForms)
     {
@@ -30,10 +30,10 @@ public class Form : Element
 
     public IEnumerable<Item> Items
     {
-        get => Children<Item>();
+        get => Elements<Item>();
         set
         {
-            Children<Item>().Remove();
+            Elements<Item>().Remove();
 
             if (value?.Any() == true)
             {

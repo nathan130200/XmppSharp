@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Core.Tls;
 
 [XmppTag("starttls", Namespaces.Tls)]
-public class StartTls : Element
+public class StartTls : XmppElement
 {
     public StartTls() : base("starttls", Namespaces.Tls)
     {
@@ -34,13 +34,11 @@ public class StartTls : Element
             RemoveTag("optional");
             RemoveTag("required");
 
-            string tagName = value == StartTlsPolicy.Required ? "required" : "optional";
+            string policyName = value == StartTlsPolicy.Required
+                ? "required"
+                : "optional";
 
-            SetTag(x =>
-            {
-                x.TagName = tagName;
-                x.Namespace = Namespaces.Tls;
-            });
+            SetTag(policyName, Namespaces.Tls);
         }
     }
 }

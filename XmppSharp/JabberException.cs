@@ -6,7 +6,7 @@ namespace XmppSharp;
 
 public class JabberException : Exception
 {
-    public Element? Element { get; protected set; }
+    public XmppElement? Element { get; protected set; }
 
     public JabberException()
     {

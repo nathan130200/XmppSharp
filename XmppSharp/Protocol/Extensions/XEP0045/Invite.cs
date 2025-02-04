@@ -19,13 +19,7 @@ public class Invite : DirectionalElement
             RemoveTag("reason");
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "reason";
-                    x.Value = value;
-                });
-            }
+                SetTag("reason", value: value);
         }
     }
 }

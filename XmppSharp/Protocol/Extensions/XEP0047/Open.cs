@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0047;
 
 [XmppTag("open", Namespaces.Ibb)]
-public class Open : Element
+public class Open : XmppElement
 {
     public Open() : base("open", Namespaces.Ibb)
     {

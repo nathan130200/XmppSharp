@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Core.Sasl;
 
 [XmppTag("failure", Namespaces.Sasl)]
-public class Failure : Element
+public class Failure : XmppElement
 {
     public Failure() : base("failure", Namespaces.Sasl)
     {
@@ -35,12 +35,7 @@ public class Failure : Element
                 RemoveTag(name, Namespaces.Sasl);
 
             if (value.HasValue)
-                SetTag(x =>
-                {
-                    x.TagName = XmppEnum.ToXml(value)!;
-                    x.Namespace = Namespaces.Sasl;
-                });
-
+                SetTag(XmppEnum.ToXml(value)!, Namespaces.Sasl);
         }
     }
 
@@ -52,14 +47,7 @@ public class Failure : Element
             RemoveTag("text", Namespaces.Sasl);
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "text";
-                    x.Namespace = Namespaces.Sasl;
-                    x.Value = value;
-                });
-            }
+                SetTag("text", Namespaces.Sasl, value);
         }
     }
 }

@@ -6,7 +6,7 @@ namespace XmppSharp.Protocol.Core.Component;
 
 [XmppTag("handshake", Namespaces.Accept)]
 [XmppTag("handshake", Namespaces.Connect)]
-public class Handshake : Element
+public class Handshake : XmppElement
 {
     public Handshake() : base("handshake", Namespaces.Accept)
     {

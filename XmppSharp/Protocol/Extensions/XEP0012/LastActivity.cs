@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0012;
 
 [XmppTag("query", Namespaces.IqLast)]
-public class LastActivity : Element
+public class LastActivity : XmppElement
 {
     public LastActivity() : base("query", Namespaces.IqLast)
     {

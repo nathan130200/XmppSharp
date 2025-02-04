@@ -8,7 +8,7 @@ public class AttributeParsingTests
     [TestMethod]
     public void ShouldReturnNull()
     {
-        var el = new Element("test");
+        var el = new XmppElement("test");
         el.SetAttribute("foo", "bar");
 
         var cond = el.GetAttribute<bool>("checked");
@@ -18,7 +18,7 @@ public class AttributeParsingTests
     [TestMethod]
     public void ShouldBeNotNull()
     {
-        var el = new Element("sample")
+        var el = new XmppElement("sample")
             .SetAttribute("count", 1);
 
         var item = el.GetAttribute<int>("count");
@@ -29,7 +29,7 @@ public class AttributeParsingTests
     [TestMethod]
     public void ShouldParseTheValues()
     {
-        var el = new Element("sample")
+        var el = new XmppElement("sample")
             .SetAttribute("my_float", 1.25f)
             .SetAttribute("my_double", double.Epsilon)
             .SetAttribute("my_bool_as_int", 1)
@@ -55,7 +55,7 @@ public class AttributeParsingTests
         var dateTime = new DateTime(2024, 6, 12, 0, 12, 24);
         var dateTimeOffset = new DateTimeOffset(2024, 6, 12, 0, 12, 24, TimeSpan.FromHours(-3));
 
-        var elem = new Element("sample")
+        var elem = new XmppElement("sample")
             .SetAttribute("i16", 16)
             .SetAttribute("i32", 32)
             .SetAttribute("i64", 64)

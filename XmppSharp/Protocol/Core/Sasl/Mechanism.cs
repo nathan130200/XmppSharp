@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Core.Sasl;
 
 [XmppTag("mechanism", Namespaces.Sasl)]
-public class Mechanism : Element
+public class Mechanism : XmppElement
 {
     public Mechanism() : base("mechanism", Namespaces.Sasl)
     {

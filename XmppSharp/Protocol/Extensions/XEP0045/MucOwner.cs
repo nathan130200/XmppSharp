@@ -5,7 +5,7 @@ using XmppSharp.Protocol.Extensions.XEP0004;
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [XmppTag("query", Namespaces.MucOwner)]
-public class MucOwner : Element
+public class MucOwner : XmppElement
 {
     public MucOwner() : base("query", Namespaces.MucOwner)
     {
@@ -14,20 +14,20 @@ public class MucOwner : Element
 
     public Form? Form
     {
-        get => Child<Form>();
+        get => Element<Form>();
         set
         {
-            Child<Form>()?.Remove();
+            Element<Form>()?.Remove();
             AddChild(value);
         }
     }
 
     public Destroy? Destroy
     {
-        get => Child<Destroy>();
+        get => Element<Destroy>();
         set
         {
-            Child<Destroy>()?.Remove();
+            Element<Destroy>()?.Remove();
             AddChild(value);
         }
     }

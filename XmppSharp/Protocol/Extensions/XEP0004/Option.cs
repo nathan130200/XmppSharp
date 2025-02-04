@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0004;
 
 [XmppTag("option", Namespaces.DataForms)]
-public class Option : Element
+public class Option : XmppElement
 {
     public Option() : base("option", Namespaces.DataForms)
     {
@@ -31,13 +31,7 @@ public class Option : Element
             RemoveTag("value");
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "value";
-                    x.Value = value;
-                });
-            }
+                SetTag("value", value: value);
         }
     }
 }

@@ -4,28 +4,30 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0202;
 
 [XmppTag("time", Namespaces.EntityTime)]
-public class EntityTime : Element
+public class EntityTime : XmppElement
 {
     public EntityTime() : base("time", Namespaces.EntityTime)
     {
 
     }
 
-    public string? UtcTime
+    public DateTimeOffset? UtcTime
     {
-        get => GetTag("utc");
+        get
+        {
+            var temp = GetTag("utc");
+
+            if (temp == null)
+                return null;
+
+            return DateTimeOffset.Parse(temp);
+        }
         set
         {
             RemoveTag("utc");
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "utc";
-                    x.Value = value;
-                });
-            }
+                SetTag("utc", value: ((DateTimeOffset)value).ToString(Xml.XmppTimestampFormat));
         }
     }
 
@@ -37,13 +39,7 @@ public class EntityTime : Element
             RemoveTag("tzo");
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "tzo";
-                    x.Value = value;
-                });
-            }
+                SetTag("tzo", value: value);
         }
     }
 }

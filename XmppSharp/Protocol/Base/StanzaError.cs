@@ -1,5 +1,4 @@
 ﻿using XmppSharp.Attributes;
-using XmppSharp.Collections;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Base;
@@ -8,7 +7,7 @@ namespace XmppSharp.Protocol.Base;
 [XmppTag("error", Namespaces.Server)]
 [XmppTag("error", Namespaces.Accept)]
 [XmppTag("error", Namespaces.Connect)]
-public class StanzaError : Element
+public class StanzaError : XmppElement
 {
     public StanzaError() : base("error")
     {
@@ -48,17 +47,12 @@ public class StanzaError : Element
         set
         {
             XmppEnum.GetNames<StanzaErrorCondition>()
-                .ForEach(x => Child(x, Namespaces.Stanzas)?.Remove());
+                .ForEach(x => Element(x, Namespaces.Stanzas)?.Remove());
 
             if (value.HasValue)
             {
                 var name = XmppEnum.ToXml((StanzaErrorCondition)value)!;
-
-                SetTag(x =>
-                {
-                    x.TagName = name;
-                    x.Namespace = Namespaces.Stanzas;
-                });
+                SetTag(name, xmlns: Namespaces.Stanzas);
             }
         }
     }
@@ -95,14 +89,7 @@ public class StanzaError : Element
             RemoveTag("text", Namespaces.Stanzas);
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "text";
-                    x.Namespace = Namespaces.Stanzas;
-                    x.Value = value;
-                });
-            }
+                SetTag("text", Namespaces.Stanzas, value);
         }
     }
 }

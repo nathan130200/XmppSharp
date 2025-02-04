@@ -4,19 +4,19 @@ using System.Xml.Schema;
 
 namespace XmppSharp.Dom;
 
-public sealed class Document
+public class XmppDocument
 {
     public Encoding? Encoding { get; set; } = Encoding.UTF8;
-    public Element? RootElement { get; set; }
+    public XmppElement? RootElement { get; set; }
 
-    public Document()
+    public XmppDocument()
     {
     }
 
-    public Document(Element rootElement)
+    public XmppDocument(XmppElement rootElement)
         => RootElement = rootElement;
 
-    public Document Parse(string xml)
+    public XmppDocument Parse(string xml)
     {
         using (var reader = new StringReader(xml))
             Load(reader);
@@ -24,7 +24,7 @@ public sealed class Document
         return this;
     }
 
-    public Document Load(string file, Encoding? encoding = default, int bufferSize = -1)
+    public XmppDocument Load(string file, Encoding? encoding = default, int bufferSize = -1)
     {
         encoding ??= Encoding.UTF8;
 
@@ -37,7 +37,7 @@ public sealed class Document
         return this;
     }
 
-    public Document Load(Stream stream, Encoding? encoding = default, int bufferSize = -1, bool leaveOpen = true)
+    public XmppDocument Load(Stream stream, Encoding? encoding = default, int bufferSize = -1, bool leaveOpen = true)
     {
         encoding ??= Encoding.UTF8;
 
@@ -70,7 +70,7 @@ public sealed class Document
 
         };
 
-        Element? root = default,
+        XmppElement? root = default,
             current = default;
 
         try
@@ -85,7 +85,7 @@ public sealed class Document
                     {
                         case XmlNodeType.Element:
                             {
-                                var elem = ElementFactory.CreateElement(reader.Name, reader.LookupNamespace(reader.Prefix));
+                                var elem = XmppElementFactory.Create(reader.Name, reader.LookupNamespace(reader.Prefix), current);
 
                                 while (reader.MoveToNextAttribute())
                                     elem.SetAttribute(reader.Name, reader.Value);
@@ -123,7 +123,7 @@ public sealed class Document
 
                         case XmlNodeType.SignificantWhitespace:
                         case XmlNodeType.Text:
-                            current?.AddChild(new Text(reader.Value));
+                            current?.AddChild(new XmppText(reader.Value));
                             break;
 
                         case XmlNodeType.Whitespace:
@@ -131,11 +131,11 @@ public sealed class Document
                             break;
 
                         case XmlNodeType.Comment:
-                            current?.AddChild(new Comment(reader.Value));
+                            current?.AddChild(new XmppComment(reader.Value));
                             break;
 
                         case XmlNodeType.CDATA:
-                            current?.AddChild(new Cdata(reader.Value));
+                            current?.AddChild(new XmppCdata(reader.Value));
                             break;
 
                         case XmlNodeType.XmlDeclaration:
@@ -162,15 +162,15 @@ public sealed class Document
 
     public string ToString(bool indented)
     {
-        var formatting = XmlFormatting.OmitDuplicatedNamespaces | XmlFormatting.CheckCharacters;
+        var formatting = XmppFormatting.OmitDuplicatedNamespaces | XmppFormatting.CheckCharacters;
 
         if (indented)
-            formatting |= XmlFormatting.Indented;
+            formatting |= XmppFormatting.Indented;
 
         return ToString(formatting);
     }
 
-    public string ToString(XmlFormatting formatting)
+    public string ToString(XmppFormatting formatting)
     {
         var sb = new StringBuilder();
 
@@ -180,7 +180,7 @@ public sealed class Document
         {
             using (var writer = Xml.CreateWriter(sw, formatting, Encoding))
             {
-                var writeXmlDecl = !formatting.HasFlag(XmlFormatting.OmitXmlDeclaration);
+                var writeXmlDecl = !formatting.HasFlag(XmppFormatting.OmitXmlDeclaration);
 
                 if (writeXmlDecl)
                     writer.WriteStartDocument();

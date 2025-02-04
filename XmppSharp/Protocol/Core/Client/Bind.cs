@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Core.Client;
 
 [XmppTag("bind", Namespaces.Bind)]
-public class Bind : Element
+public class Bind : XmppElement
 {
     public Bind() : base("bind", Namespaces.Bind)
     {
@@ -19,37 +19,25 @@ public class Bind : Element
 
     public string? Resource
     {
-        get => GetTag("resource");
+        get => GetTag("resource", Namespaces.Bind);
         set
         {
-            RemoveTag("resource");
+            RemoveTag("resource", Namespaces.Bind);
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "resource";
-                    x.Value = value;
-                });
-            }
+                SetTag("resource", Namespaces.Bind, value);
         }
     }
 
     public Jid? Jid
     {
-        get => GetTag("jid");
+        get => GetTag("jid", Namespaces.Bind);
         set
         {
-            RemoveTag("jid");
+            RemoveTag("jid", Namespaces.Bind);
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "jid";
-                    x.Value = value;
-                });
-            }
+                SetTag("jid", Namespaces.Bind, value);
         }
     }
 }

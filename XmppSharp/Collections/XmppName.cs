@@ -1,17 +1,25 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Xml;
 
 namespace XmppSharp.Collections;
 
+[DebuggerDisplay("{_debugString,nq}")]
 public sealed class XmppName : IEquatable<XmppName>
 {
-    public string LocalName { get; private set; }
-    public string? Prefix { get; private set; }
+    public string LocalName { get; }
+    public string? Prefix { get; }
     public bool HasPrefix => Prefix != null;
 
-    ~XmppName()
+    readonly string _debugString;
+
+    public XmppName(XmppName other)
     {
-        LocalName = null!;
-        Prefix = null;
+        ThrowHelper.ThrowIfNull(other);
+
+        LocalName = other.LocalName;
+        Prefix = other.Prefix;
+        _debugString = other._debugString;
     }
 
     public XmppName(string? str)
@@ -21,20 +29,18 @@ public sealed class XmppName : IEquatable<XmppName>
         var ofs = str!.IndexOf(':');
 
         if (ofs > 0)
-            Prefix = str[0..ofs];
+            Prefix = XmlConvert.EncodeLocalName(str[0..ofs]);
 
-        LocalName = str[(ofs + 1)..];
+        LocalName = XmlConvert.EncodeLocalName(str[(ofs + 1)..]);
 
         ThrowHelper.ThrowIfNullOrWhiteSpace(LocalName);
+
+        _debugString = XmlConvert.EncodeName(str);
     }
 
     public override string ToString()
-    {
-        if (!HasPrefix)
-            return LocalName;
+        => _debugString;
 
-        return string.Concat(Prefix, ':', LocalName);
-    }
     public override int GetHashCode() => HashCode.Combine
     (
         LocalName?.GetHashCode() ?? 0,
@@ -49,16 +55,14 @@ public sealed class XmppName : IEquatable<XmppName>
         if (other is null)
             return false;
 
-        var result = string.Compare(LocalName, other.LocalName, StringComparison.Ordinal); // xml rules
-
-        if (result != 0)
-            return false;
-
-        return string.Compare(Prefix, other.Prefix, StringComparison.Ordinal) == 0; // xml rules
+        return string.Equals(_debugString, other._debugString, StringComparison.Ordinal);
     }
 
-    public static implicit operator XmppName(string? str) => new(str);
-    public static implicit operator string(XmppName name) => name.ToString();
+    [return: NotNullIfNotNull(nameof(str))]
+    public static implicit operator XmppName?(string? str) => str == null ? null : new(str);
+
+    [return: NotNullIfNotNull(nameof(name))]
+    public static implicit operator string?(XmppName? name) => name?.ToString();
 
     public static bool operator ==(XmppName lhs, XmppName rhs)
     {

@@ -41,16 +41,10 @@ public class Message : Stanza
         }
         set
         {
-            this.Children(e => e.Namespace == Namespaces.ChatStates).Remove();
+            this.Elements(e => e.Namespace == Namespaces.ChatStates).Remove();
 
             if (value.HasValue)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = XmppEnum.ToXml(value)!;
-                    x.Namespace = Namespaces.ChatStates;
-                });
-            }
+                SetTag(XmppEnum.ToXml(value)!, Namespaces.ChatStates);
         }
     }
 
@@ -62,13 +56,7 @@ public class Message : Stanza
             RemoveTag("body");
 
             if (value != null)
-            {
-                SetTag(x =>
-                {
-                    x.TagName = "body";
-                    x.Value = value;
-                });
-            }
+                SetTag("body", value: value);
         }
     }
 }

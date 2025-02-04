@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0047;
 
 [XmppTag("data", Namespaces.Ibb)]
-public class Data : Element
+public class Data : XmppElement
 {
     public Data() : base("data", Namespaces.Ibb)
     {

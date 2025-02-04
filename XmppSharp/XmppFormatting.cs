@@ -1,7 +1,7 @@
 ﻿namespace XmppSharp;
 
 [Flags]
-public enum XmlFormatting
+public enum XmppFormatting
 {
     None,
     Indented = 1 << 0,

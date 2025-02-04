@@ -5,7 +5,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Extensions.XEP0203;
 
 [XmppTag("delay", Namespaces.Delay)]
-public class Delay : Element
+public class Delay : XmppElement
 {
     public Delay() : base("delay", Namespaces.Delay)
     {

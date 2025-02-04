@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Core.Sasl;
 
 [XmppTag("auth", Namespaces.Sasl)]
-public class Auth : Element
+public class Auth : XmppElement
 {
     public Auth(Auth other) : base(other)
     {

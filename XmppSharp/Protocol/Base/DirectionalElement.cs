@@ -3,7 +3,7 @@ using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Base;
 
-public abstract class DirectionalElement : Element
+public abstract class DirectionalElement : XmppElement
 {
     protected DirectionalElement(DirectionalElement other) : base(other)
     {

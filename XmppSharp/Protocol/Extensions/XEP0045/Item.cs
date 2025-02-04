@@ -5,7 +5,7 @@ namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [XmppTag("item", Namespaces.MucUser)]
 [XmppTag("item", Namespaces.MucAdmin)]
-public class Item : Element
+public class Item : XmppElement
 {
     public Item() : base("item")
     {
@@ -50,10 +50,10 @@ public class Item : Element
 
     public Actor? Actor
     {
-        get => Child<Actor>();
+        get => Element<Actor>();
         set
         {
-            Child<Actor>()?.Remove();
+            Element<Actor>()?.Remove();
             AddChild(value);
         }
     }
@@ -72,7 +72,7 @@ public class Item : Element
             if (!value)
                 RemoveTag("continue");
             else
-                SetTag(x => x.TagName = "continue");
+                SetTag("continue");
         }
     }
 }

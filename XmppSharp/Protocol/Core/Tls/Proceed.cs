@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Core.Tls;
 
 [XmppTag("proceed", Namespaces.Tls)]
-public class Proceed : Element
+public class Proceed : XmppElement
 {
     public Proceed() : base("proceed", Namespaces.Tls)
     {
