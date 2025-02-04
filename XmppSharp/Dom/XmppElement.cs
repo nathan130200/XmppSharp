@@ -1,22 +1,36 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
+using System.Xml.Linq;
 using XmppSharp.Collections;
 
 namespace XmppSharp.Dom;
 
 [DebuggerDisplay("{StartTag(),nq}")]
+public class XmppElementDebuggerProxy
+{
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    readonly XmppElement? _element;
+
+    public XmppElementDebuggerProxy(XmppElement? e)
+        => _element = e;
+
+    public string? TagName => _element?.TagName;
+    public string? StartTag => _element?.StartTag();
+    public string? EndTag => _element?.EndTag();
+    public IReadOnlyDictionary<string, string>? Attributes => _element?._attributes;
+    public IEnumerable<XmppNode>? Children => _element?.Nodes();
+}
+
+[DebuggerTypeProxy(typeof(XmppElementDebuggerProxy))]
 public class XmppElement : XmppNode
 {
     public XmppName Name { get; set; } = default!;
     public string? Prefix => Name.Prefix;
     public string LocalName => Name.LocalName;
 
-    public XmppNodeList Children { get; private set; }
-    public ConcurrentDictionary<string, string> Attributes { get; } = new();
     public XmppElement? this[XmppName name] => Element(name);
 
     public string TagName
@@ -25,15 +39,20 @@ public class XmppElement : XmppNode
         set => Name = new(value);
     }
 
+    internal readonly List<XmppNode> _children;
+    internal readonly ConcurrentDictionary<string, string> _attributes;
+
     internal XmppElement()
     {
-        Attributes = new();
-        Children = new(this);
+        _children = new List<XmppNode>();
+        _attributes = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
     }
 
-    public XmppElement(XmppName name, string? namespaceURI = default, object? value = default) : this()
+    public XmppElement(XmppName tagName, string? namespaceURI = default, object? value = default) : this()
     {
-        Name = name;
+        ThrowHelper.ThrowIfNull(tagName);
+
+        Name = tagName;
 
         if (namespaceURI != null)
         {
@@ -53,13 +72,13 @@ public class XmppElement : XmppNode
 
         Name = new(other.Name);
 
-        foreach (var (key, value) in other.Attributes)
-            Attributes[key] = value;
+        foreach (var (key, value) in other._attributes)
+            _attributes[key] = value;
 
-        lock (other.Children)
+        lock (other._children)
         {
             foreach (var node in other.Nodes())
-                Children.Add(node.Clone());
+                _children.Add(node.Clone());
         }
     }
 
@@ -70,9 +89,9 @@ public class XmppElement : XmppNode
     {
         get
         {
-            var nodes = Nodes()
-                .OfType<XmppText>()
-                .Select(x => x.Value);
+            var nodes = from node in Nodes()
+                        where node is XmppText
+                        select node;
 
             if (!nodes.Any())
                 return null;
@@ -81,7 +100,7 @@ public class XmppElement : XmppNode
         }
         set
         {
-            RemoveAllChildNodes();
+            RemoveNodes();
             AddChild(new XmppText(value));
         }
     }
@@ -94,11 +113,76 @@ public class XmppElement : XmppNode
             Value = Convert.ToString(content, format);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddChild(XmppNode? node) => Children.Add(node);
+    public void AddChild(XmppNode? node)
+    {
+        if (node is null)
+            return;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RemoveChild(XmppNode? node) => Children.Remove(node);
+        if (node._parent is not null)
+            node = node.Clone();
+
+        lock (_children)
+        {
+            node._parent = this;
+            _children.Add(node);
+        }
+    }
+
+    public void RemoveChild(XmppNode? node)
+    {
+        if (node?._parent != this)
+            return;
+
+        lock (_children)
+        {
+            node._parent = null;
+            _children.Remove(node);
+
+            if (node is XmppElement element)
+            {
+            }
+        }
+    }
+
+    public IEnumerable<XmppElement> Descendants(bool includeSelf = false)
+    {
+        var result = new List<XmppElement>();
+        BuildDescendantElements(this, result, includeSelf);
+        return result;
+    }
+
+    public IEnumerable<XmppElement> DescendantNodes(bool includeSelf = false)
+    {
+        var result = new List<XmppElement>();
+        BuildDescendantElements(this, result, includeSelf);
+        return result;
+    }
+
+    static void BuildDescendantNodes(XmppElement parent, List<XmppNode> result, bool includeSelf = false)
+    {
+        if (includeSelf)
+            result.Add(parent);
+
+        foreach (var child in parent.Nodes())
+        {
+            result.Add(child);
+
+            if (child is XmppElement e)
+                BuildDescendantNodes(e, result, false);
+        }
+    }
+
+    static void BuildDescendantElements(XmppElement parent, List<XmppElement> result, bool includeSelf = false)
+    {
+        if (includeSelf)
+            result.Add(parent);
+
+        foreach (var child in parent.Elements())
+        {
+            result.Add(child);
+            BuildDescendantElements(child, result, false);
+        }
+    }
 
     public XmppElement SetAttribute(string name, object? value, string? format = default, IFormatProvider? ifp = default)
     {
@@ -112,7 +196,7 @@ public class XmppElement : XmppNode
             if (value is IFormattable fmt) str = fmt.ToString(format, ifp);
             else if (value is IConvertible conv) str = conv.ToString(ifp);
             else str = Convert.ToString(value, ifp) ?? string.Empty;
-            Attributes[name] = str;
+            _attributes[name] = str;
         }
 
         return this;
@@ -122,8 +206,8 @@ public class XmppElement : XmppNode
     {
         var result = XmppElementFactory.Create(TagName, Namespace);
 
-        foreach (var (key, value) in Attributes)
-            result.Attributes[key] = value;
+        foreach (var (key, value) in _attributes)
+            result._attributes[key] = value;
 
         foreach (var node in Nodes())
             result.AddChild(node.Clone());
@@ -137,20 +221,20 @@ public class XmppElement : XmppNode
     {
         ThrowHelper.ThrowIfNullOrWhiteSpace(name);
 
-        lock (Attributes)
-            return Attributes.ContainsKey(name);
+        lock (_attributes)
+            return _attributes.ContainsKey(name);
     }
 
     public string? GetAttribute(XmppName name)
     {
         ThrowHelper.ThrowIfNullOrWhiteSpace(name);
-        return Attributes.GetValueOrDefault(name);
+        return _attributes.GetValueOrDefault(name);
     }
 
     public bool RemoveAttribute(string name)
     {
         ThrowHelper.ThrowIfNullOrWhiteSpace(name);
-        return Attributes.Remove(name, out _);
+        return _attributes.Remove(name, out _);
     }
 
     public string? GetNamespace(string? prefix = default)
@@ -199,8 +283,11 @@ public class XmppElement : XmppNode
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public IEnumerable<XmppNode> Nodes() => Children;
+    public IEnumerable<XmppNode> Nodes()
+    {
+        lock (_children)
+            return _children.ToArray();
+    }
 
     public void WriteTo(TextWriter textWriter, XmppFormatting formatting = XmppFormatting.Default)
     {
@@ -221,7 +308,7 @@ public class XmppElement : XmppNode
     {
         var sb = new StringBuilder($"<{Xml.EncodeName(TagName)}");
 
-        foreach (var (key, value) in Attributes)
+        foreach (var (key, value) in _attributes)
             sb.AppendFormat(" {0}=\"{1}\"", Xml.EncodeName(key), Xml.EscapeAttribute(value));
 
         return sb.Append('>').ToString();
@@ -252,7 +339,7 @@ public class XmppElement : XmppNode
 
     public IEnumerable<XmppElement> Elements(XmppName tagName, string? namespaceURI = default)
     {
-        ThrowHelper.ThrowIfNullOrWhiteSpace(tagName);
+        ThrowHelper.ThrowIfNull(tagName);
         return LookupElements(this, tagName, namespaceURI, false);
     }
 
@@ -272,33 +359,35 @@ public class XmppElement : XmppNode
 
     public XmppElement? Element(XmppName tagName, string? namespaceURI = default)
     {
-        ThrowHelper.ThrowIfNullOrWhiteSpace(tagName);
+        ThrowHelper.ThrowIfNull(tagName);
         return LookupElements(this, tagName, namespaceURI, true).FirstOrDefault();
     }
 
     public bool HasTag(XmppName tagName, string? namespaceURI = default)
     {
-        ThrowHelper.ThrowIfNullOrWhiteSpace(tagName);
+        ThrowHelper.ThrowIfNull(tagName);
         return LookupElements(this, tagName, namespaceURI, true).Any();
     }
 
     public XmppElement SetTag(XmppName name, string? xmlns = default, object? value = default)
     {
+        ThrowHelper.ThrowIfNull(name);
+
         var e = new XmppElement(name, xmlns, value);
         AddChild(e);
         return e;
     }
 
-    public void RemoveTag(string tagName, string? namespaceURI = default)
+    public void RemoveTag(XmppName tagName, string? namespaceURI = default)
         => Element(tagName, namespaceURI)?.Remove();
 
-    public void RemoveTags(string tagName, string? namespaceURI = default)
+    public void RemoveTags(XmppName tagName, string? namespaceURI = default)
         => Elements(tagName, namespaceURI).Remove();
 
-    public string? GetTag(string tagName, string? namespaceURI = default)
+    public string? GetTag(XmppName tagName, string? namespaceURI = default)
         => Element(tagName, namespaceURI)?.Value;
 
-    public IEnumerable<string> GetTags(string tagName, string? namespaceURI = default)
+    public IEnumerable<string> GetTags(XmppName tagName, string? namespaceURI = default)
         => Elements(tagName, namespaceURI).Select(x => x.Value!);
 
     public T? Element<T>() where T : XmppElement
@@ -307,14 +396,23 @@ public class XmppElement : XmppNode
     public IEnumerable<T> Elements<T>() where T : XmppElement
         => Elements().OfType<T>();
 
-    public void ClearAttributes()
-    {
+    public void RemoveAttributes()
+        => _attributes.Clear();
 
+    public void RemoveAll()
+    {
+        RemoveAttributes();
+        RemoveNodes();
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RemoveAllChildNodes()
+    public void RemoveNodes()
     {
-        Children.Clear();
+        lock (_children)
+        {
+            foreach (var item in _children)
+                item._parent = null;
+
+            _children.Clear();
+        }
     }
 }

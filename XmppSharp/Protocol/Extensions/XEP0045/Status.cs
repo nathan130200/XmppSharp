@@ -18,7 +18,7 @@ public class Status : XmppElement
 
     public int Code
     {
-        get => this.GetAttribute("code", 0);
+        get => this.GetAttributeInt32("code", 0);
         set => SetAttribute("code", value);
     }
 }

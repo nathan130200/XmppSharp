@@ -1,5 +1,4 @@
 ﻿using XmppSharp.Attributes;
-using XmppSharp.Collections;
 using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Protocol.Core;

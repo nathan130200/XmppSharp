@@ -165,7 +165,7 @@ public static class Xml
         var skipAttribute = e.Prefix == null ? "xmlns" : $"xmlns:{e.Prefix}";
         xw.WriteStartElement(e.Prefix, e.LocalName, e.Namespace);
 
-        foreach (var (key, value) in e.Attributes)
+        foreach (var (key, value) in e._attributes)
         {
             if (key == skipAttribute)
                 continue;

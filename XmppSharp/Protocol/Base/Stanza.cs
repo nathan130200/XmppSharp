@@ -32,8 +32,8 @@ public abstract class Stanza : DirectionalElement
         set => SetAttribute("xml:lang", value);
     }
 
-    public void GenerateId(IdGenerator? generator = default)
-        => Id = (generator ?? IdGenerator.Timestamp).Generate();
+    public void GenerateId()
+        => Id = Guid.NewGuid().ToString("d");
 
     public StanzaError? Error
     {

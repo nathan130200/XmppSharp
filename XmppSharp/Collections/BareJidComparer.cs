@@ -11,13 +11,17 @@ public sealed class BareJidComparer : IComparer, IComparer<Jid>
 
     }
 
-    public int Compare(object? x, object? y) => Compare(x as Jid, y as Jid);
+    public static bool AreEquals(Jid? x, Jid? y)
+        => CompareInternal(x, y) == 0;
 
-    public int Compare(Jid? x, Jid? y)
+    static int CompareInternal(Jid? x, Jid? y)
     {
         if (x == null && y == null) return 0;
         else if (x == null) return -1;
         else if (y == null) return 1;
+
+        if (!x.IsBare) return -1;
+        if (!y.IsBare) return 1;
 
         var result = string.Compare(x.Local, y.Local, StringComparison.OrdinalIgnoreCase);
 
@@ -26,4 +30,8 @@ public sealed class BareJidComparer : IComparer, IComparer<Jid>
 
         return string.Compare(x.Domain, y.Domain, StringComparison.OrdinalIgnoreCase);
     }
+
+    public int Compare(object? x, object? y) => CompareInternal(x as Jid, y as Jid);
+
+    public int Compare(Jid? x, Jid? y) => CompareInternal(x, y);
 }

@@ -13,7 +13,7 @@ public class Data : XmppElement
 
     public ushort Seq
     {
-        get => this.GetAttribute<ushort>("seq", 0);
+        get => (ushort)this.GetAttributeInt16("seq", 0);
         set => SetAttribute("seq", value);
     }
 

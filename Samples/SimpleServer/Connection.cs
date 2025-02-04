@@ -168,7 +168,7 @@ public sealed class Connection : IDisposable
         Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, e.StartTag());
 
         e.From = Server.Hostname;
-        e.GenerateId(IdGenerator.Timestamp);
+        e.GenerateId();
         Send(e.StartTag());
 
         var features = new StreamFeatures();
@@ -296,7 +296,7 @@ public sealed class Connection : IDisposable
                 {
                     iq.SwitchDirection();
 
-                    string resource = bind.Resource ?? IdGenerator.Guid.Generate();
+                    string resource = bind.Resource ?? Guid.NewGuid().ToString("d");
 
                     var search = Jid! with { Resource = resource };
 
@@ -365,7 +365,7 @@ public sealed class Connection : IDisposable
                         iq.SwitchDirection();
                         iq.Type = IqType.Result;
 
-                        roster.Ver = IdGenerator.Timestamp.Generate();
+                        roster.Ver = "1";
 
                         var contacts = Server.Connections.Where(x => x.IsAuthenticated)
                             .Where(x => x != this)

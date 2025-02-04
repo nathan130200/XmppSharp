@@ -13,9 +13,9 @@ public sealed class ExpatXmppParser : IDisposable
     internal volatile bool _streamOpen;
     internal volatile bool _disposed;
 
-    public Action<StreamStream>? OnStreamStart;
-    public Action<XmppElement>? OnStreamElement;
-    public Action? OnStreamEnd;
+    public event Action<StreamStream>? OnStreamStart;
+    public event Action<XmppElement>? OnStreamElement;
+    public event Action? OnStreamEnd;
 
     public ExpatXmppParser(ExpatEncoding encoding, bool strict = true)
     {

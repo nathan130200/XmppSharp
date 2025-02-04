@@ -11,9 +11,9 @@ public sealed class FullJidComparer : IComparer, IComparer<Jid>
 
     }
 
-    public int Compare(object? x, object? y) => Compare(x as Jid, y as Jid);
+    public static bool AreEquals(Jid? x, Jid? y) => CompreInternal(x, y) == 0;
 
-    public int Compare(Jid? x, Jid? y)
+    static int CompreInternal(Jid? x, Jid? y)
     {
         if (x == null && y == null) return 0;
         else if (x == null) return -1;
@@ -31,4 +31,8 @@ public sealed class FullJidComparer : IComparer, IComparer<Jid>
 
         return string.Compare(x.Resource, y.Resource, StringComparison.Ordinal);
     }
+
+    public int Compare(object? x, object? y) => CompreInternal(x as Jid, y as Jid);
+
+    public int Compare(Jid? x, Jid? y) => CompreInternal(x, y);
 }

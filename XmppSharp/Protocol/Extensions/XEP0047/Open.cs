@@ -13,7 +13,7 @@ public class Open : XmppElement
 
     public ushort BlockSize
     {
-        get => this.GetAttribute<ushort>("block-size", 4096);
+        get => (ushort)this.GetAttributeInt16("block-size", 4096);
         set => SetAttribute("block-size", value);
     }
 

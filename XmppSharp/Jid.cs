@@ -6,19 +6,20 @@ using XmppSharp.Collections;
 namespace XmppSharp;
 
 [DebuggerDisplay("{ToString(),nq}")]
-public sealed record Jid :
-    IEquatable<Jid>
-
-#if NET7_0_OR_GREATER
-    , IParsable<Jid>
-#endif
-
+public sealed record Jid : IEquatable<Jid>
 {
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private string? _local, _resource;
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private string _domain = default!;
+
+    public Jid(Jid other)
+    {
+        _local = other._local;
+        _domain = other._domain;
+        _resource = other._resource;
+    }
 
     public Jid(string? local, string domain, string? resource)
     {
@@ -100,7 +101,12 @@ public sealed record Jid :
     }
 
 
-    public bool IsBare => string.IsNullOrWhiteSpace(_resource);
+    public bool IsBare
+        => string.IsNullOrWhiteSpace(_resource);
+
+    public bool IsServer
+        => string.IsNullOrWhiteSpace(_local) && string.IsNullOrWhiteSpace(_resource);
+
     public Jid Bare => this with { Resource = null };
 
     public bool Equals(Jid? other)
@@ -108,7 +114,10 @@ public sealed record Jid :
         if (other is null)
             return false;
 
-        return FullJidComparer.Shared.Compare(this, other) == 0;
+        if (ReferenceEquals(other, this))
+            return true;
+
+        return FullJidComparer.AreEquals(this, other);
     }
 
     public override int GetHashCode() => HashCode.Combine
@@ -117,28 +126,4 @@ public sealed record Jid :
         Domain?.GetHashCode() ?? 0,
         Resource?.GetHashCode() ?? 0
     );
-
-#if NET7_0_OR_GREATER
-
-    public static Jid Parse(string s, IFormatProvider? provider)
-    {
-        ThrowHelper.ThrowIfNull(s);
-        return new Jid(s);
-    }
-
-    public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Jid result)
-    {
-        try
-        {
-            result = Parse(s!, provider);
-            return true;
-        }
-        catch
-        {
-            result = default;
-            return false;
-        }
-    }
-
-#endif
 }
