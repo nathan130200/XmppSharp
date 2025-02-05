@@ -1,6 +1,6 @@
 <Project>
 	<PropertyGroup>
-		<XmppSharpVersion>6.0.0</XmppSharpVersion>
+		<XmppSharpVersion>6.0.1</XmppSharpVersion>
 		<XmppSharpExpatVersion>3.0.0</XmppSharpExpatVersion>
 		<XmppSharpTokenizerVersion>2.1.0</XmppSharpTokenizerVersion>
 	</PropertyGroup>

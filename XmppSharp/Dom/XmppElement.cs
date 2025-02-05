@@ -9,7 +9,7 @@ using XmppSharp.Collections;
 namespace XmppSharp.Dom;
 
 [DebuggerDisplay("{StartTag(),nq}")]
-public class XmppElementDebuggerProxy
+internal class XmppElementDebuggerProxy
 {
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     readonly XmppElement? _element;
