@@ -40,10 +40,10 @@ public class AttributeParsingTests
         var myDouble = el.GetAttributeDouble("my_double", 0d);
         Assert.AreEqual(double.Epsilon, myDouble);
 
-        var myBool = el.GetAttributeBool("my_bool_as_int", false);
+        var myBool = el.GetAttributeBool("my_bool_as_int") ?? false;
         Assert.AreEqual(true, myBool);
 
-        myBool = el.GetAttributeBool("my_bool_as_string", true);
+        myBool = el.GetAttributeBool("my_bool_as_string") ?? true;
         Assert.AreEqual(false, myBool);
     }
 

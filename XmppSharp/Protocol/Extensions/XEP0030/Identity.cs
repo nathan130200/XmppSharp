@@ -20,7 +20,7 @@ public class Identity : XmppElement
     public Identity(string category, string name, string? type) : this()
     {
         Category = category;
-        Name = name;
+        ItemName = name;
         Type = type;
     }
 

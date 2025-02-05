@@ -16,9 +16,15 @@ public class Status : XmppElement
         Code = code;
     }
 
-    public int Code
+    public int? Code
     {
-        get => this.GetAttributeInt32("code", 0);
-        set => SetAttribute("code", value);
+        get => this.GetAttributeInt32("code");
+        set
+        {
+            if (!value.HasValue)
+                RemoveAttribute("code");
+            else
+                SetAttribute("code", (int)value);
+        }
     }
 }

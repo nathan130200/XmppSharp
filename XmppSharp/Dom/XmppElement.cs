@@ -67,9 +67,6 @@ public class XmppElement : XmppNode
 
     public XmppElement(XmppElement other) : this()
     {
-        if (GetType() != other.GetType())
-            throw new InvalidOperationException("To perform a copy constructor, both objects must be of the same type.");
-
         Name = new(other.Name);
 
         foreach (var (key, value) in other._attributes)

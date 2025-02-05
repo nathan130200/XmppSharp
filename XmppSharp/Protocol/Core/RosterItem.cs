@@ -14,7 +14,7 @@ public class RosterItem : XmppElement
     public RosterItem(Jid? jid, string? name, RosterSubscriptionType? subscription) : this()
     {
         Jid = jid;
-        Name = name;
+        ItemName = name;
         Subscription = subscription;
     }
 

@@ -18,13 +18,13 @@ public class LastActivity : XmppElement
 
     public ulong? Seconds
     {
-        get => (ulong)this.GetAttributeInt64("seconds");
+        get => (ulong?)this.GetAttributeInt64("seconds");
         set
         {
             if (!value.HasValue)
                 RemoveAttribute("seconds");
             else
-                SetAttribute("seconds", (ulong)value);
+                SetAttribute("seconds", value);
         }
     }
 }

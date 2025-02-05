@@ -25,56 +25,53 @@ public static class XmppElementExtensions
     public static readonly TryParseNumberDelegate<float> FloatParser = CreateNumberParser<float>(float.TryParse);
     public static readonly TryParseNumberDelegate<double> DoubleParser = CreateNumberParser<double>(double.TryParse);
 
-    public static bool GetAttributeBool(this XmppElement e, string name, bool defaultValue = default)
+    public static bool? GetAttributeBool(this XmppElement e, string name)
     {
         var temp = e.GetAttribute(name);
 
         if (temp == null)
-            return defaultValue;
+            return default;
 
         return temp == "1" || temp.Equals("true", StringComparison.OrdinalIgnoreCase);
     }
 
-    public static short GetAttributeInt16(this XmppElement e, string name, short defaultValue = default, NumberStyles style = NumberStyles.Integer, IFormatProvider? ifp = default)
+    public static short? GetAttributeInt16(this XmppElement e, string name, NumberStyles style = NumberStyles.Integer, IFormatProvider? ifp = default)
     {
         var temp = e._attributes.GetValueOrDefault(name);
         var (success, result) = Int16Parser(temp, style, ifp);
-        return success ? result : defaultValue;
+        return success ? result : default;
     }
 
-    public static int GetAttributeInt32(this XmppElement e, string name, int defaultValue = default, NumberStyles style = NumberStyles.Integer, IFormatProvider? ifp = default)
+    public static int? GetAttributeInt32(this XmppElement e, string name, NumberStyles style = NumberStyles.Integer, IFormatProvider? ifp = default)
     {
         var temp = e._attributes.GetValueOrDefault(name);
         var (success, result) = Int32Parser(temp, style, ifp);
-        return success ? result : defaultValue;
+        return success ? result : default;
     }
 
-    public static long GetAttributeInt64(this XmppElement e, string name, long defaultValue = default, NumberStyles style = NumberStyles.Integer, IFormatProvider? ifp = default)
+    public static long? GetAttributeInt64(this XmppElement e, string name, NumberStyles style = NumberStyles.Integer, IFormatProvider? ifp = default)
     {
         var temp = e._attributes.GetValueOrDefault(name);
         var (success, result) = Int64Parser(temp, style, ifp);
-        return success ? result : defaultValue;
+        return success ? result : default;
     }
 
-    public static float GetAttributeFloat(this XmppElement e, string name, float defaultValue = default, NumberStyles style = NumberStyles.Float, IFormatProvider? ifp = default)
+    public static float? GetAttributeFloat(this XmppElement e, string name, NumberStyles style = NumberStyles.Float, IFormatProvider? ifp = default)
     {
         var temp = e._attributes.GetValueOrDefault(name);
         var (success, result) = FloatParser(temp, style, ifp);
-        return success ? result : defaultValue;
+        return success ? result : default;
     }
 
-    public static double GetAttributeDouble(this XmppElement e, string name, double defaultValue = default, NumberStyles style = NumberStyles.Float, IFormatProvider? ifp = default)
+    public static double? GetAttributeDouble(this XmppElement e, string name, NumberStyles style = NumberStyles.Float, IFormatProvider? ifp = default)
     {
         var temp = e._attributes.GetValueOrDefault(name);
         var (success, result) = DoubleParser(temp, style, ifp);
-        return success ? result : defaultValue;
+        return success ? result : default;
     }
 
-    public static Jid? GetAttributeJid(this XmppElement e, string name, Jid? defaultValue = default)
-    {
-        var temp = e._attributes.GetValueOrDefault(name);
-        return temp != null ? temp : defaultValue;
-    }
+    public static Jid? GetAttributeJid(this XmppElement e, string name)
+        => e._attributes.GetValueOrDefault(name);
 
     public static T GetAttributeEnum<T>(this XmppElement e, string name, T defaultValue, bool ignoreCase = true) where T : struct, Enum
     {
@@ -112,7 +109,7 @@ public static class XmppElementExtensions
 
 #if NET8_0_OR_GREATER
 
-    public static T GetAttribute<T>(this XmppElement e, string name, T defaultValue, IFormatProvider? formatter = default) where T : IParsable<T>
+    public static T GetAttributeValue<T>(this XmppElement e, string name, T defaultValue, IFormatProvider? formatter = default) where T : IParsable<T>
     {
         formatter ??= CultureInfo.InvariantCulture;
 
@@ -124,7 +121,7 @@ public static class XmppElementExtensions
         return result;
     }
 
-    public static T? GetAttribute<T>(this XmppElement e, string name, IFormatProvider? formatter = default) where T : struct, IParsable<T>
+    public static T? GetAttributeValue<T>(this XmppElement e, string name, IFormatProvider? formatter = default) where T : struct, IParsable<T>
     {
         formatter ??= CultureInfo.InvariantCulture;
 
