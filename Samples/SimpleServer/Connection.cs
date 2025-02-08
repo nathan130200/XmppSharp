@@ -212,7 +212,7 @@ public sealed class Connection : IDisposable
     }
 
     void OnStreamElement(XmppElement e)
-        => AsyncHelper.RunSync(() => HandleStreamElement(e));
+        => HandleStreamElement(e).GetAwaiter().GetResult();
 
     async Task HandleStreamElement(XmppElement e)
     {
