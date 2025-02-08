@@ -52,4 +52,16 @@ public static class Utilities
 
     public static string ComputeHash(this string str, HashAlgorithmName hashAlgorithm)
         => Convert.ToHexString(ComputeHashCore(hashAlgorithm, str.GetBytes()));
+
+    internal static Exception Throw(Exception ex)
+    {
+        try
+        {
+            throw ex;
+        }
+        catch (Exception e)
+        {
+            return e;
+        }
+    }
 }

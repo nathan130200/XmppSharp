@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<XmppSharpVersion>6.0.1</XmppSharpVersion>
+	</PropertyGroup>
+
+	<PropertyGroup>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Version>$(XmppSharpVersion)</Version>
@@ -8,7 +12,6 @@
 		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<Description>Lightweight XMPP library.</Description>
-		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<TargetFrameworks>net6.0;net8.0</TargetFrameworks>
 
 		<PackageId>XmppSharp</PackageId>
@@ -46,11 +49,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Expat.Net" Version="1.0.1" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Net\" />
+		<PackageReference Include="Expat.Net" Version="1.0.1" />
 	</ItemGroup>
 
 </Project>

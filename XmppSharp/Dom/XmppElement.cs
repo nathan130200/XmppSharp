@@ -50,7 +50,7 @@ public class XmppElement : XmppNode
 
     public XmppElement(XmppName tagName, string? namespaceURI = default, object? value = default) : this()
     {
-        ThrowHelper.ThrowIfNull(tagName);
+        Throw.IfNull(tagName);
 
         Name = tagName;
 
@@ -183,7 +183,7 @@ public class XmppElement : XmppNode
 
     public XmppElement SetAttribute(string name, object? value, string? format = default, IFormatProvider? ifp = default)
     {
-        ThrowHelper.ThrowIfNullOrWhiteSpace(name);
+        Throw.IfStringNullOrWhiteSpace(name);
 
         if (value is null)
             RemoveAttribute(name);
@@ -216,7 +216,7 @@ public class XmppElement : XmppNode
 
     public bool HasAttribute(string name)
     {
-        ThrowHelper.ThrowIfNullOrWhiteSpace(name);
+        Throw.IfStringNullOrWhiteSpace(name);
 
         lock (_attributes)
             return _attributes.ContainsKey(name);
@@ -224,13 +224,13 @@ public class XmppElement : XmppNode
 
     public string? GetAttribute(XmppName name)
     {
-        ThrowHelper.ThrowIfNullOrWhiteSpace(name);
+        Throw.IfStringNullOrWhiteSpace(name);
         return _attributes.GetValueOrDefault(name);
     }
 
     public bool RemoveAttribute(string name)
     {
-        ThrowHelper.ThrowIfNullOrWhiteSpace(name);
+        Throw.IfStringNullOrWhiteSpace(name);
         return _attributes.Remove(name, out _);
     }
 
@@ -246,14 +246,14 @@ public class XmppElement : XmppNode
 
     public void SetNamespace(string? namespaceURI)
     {
-        ThrowHelper.ThrowIfNull(namespaceURI);
+        Throw.IfNull(namespaceURI);
         SetAttribute("xmlns", namespaceURI);
     }
 
     public void SetNamespace(string prefix, string? namespaceURI)
     {
-        ThrowHelper.ThrowIfNullOrWhiteSpace(prefix);
-        ThrowHelper.ThrowIfNull(namespaceURI);
+        Throw.IfStringNullOrWhiteSpace(prefix);
+        Throw.IfNull(namespaceURI);
         SetAttribute($"xmlns:{prefix}", namespaceURI);
     }
 
@@ -336,7 +336,7 @@ public class XmppElement : XmppNode
 
     public IEnumerable<XmppElement> Elements(XmppName tagName, string? namespaceURI = default)
     {
-        ThrowHelper.ThrowIfNull(tagName);
+        Throw.IfNull(tagName);
         return LookupElements(this, tagName, namespaceURI, false);
     }
 
@@ -356,19 +356,19 @@ public class XmppElement : XmppNode
 
     public XmppElement? Element(XmppName tagName, string? namespaceURI = default)
     {
-        ThrowHelper.ThrowIfNull(tagName);
+        Throw.IfNull(tagName);
         return LookupElements(this, tagName, namespaceURI, true).FirstOrDefault();
     }
 
     public bool HasTag(XmppName tagName, string? namespaceURI = default)
     {
-        ThrowHelper.ThrowIfNull(tagName);
+        Throw.IfNull(tagName);
         return LookupElements(this, tagName, namespaceURI, true).Any();
     }
 
     public XmppElement SetTag(XmppName name, string? xmlns = default, object? value = default)
     {
-        ThrowHelper.ThrowIfNull(name);
+        Throw.IfNull(name);
 
         var e = new XmppElement(name, xmlns, value);
         AddChild(e);

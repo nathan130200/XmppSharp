@@ -108,7 +108,7 @@ public class Field : XmppElement
 
     public void AddValue(object value, IFormatProvider? ifp = default)
     {
-        ThrowHelper.ThrowIfNull(value);
+        Throw.IfNull(value);
 
         AddChild(new XmppElement("value", Namespaces.DataForms)
         {

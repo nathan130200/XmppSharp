@@ -19,7 +19,7 @@ public static class AsyncHelper
 
     public static Task RunAsync(Action callback)
     {
-        ThrowHelper.ThrowIfNull(callback);
+        Throw.IfNull(callback);
 
         var culture = GetCurrentCulture();
 
@@ -32,7 +32,7 @@ public static class AsyncHelper
 
     public static Task RunAsync(Action<object?> callback, object? argument)
     {
-        ThrowHelper.ThrowIfNull(callback);
+        Throw.IfNull(callback);
 
         var culture = GetCurrentCulture();
 
@@ -45,7 +45,7 @@ public static class AsyncHelper
 
     public static Task RunAsync<TArgument>(Action<TArgument?> callback, TArgument? argument)
     {
-        ThrowHelper.ThrowIfNull(callback);
+        Throw.IfNull(callback);
 
         var culture = GetCurrentCulture();
 
@@ -58,7 +58,7 @@ public static class AsyncHelper
 
     public static void RunSync(Func<Task> task)
     {
-        ThrowHelper.ThrowIfNull(task);
+        Throw.IfNull(task);
 
         var culture = GetCurrentCulture();
 
@@ -71,7 +71,7 @@ public static class AsyncHelper
 
     public static TResult RunSync<TResult>(Func<Task<TResult>> task)
     {
-        ThrowHelper.ThrowIfNull(task);
+        Throw.IfNull(task);
 
         var culture = GetCurrentCulture();
 

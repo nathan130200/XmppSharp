@@ -49,7 +49,7 @@ public class XmppDocument
 
     public void Load(TextReader textReader)
     {
-        ThrowHelper.ThrowIfNull(textReader);
+        Throw.IfNull(textReader);
 
         var settings = new XmlReaderSettings
         {
@@ -203,7 +203,7 @@ public sealed class StringWriterWithEncoding : StringWriter
 
     public StringWriterWithEncoding(StringBuilder @out, Encoding encoding) : base(@out)
     {
-        ThrowHelper.ThrowIfNull(encoding);
+        Throw.IfNull(encoding);
 
         _encoding = encoding;
     }

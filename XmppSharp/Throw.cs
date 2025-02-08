@@ -1,12 +1,13 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace XmppSharp;
 
-internal static class ThrowHelper
+internal static class Throw
 {
     [StackTraceHidden]
-    public static Exception Rethrow(Exception ex)
+    public static Exception GetStackTrace(this Exception ex)
     {
         Exception result;
 
@@ -22,7 +23,15 @@ internal static class ThrowHelper
         return result;
     }
 
-    public static void ThrowIfNotEquals(string? expected, string? current,
+    public static void IfDisposed(object obj, [DoesNotReturnIf(true)] bool condition)
+    {
+        IfNull(obj);
+
+        if (condition)
+            throw new ObjectDisposedException(obj.GetType().FullName);
+    }
+
+    public static void IfStringNotEquals(string? expected, string? current,
         StringComparison comparer = StringComparison.Ordinal,
         [CallerArgumentExpression(nameof(current))] string paramName = default!)
     {
@@ -30,19 +39,19 @@ internal static class ThrowHelper
             throw new ArgumentException(default, paramName);
     }
 
-    public static void ThrowIfNull(object? obj, [CallerArgumentExpression(nameof(obj))] string? paramName = default)
+    public static void IfNull(object? obj, [CallerArgumentExpression(nameof(obj))] string? paramName = default)
     {
         if (obj is null)
             throw new ArgumentNullException(paramName);
     }
 
-    public static void ThrowIfNullOrWhiteSpace(string? s, [CallerArgumentExpression(nameof(s))] string? paramName = default)
+    public static void IfStringNullOrWhiteSpace(string? s, [CallerArgumentExpression(nameof(s))] string? paramName = default)
     {
         if (string.IsNullOrWhiteSpace(s))
             throw new ArgumentException(null, paramName);
     }
 
-    public static void ThrowIfNullOrEmpty(string? s, [CallerArgumentExpression(nameof(s))] string? paramName = default)
+    public static void IfStringNullOrEmpty(string? s, [CallerArgumentExpression(nameof(s))] string? paramName = default)
     {
         if (string.IsNullOrEmpty(s))
             throw new ArgumentException(null, paramName);

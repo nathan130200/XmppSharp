@@ -66,8 +66,8 @@ public static class Xml
 
     public static IEnumerable<T> ForEach<T>(this IEnumerable<T> source, Action<T> callback)
     {
-        ThrowHelper.ThrowIfNull(source);
-        ThrowHelper.ThrowIfNull(callback);
+        Throw.IfNull(source);
+        Throw.IfNull(callback);
 
         if (source.Any())
         {
@@ -80,8 +80,8 @@ public static class Xml
 
     public static bool FindChild(this XmppElement parent, string tagName, string? namespaceURI, [NotNullWhen(true)] out XmppElement? result)
     {
-        ThrowHelper.ThrowIfNull(parent);
-        ThrowHelper.ThrowIfNullOrWhiteSpace(tagName);
+        Throw.IfNull(parent);
+        Throw.IfStringNullOrWhiteSpace(tagName);
 
         result = parent.Element(tagName, namespaceURI);
 
@@ -90,8 +90,8 @@ public static class Xml
 
     public static bool FindChild(this XmppElement parent, string tagName, [NotNullWhen(true)] out XmppElement? result)
     {
-        ThrowHelper.ThrowIfNull(parent);
-        ThrowHelper.ThrowIfNullOrWhiteSpace(tagName);
+        Throw.IfNull(parent);
+        Throw.IfStringNullOrWhiteSpace(tagName);
 
         result = parent.Element(tagName);
 
@@ -100,21 +100,21 @@ public static class Xml
 
     public static XmppElement? Child(this XmppElement parent, Func<XmppElement, bool> predicate)
     {
-        ThrowHelper.ThrowIfNull(parent);
-        ThrowHelper.ThrowIfNull(predicate);
+        Throw.IfNull(parent);
+        Throw.IfNull(predicate);
         return parent.Elements().FirstOrDefault(predicate);
     }
 
     public static IEnumerable<XmppElement> Elements(this XmppElement parent, Func<XmppElement, bool> predicate)
     {
-        ThrowHelper.ThrowIfNull(parent);
-        ThrowHelper.ThrowIfNull(predicate);
+        Throw.IfNull(parent);
+        Throw.IfNull(predicate);
         return parent.Elements().Where(predicate);
     }
 
     public static XmppElement C(this XmppElement parent, string tagName, string? namespaceURI = default, object? value = default)
     {
-        ThrowHelper.ThrowIfNull(parent);
+        Throw.IfNull(parent);
 
         var child = XmppElementFactory.Create(tagName, namespaceURI, parent);
         child.SetValue(value);
@@ -124,7 +124,7 @@ public static class Xml
 
     public static XmppElement? Up(this XmppElement child)
     {
-        ThrowHelper.ThrowIfNull(child);
+        Throw.IfNull(child);
         return child.Parent;
     }
 

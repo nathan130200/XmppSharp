@@ -15,7 +15,7 @@ public sealed class XmppName : IEquatable<XmppName>
 
     public XmppName(XmppName other)
     {
-        ThrowHelper.ThrowIfNull(other);
+        Throw.IfNull(other);
 
         LocalName = other.LocalName;
         Prefix = other.Prefix;
@@ -24,7 +24,7 @@ public sealed class XmppName : IEquatable<XmppName>
 
     public XmppName(string? str)
     {
-        ThrowHelper.ThrowIfNullOrWhiteSpace(str);
+        Throw.IfStringNullOrWhiteSpace(str);
 
         var ofs = str!.IndexOf(':');
 
@@ -33,7 +33,7 @@ public sealed class XmppName : IEquatable<XmppName>
 
         LocalName = XmlConvert.EncodeLocalName(str[(ofs + 1)..]);
 
-        ThrowHelper.ThrowIfNullOrWhiteSpace(LocalName);
+        Throw.IfStringNullOrWhiteSpace(LocalName);
 
         _debugString = XmlConvert.EncodeName(str);
     }

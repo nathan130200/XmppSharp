@@ -25,7 +25,7 @@ public class Auth : XmppElement
         get => GetAttribute("mechanism")!;
         set
         {
-            ThrowHelper.ThrowIfNullOrWhiteSpace(value, nameof(Mechanism));
+            Throw.IfStringNullOrWhiteSpace(value, nameof(Mechanism));
             SetAttribute("mechanism", value);
         }
     }
