@@ -96,23 +96,35 @@ public class XmppClientConnection : XmppConnection
                 if (!_isInStartTls || State.HasFlag(XmppConnectionState.Encrypted))
                     throw new JabberStreamException(StreamErrorCondition.UnsupportedFeature);
 
-                _access &= ~FileAccess.Read;
+                _cancelRead = _cancelWrite = true;
 
                 _ = Task.Run(async () =>
                 {
-                    Throw.IfNull(Stream);
+                    try
+                    {
+                        if (_readLoopTask != null)
+                            await _readLoopTask;
 
-                    var temp = new SslStream(Stream, false);
-                    await temp.AuthenticateAsClientAsync(Options.Ssl!);
-                    Stream = temp;
-                    temp = null;
+                        if (_writeLoopTask != null)
+                            await _writeLoopTask;
 
-                    State |= XmppConnectionState.Encrypted;
-                    _isInStartTls = false;
+                        Throw.IfNull(Stream);
 
-                    SendStreamHeader();
+                        var temp = new SslStream(Stream, false);
+                        await temp.AuthenticateAsClientAsync(Options.Ssl!);
+                        Stream = temp;
+                        temp = null;
 
-                    _access |= FileAccess.Read;
+                        State |= XmppConnectionState.Encrypted;
+                        _isInStartTls = false;
+
+                        InitStream();
+                    }
+                    catch (Exception ex)
+                    {
+                        FireOnError(ex);
+                        Disconnect();
+                    }
                 });
 
                 return;
@@ -125,6 +137,8 @@ public class XmppClientConnection : XmppConnection
         {
             if (_saslHandler!.Invoke(this, e))
             {
+                Jid = Options.Jid.Bare;
+
                 State |= XmppConnectionState.Authenticated;
 
                 _isInAuth = false;
@@ -146,7 +160,10 @@ public class XmppClientConnection : XmppConnection
 
     async Task DoResourceBind(StreamFeatures features)
     {
-        var bindIq = new Iq(IqType.Set);
+        var bindIq = new Iq(IqType.Set)
+        {
+            To = Options.Jid.Domain
+        };
 
         bindIq
             .C("bind", Namespaces.Bind)
@@ -159,6 +176,14 @@ public class XmppClientConnection : XmppConnection
             Disconnect();
             return;
         }
+
+        Jid = Jid with
+        {
+            Resource = result["bind"]?["jid"]?.Value
+        };
+
+        if (string.IsNullOrWhiteSpace(Jid.Resource))
+            throw new JabberStreamException(StreamErrorCondition.ImproperAddressing);
 
         State |= XmppConnectionState.ResourceBinded;
 
@@ -178,6 +203,8 @@ public class XmppClientConnection : XmppConnection
             }
 
             State |= XmppConnectionState.SessionStarted;
+
+            InitKeepAliveTimer();
         }
     }
 }

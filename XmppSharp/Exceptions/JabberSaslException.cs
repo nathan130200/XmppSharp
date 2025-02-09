@@ -6,7 +6,7 @@ public class JabberSaslException : JabberException
 {
     public FailureCondition Condition { get; }
 
-    public JabberSaslException(FailureCondition condition) : base()
+    public JabberSaslException(FailureCondition condition) : base(condition.ToString())
     {
         Condition = condition;
     }

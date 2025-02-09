@@ -6,7 +6,7 @@ public class JabberStreamException : JabberException
 {
     public StreamErrorCondition Condition { get; }
 
-    public JabberStreamException(StreamErrorCondition condition) : base()
+    public JabberStreamException(StreamErrorCondition condition) : base(condition.ToString())
     {
         Condition = condition;
     }

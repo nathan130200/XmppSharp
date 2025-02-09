@@ -27,8 +27,10 @@ public class XmppConnection : IDisposable
 
     public XmppConnectionState State { get; protected set; }
     internal SemaphoreSlim? _semaphore = new(1, 1);
-    internal volatile FileAccess _access;
     internal volatile byte _disposed;
+
+    protected TaskCompletionSource? _connectionTcs;
+    protected Task? _readLoopTask, _writeLoopTask;
 
     protected XmppConnection(XmppConnectionOptions options)
     {
@@ -46,19 +48,79 @@ public class XmppConnection : IDisposable
 
             Stream = new NetworkStream(Socket, false);
 
+            _connectionTcs = new TaskCompletionSource();
             State |= XmppConnectionState.Connected;
-            _access = FileAccess.ReadWrite;
 
             InitParser();
-            SendStreamHeader();
+            InitStream();
 
-            await Task.WhenAll(BeginReceive(), BeginSend());
+            await _connectionTcs.Task;
         }
         catch
         {
             Dispose();
             throw;
         }
+    }
+
+    public Jid Jid { get; protected set; }
+
+    private Timer _keepAliveTimer;
+
+    static readonly byte[] s_KeepAliveBuffer = " ".GetBytes();
+
+    protected void InitKeepAliveTimer()
+    {
+        if (!Options.EnableKeepAlive)
+            return;
+
+        _keepAliveTimer = new Timer(OnTick, null, TimeSpan.Zero, Options.KeepAliveInterval);
+
+        void OnTick(object? token)
+        {
+            try
+            {
+                Throw.IfNull(_semaphore);
+                Throw.IfNull(Stream);
+
+                _semaphore.Wait();
+
+                Console.WriteLine("Start keep alive");
+
+                int index = Task.WaitAny(Task.Delay(Options.KeepAliveInterval),
+                    Stream.WriteAsync(s_KeepAliveBuffer, 0, s_KeepAliveBuffer.Length));
+
+                Console.WriteLine("End keep alive (timed out: {0})", index == 0);
+
+                if (index == 0)
+                    throw new JabberStreamException(StreamErrorCondition.HostGone);
+            }
+            catch (Exception ex)
+            {
+                FireOnError(ex);
+                Disconnect();
+            }
+            finally
+            {
+                _semaphore?.Release();
+            }
+        }
+    }
+
+    protected internal volatile bool _cancelRead = true;
+    protected internal volatile bool _cancelWrite = true;
+
+    protected void InitStream()
+    {
+        _cancelRead = _cancelWrite = true;
+        _readLoopTask?.Wait();
+        _writeLoopTask?.Wait();
+
+        _cancelRead = _cancelWrite = false;
+        _readLoopTask = BeginReceive();
+        _writeLoopTask = BeginSend();
+
+        SendStreamHeader();
     }
 
     public void Send(string xml)
@@ -143,10 +205,6 @@ public class XmppConnection : IDisposable
 
     protected virtual void InitParser()
     {
-        // FIXME: Due weird reason, soft-parser reset does not work in expat if server re-send XML prolog.
-        // An work-around to fix this, just delete old parser and create new one.
-        _access &= ~FileAccess.Read;
-
         var oldParser = Parser;
 
         Parser = new ExpatXmppParser(ExpatEncoding.UTF8);
@@ -202,31 +260,31 @@ public class XmppConnection : IDisposable
                 FireOnError(ex);
             }
 
-            Dispose();
+            Disconnect();
         };
 
         oldParser?.Dispose();
-
-        _access |= FileAccess.Read;
     }
+
+    const int DefaultBufferSize = 4096;
 
     async Task BeginReceive()
     {
         int numBytes = _options.ReceiveBufferSize;
 
         if (numBytes <= 0)
-            numBytes = 4096;
+            numBytes = DefaultBufferSize;
 
         var buffer = ArrayPool<byte>.Shared.Rent(numBytes);
 
         try
         {
-            while (_disposed < 1)
+            while (!_cancelRead)
             {
                 await Task.Delay(1);
 
-                if (!_access.HasFlag(FileAccess.Read))
-                    continue;
+                if (_disposed > 1)
+                    return;
 
                 Throw.IfNull(Stream);
                 Throw.IfNull(Parser);
@@ -242,23 +300,22 @@ public class XmppConnection : IDisposable
         catch (Exception ex)
         {
             FireOnError(ex);
+            Dispose();
         }
         finally
         {
             ArrayPool<byte>.Shared.Return(buffer);
         }
-
-        Dispose();
     }
 
     async Task BeginSend()
     {
-        while (_disposed < 2)
+        while (!_cancelRead)
         {
-            await Task.Delay(1);
+            await Task.Delay(16);
 
-            if (!_access.HasFlag(FileAccess.Write))
-                continue;
+            if (_disposed > 0)
+                return;
 
             try
             {
@@ -285,11 +342,14 @@ public class XmppConnection : IDisposable
                     {
                         tcs?.TrySetResult();
                     }
+
+                    await Task.Delay(16);
                 }
             }
             catch (Exception ex)
             {
                 FireOnError(ex);
+                Dispose();
                 break;
             }
             finally
@@ -297,11 +357,13 @@ public class XmppConnection : IDisposable
                 _semaphore?.Release();
             }
         }
-
-        Dispose();
     }
 
-    protected void FireOnError(Exception ex) => OnError?.Invoke(this, ex);
+    protected void FireOnError(Exception ex)
+    {
+        OnError?.Invoke(this, ex);
+    }
+
     protected void FireOnMessage(Message e) => OnMessage?.Invoke(this, e);
     protected void FireOnPresence(Presence e) => OnPresence?.Invoke(this, e);
     protected void FireOnIq(Iq e) => OnIq?.Invoke(this, e);
@@ -324,8 +386,6 @@ public class XmppConnection : IDisposable
         _disposed = 1;
         GC.SuppressFinalize(this);
 
-        _access &= ~FileAccess.Read;
-
         var isConnected = State.HasFlag(XmppConnectionState.Connected);
         State &= ~XmppConnectionState.Connected;
 
@@ -341,14 +401,10 @@ public class XmppConnection : IDisposable
         if (isConnected)
             Socket?.Shutdown(SocketShutdown.Receive);
 
-        Parser?.Dispose();
-
         Disposing();
 
         _semaphore?.Dispose();
         _semaphore = null;
-
-        Parser = null;
 
         if (_sendQueue.IsEmpty || Options.DisconnectTimeout <= TimeSpan.Zero)
             CleanupSocket(isConnected);
@@ -362,7 +418,9 @@ public class XmppConnection : IDisposable
     void CleanupSocket(bool isConnected)
     {
         _disposed = 2;
-        _access &= ~FileAccess.Write;
+
+        Parser?.Dispose();
+        Parser = null;
 
         if (isConnected)
             Socket?.Shutdown(SocketShutdown.Send);
@@ -382,6 +440,9 @@ public class XmppConnection : IDisposable
             Socket = null;
         }
         catch { }
+
+        _connectionTcs?.TrySetResult();
+        _connectionTcs = null;
     }
 
     public event Action<XmppConnection, Exception>? OnError;

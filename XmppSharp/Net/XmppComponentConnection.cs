@@ -40,7 +40,11 @@ public sealed class XmppComponentConnection : XmppConnection
                 throw new JabberStreamException(se.Condition ?? StreamErrorCondition.UndefinedCondition);
 
             if (e is Handshake)
+            {
+                Jid = Options.Jid;
                 State |= XmppConnectionState.Authenticated;
+                InitKeepAliveTimer();
+            }
         }
         else
         {
