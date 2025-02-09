@@ -39,7 +39,7 @@ internal static class Throw
             throw new ArgumentException(default, paramName);
     }
 
-    public static void IfNull(object? obj, [CallerArgumentExpression(nameof(obj))] string? paramName = default)
+    public static void IfNull([NotNull] object? obj, [CallerArgumentExpression(nameof(obj))] string? paramName = default)
     {
         if (obj is null)
             throw new ArgumentNullException(paramName);

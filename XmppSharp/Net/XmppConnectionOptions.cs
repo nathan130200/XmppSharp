@@ -20,7 +20,7 @@ public class XmppConnectionOptions
     public TimeSpan ReceiveTimeout { get; set; }
     public TimeSpan DisconnectTimeout { get; set; }
 
-    public bool OnlineVerbose { get; set; }
+    public bool Verbose { get; set; }
 
     internal void Validate()
     {

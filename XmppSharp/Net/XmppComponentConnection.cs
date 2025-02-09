@@ -5,7 +5,7 @@ using XmppSharp.Protocol.Core.Component;
 
 namespace XmppSharp.Net;
 
-public class XmppComponentConnection : XmppConnection
+public sealed class XmppComponentConnection : XmppConnection
 {
     public XmppComponentConnection(XmppConnectionOptions options) : base(options)
     {

@@ -1,9 +1,11 @@
-﻿using XmppSharp.Dom;
+﻿using XmppSharp.Attributes;
+using XmppSharp.Dom;
 using XmppSharp.Protocol.Core.Sasl;
 using XmppSharp.Protocol.Core.Tls;
 
 namespace XmppSharp.Protocol.Base;
 
+[XmppTag("stream:features", Namespaces.Stream)]
 public class StreamFeatures : XmppElement
 {
     public StreamFeatures(StreamFeatures other) : base(other)

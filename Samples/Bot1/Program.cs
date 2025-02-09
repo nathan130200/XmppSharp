@@ -3,15 +3,16 @@ using XmppSharp.Net;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Core;
 
-var options = new XmppConnectionOptions
+var options = new XmppClientConnectionOptions
 {
-    EndPoint = new DnsEndPoint("localhost", 5275),
-    Jid = "cache.warface",
-    Password = "youshallnotpass",
-    OnlineVerbose = true
+    EndPoint = new DnsEndPoint("localhost", 5222),
+    Jid = "dedicated@warface/GameClient",
+    Password = "gamek01:dedicated",
+    AuthenticationMechanism = "PLAIN",
+    Verbose = true,
 };
 
-var component = new XmppComponentConnection(options);
+var component = new XmppClientConnection(options);
 {
     component.OnError += (sender, ex) =>
     {

@@ -30,8 +30,6 @@ public class XmppConnection : IDisposable
     internal volatile FileAccess _access;
     internal volatile byte _disposed;
 
-    internal bool _wasStreamHeaderSent;
-
     protected XmppConnection(XmppConnectionOptions options)
     {
         _options = options;
@@ -69,7 +67,7 @@ public class XmppConnection : IDisposable
             return;
 
         var buffer = xml.GetBytes();
-        _sendQueue.Enqueue((buffer, null, _options.OnlineVerbose ? xml : null));
+        _sendQueue.Enqueue((buffer, null, _options.Verbose ? xml : null));
     }
 
     public void Send(XmppElement element)
@@ -78,7 +76,7 @@ public class XmppConnection : IDisposable
             return;
 
         var buffer = element.ToString(false).GetBytes();
-        _sendQueue.Enqueue((buffer, null, _options.OnlineVerbose ? element.ToString(true) : null));
+        _sendQueue.Enqueue((buffer, null, _options.Verbose ? element.ToString(true) : null));
     }
 
     public Task SendAsync(string xml)
@@ -88,7 +86,7 @@ public class XmppConnection : IDisposable
 
         var tcs = new TaskCompletionSource();
         var buffer = xml.GetBytes();
-        _sendQueue.Enqueue((buffer, tcs, _options.OnlineVerbose ? xml : null));
+        _sendQueue.Enqueue((buffer, tcs, _options.Verbose ? xml : null));
         return tcs.Task;
     }
 
@@ -99,7 +97,7 @@ public class XmppConnection : IDisposable
 
         var tcs = new TaskCompletionSource();
         var buffer = element.ToString(false).GetBytes();
-        _sendQueue.Enqueue((buffer, tcs, _options.OnlineVerbose ? element.ToString(true) : null));
+        _sendQueue.Enqueue((buffer, tcs, _options.Verbose ? element.ToString(true) : null));
         return tcs.Task;
     }
 
@@ -119,6 +117,8 @@ public class XmppConnection : IDisposable
             cts.CancelAfter(timeout);
 
         Callbacks[stz.Id!] = tcs;
+
+        Send(stz);
 
         return await tcs.Task;
     }
@@ -143,11 +143,17 @@ public class XmppConnection : IDisposable
 
     protected virtual void InitParser()
     {
+        // FIXME: Due weird reason, soft-parser reset does not work in expat if server re-send XML prolog.
+        // An work-around to fix this, just delete old parser and create new one.
+        _access &= ~FileAccess.Read;
+
+        var oldParser = Parser;
+
         Parser = new ExpatXmppParser(ExpatEncoding.UTF8);
 
         Parser.OnStreamStart += e =>
         {
-            if (_options.OnlineVerbose)
+            if (_options.Verbose)
                 FireOnReadXml(e.StartTag());
 
             try
@@ -163,7 +169,7 @@ public class XmppConnection : IDisposable
 
         Parser.OnStreamElement += element =>
         {
-            if (_options.OnlineVerbose)
+            if (_options.Verbose)
                 FireOnReadXml(element.ToString(true));
 
             if (element is StreamError se)
@@ -184,7 +190,7 @@ public class XmppConnection : IDisposable
         {
             Send(Xml.XmppStreamEnd);
 
-            if (_options.OnlineVerbose)
+            if (_options.Verbose)
                 FireOnReadXml(Xml.XmppStreamEnd);
 
             try
@@ -198,6 +204,10 @@ public class XmppConnection : IDisposable
 
             Dispose();
         };
+
+        oldParser?.Dispose();
+
+        _access |= FileAccess.Read;
     }
 
     async Task BeginReceive()
@@ -226,7 +236,7 @@ public class XmppConnection : IDisposable
                 if (numBytes <= 0)
                     break;
 
-                Parser!.Parse(buffer, numBytes, numBytes <= 0);
+                Parser?.Parse(buffer, numBytes, numBytes <= 0);
             }
         }
         catch (Exception ex)
@@ -263,7 +273,7 @@ public class XmppConnection : IDisposable
                         if (buffer?.Length > 0)
                             await Stream!.WriteAsync(buffer);
 
-                        if (xml != null && _options.OnlineVerbose)
+                        if (xml != null && _options.Verbose)
                             FireOnWriteXml(xml);
                     }
                     catch (Exception ex)
@@ -284,7 +294,7 @@ public class XmppConnection : IDisposable
             }
             finally
             {
-                _semaphore!.Release();
+                _semaphore?.Release();
             }
         }
 
@@ -299,15 +309,6 @@ public class XmppConnection : IDisposable
     protected virtual void Disposing()
     {
 
-    }
-
-    protected void InitStream()
-    {
-        if (!_wasStreamHeaderSent) // -1 means nevet sent, 0 means stream reset (eg: auth/ssl)
-        {
-            _wasStreamHeaderSent = true;
-            SendStreamHeader();
-        }
     }
 
     protected virtual void SendStreamHeader()
@@ -390,16 +391,13 @@ public class XmppConnection : IDisposable
 
     protected virtual void HandleStreamStart(StreamStream e)
     {
-        throw new NotImplementedException();
     }
 
     protected virtual void HandleStreamElement(XmppElement e)
     {
-        throw new NotImplementedException();
     }
 
     protected virtual void HandleStreamEnd()
     {
-        throw new NotImplementedException();
     }
 }
