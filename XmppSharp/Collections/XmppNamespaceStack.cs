@@ -2,7 +2,7 @@
 
 public class XmppNamespaceStack
 {
-    private readonly Stack<Dictionary<string, string>> _stack = new();
+    private readonly Stack<Dictionary<string, string>> _scopes = new();
 
     public XmppNamespaceStack()
     {
@@ -11,16 +11,16 @@ public class XmppNamespaceStack
 
     public void PushScope()
     {
-        lock (_stack)
-            _stack.Push(new(StringComparer.Ordinal));
+        lock (_scopes)
+            _scopes.Push(new(StringComparer.Ordinal));
     }
 
     public void PopScope()
     {
-        lock (_stack)
+        lock (_scopes)
         {
-            if (_stack.Count > 1)
-                _stack.Pop();
+            if (_scopes.Count > 1)
+                _scopes.Pop();
         }
     }
 
@@ -29,9 +29,9 @@ public class XmppNamespaceStack
         if (prefix == "xmlns" || prefix == "xml")
             throw new InvalidOperationException("Reserved XML prefixes cannot be redefined.");
 
-        lock (_stack)
+        lock (_scopes)
         {
-            _stack.Peek()[prefix] = uri;
+            _scopes.Peek()[prefix] = uri;
         }
     }
 
@@ -39,9 +39,9 @@ public class XmppNamespaceStack
     {
         prefix ??= string.Empty;
 
-        lock (_stack)
+        lock (_scopes)
         {
-            foreach (var entry in _stack)
+            foreach (var entry in _scopes)
             {
                 if (entry.TryGetValue(prefix, out var result))
                     return result;
@@ -53,16 +53,29 @@ public class XmppNamespaceStack
 
     public void Reset()
     {
-        lock (_stack)
+        lock (_scopes)
         {
-            while (_stack.Count > 0)
-                _ = _stack.Pop();
+            UnsafeClear();
 
-            _stack.Push(new()
+            _scopes.Push(new()
             {
                 ["xml"] = Namespaces.Xml,
                 ["xmlns"] = Namespaces.Xmlns
             });
+        }
+    }
+
+    void UnsafeClear()
+    {
+        while (_scopes.TryPop(out var dict))
+            dict.Clear();
+    }
+
+    public void Clear()
+    {
+        lock (_scopes)
+        {
+            UnsafeClear();
         }
     }
 

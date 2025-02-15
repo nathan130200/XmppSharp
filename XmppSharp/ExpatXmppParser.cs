@@ -7,13 +7,14 @@ namespace XmppSharp.Parser;
 
 public sealed class ExpatXmppParser : IDisposable
 {
-    internal XmppElement? _current;
-    internal ExpatParser? _xmlParser;
-    internal XmppNamespaceStack? _namespaces;
-    internal volatile bool _streamOpen;
-    internal volatile bool _disposed;
+    readonly object _syncRoot = new();
 
-    public ExpatParser? UnderlyingParser => _xmlParser;
+    protected XmppElement? _current;
+    protected ExpatParser? _xmlParser;
+    protected XmppNamespaceStack? _namespaces;
+    protected volatile bool _disposed;
+
+    public ExpatParser? XmlParser => _xmlParser;
 
     public event Action<StreamStream>? OnStreamStart;
     public event Action<XmppElement>? OnStreamElement;
@@ -24,74 +25,73 @@ public sealed class ExpatXmppParser : IDisposable
         _namespaces = new();
 
         _xmlParser = new ExpatParser(encoding, strict);
+        _xmlParser.OnStartElement += HandleStartElement;
+        _xmlParser.OnEndElement += HandleEndElement;
+        _xmlParser.OnText += HandleText;
+        _xmlParser.OnComment += HandleComment;
+        _xmlParser.OnCdata += HandleCdata;
+    }
 
-        _xmlParser.OnStartElement += (name, attrs) =>
+    void HandleStartElement(string name, IReadOnlyDictionary<string, string> attrs)
+    {
+        _namespaces!.PushScope();
+
+        XmppName tagName = name;
+
+        foreach (var (key, value) in attrs)
         {
-            _namespaces.PushScope();
+            XmppName attrName = key;
 
-            XmppName tagName = name;
+            if (attrName == "xmlns")
+                _namespaces.AddNamespace(string.Empty, value);
+            else if (attrName.Prefix == "xmlns")
+                _namespaces.AddNamespace(attrName.LocalName, value);
+        }
 
-            foreach (var (key, value) in attrs)
-            {
-                XmppName attrName = key;
+        var element = XmppElementFactory.Create(tagName, _namespaces.LookupNamespace(tagName.Prefix), _current);
 
-                if (attrName == "xmlns")
-                    _namespaces.AddNamespace(string.Empty, value);
-                else if (attrName.Prefix == "xmlns")
-                    _namespaces.AddNamespace(attrName.LocalName, value);
-            }
+        foreach (var (key, value) in attrs)
+            element.SetAttribute(key, value);
 
-            var element = XmppElementFactory.Create(tagName, _namespaces.LookupNamespace(tagName.Prefix), _current);
-
-            foreach (var (key, value) in attrs)
-                element.SetAttribute(key, value);
-
-            if (element is StreamStream start)
-            {
-                if (!_streamOpen)
-                {
-                    _streamOpen = true;
-                    OnStreamStart?.Invoke(start);
-                }
-            }
-            else
-            {
-                _current?.AddChild(element);
-                _current = element;
-            }
-        };
-
-        _xmlParser.OnEndElement += name =>
+        if (element is StreamStream start)
+            OnStreamStart?.Invoke(start);
+        else
         {
-            _namespaces.PopScope();
+            _current?.AddChild(element);
+            _current = element;
+        }
+    }
 
-            if (name == "stream:stream")
-            {
-                if (_streamOpen)
-                {
-                    _streamOpen = false;
-                    OnStreamEnd?.Invoke();
-                }
-            }
-            else
-            {
-                var parent = _current?.Parent;
+    void HandleEndElement(string name)
+    {
+        _namespaces!.PopScope();
 
-                if (parent == null && _current != null)
-                    OnStreamElement?.Invoke(_current);
+        if (name == "stream:stream")
+            OnStreamEnd?.Invoke();
+        else
+        {
+            var parent = _current?.Parent;
 
-                _current = parent;
-            }
-        };
+            if (parent == null && _current != null)
+                OnStreamElement?.Invoke(_current);
 
-        _xmlParser.OnText += value
-            => _current?.AddChild(new XmppText(value));
+            _current = parent;
+        }
+    }
 
-        _xmlParser.OnComment += value
-            => _current?.AddChild(new XmppComment(value));
+    void HandleText(string value)
+    {
+        _current?.AddChild(new XmppText(value));
+    }
 
-        _xmlParser.OnCdata += value
-            => _current?.AddChild(new XmppCdata(value));
+    void HandleComment(string value)
+    {
+        _current?.AddChild(new XmppComment(value));
+    }
+
+    void HandleCdata(string value)
+    {
+        _current?.AddChild(new XmppCdata(value));
     }
 
     void ThrowIfDisposed()
@@ -107,12 +107,14 @@ public sealed class ExpatXmppParser : IDisposable
 
         _disposed = true;
 
-        _namespaces?.Reset();
-        _namespaces = null;
+        GC.SuppressFinalize(this);
 
-        if (_xmlParser != null)
+        lock (_syncRoot)
         {
-            _xmlParser.Dispose();
+            _namespaces?.Clear();
+            _namespaces = null;
+
+            _xmlParser?.Dispose();
             _xmlParser = null;
         }
     }
@@ -120,20 +122,28 @@ public sealed class ExpatXmppParser : IDisposable
     public void Reset()
     {
         ThrowIfDisposed();
-        _current = null;
-        _namespaces!.Reset();
-        _streamOpen = false;
+
+        lock (_syncRoot)
+        {
+            _current = null;
+            _namespaces!.Reset();
+            _xmlParser!.Reset();
+        }
     }
 
     public bool TryParse(byte[] buffer, int length, out ExpatParserError error, bool isFinalBlock = false)
     {
         ThrowIfDisposed();
-        return _xmlParser!.TryParse(buffer, length, out error, isFinalBlock); ;
+
+        lock (_syncRoot)
+            return _xmlParser!.TryParse(buffer, length, out error, isFinalBlock);
     }
 
     public void Parse(byte[] buffer, int length, bool isFinalBlock = false)
     {
         ThrowIfDisposed();
-        _xmlParser!.Parse(buffer, length, isFinalBlock);
+
+        lock (_syncRoot)
+            _xmlParser!.Parse(buffer, length, isFinalBlock);
     }
 }
