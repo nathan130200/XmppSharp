@@ -11,7 +11,7 @@ public class JabberStreamException : JabberException
         Condition = condition;
     }
 
-    public JabberStreamException(StreamErrorCondition condition, string? message = default) : base(message)
+    public JabberStreamException(StreamErrorCondition condition, string? message = default) : base(message ?? condition.ToString())
     {
         Condition = condition;
     }

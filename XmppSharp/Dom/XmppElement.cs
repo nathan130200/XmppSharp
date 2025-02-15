@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -20,39 +21,41 @@ internal class XmppElementDebuggerProxy
     public string? TagName => _element?.TagName;
     public string? StartTag => _element?.StartTag();
     public string? EndTag => _element?.EndTag();
-    public IReadOnlyDictionary<string, string>? Attributes => _element?._attributes;
+    public IReadOnlyDictionary<string, string>? Attributes => _element?.Attributes;
     public IEnumerable<XmppNode>? Children => _element?.Nodes();
 }
 
 [DebuggerTypeProxy(typeof(XmppElementDebuggerProxy))]
 public class XmppElement : XmppNode
 {
-    public XmppName Name { get; set; } = default!;
-    public string? Prefix => Name.Prefix;
-    public string LocalName => Name.LocalName;
+    public XmppName QualifiedName { get; set; } = default!;
+    public string? Prefix => QualifiedName.Prefix;
+    public string LocalName => QualifiedName.LocalName;
 
     public XmppElement? this[XmppName name] => Element(name);
 
     public string TagName
     {
-        get => Name;
-        set => Name = new(value);
+        get => QualifiedName;
+        set => QualifiedName = new(value);
     }
 
     internal readonly List<XmppNode> _children;
-    internal readonly ConcurrentDictionary<string, string> _attributes;
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public ConcurrentDictionary<string, string> Attributes { get; }
 
     internal XmppElement()
     {
         _children = new List<XmppNode>();
-        _attributes = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+        Attributes = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
     }
 
     public XmppElement(XmppName tagName, string? namespaceURI = default, object? value = default) : this()
     {
         Throw.IfNull(tagName);
 
-        Name = tagName;
+        QualifiedName = tagName;
 
         if (namespaceURI != null)
         {
@@ -67,16 +70,13 @@ public class XmppElement : XmppNode
 
     public XmppElement(XmppElement other) : this()
     {
-        Name = new(other.Name);
+        QualifiedName = new(other.QualifiedName);
 
-        foreach (var (key, value) in other._attributes)
-            _attributes[key] = value;
+        foreach (var (key, value) in other.Attributes)
+            Attributes[key] = value;
 
-        lock (other._children)
-        {
-            foreach (var node in other.Nodes())
-                _children.Add(node.Clone());
-        }
+        foreach (var node in other.Nodes())
+            _children.Add(node.Clone());
     }
 
     public bool IsRootElement
@@ -134,10 +134,6 @@ public class XmppElement : XmppNode
         {
             node._parent = null;
             _children.Remove(node);
-
-            if (node is XmppElement element)
-            {
-            }
         }
     }
 
@@ -193,7 +189,7 @@ public class XmppElement : XmppNode
             if (value is IFormattable fmt) str = fmt.ToString(format, ifp);
             else if (value is IConvertible conv) str = conv.ToString(ifp);
             else str = Convert.ToString(value, ifp) ?? string.Empty;
-            _attributes[name] = str;
+            Attributes[name] = str;
         }
 
         return this;
@@ -203,8 +199,8 @@ public class XmppElement : XmppNode
     {
         var result = XmppElementFactory.Create(TagName, Namespace);
 
-        foreach (var (key, value) in _attributes)
-            result._attributes[key] = value;
+        foreach (var (key, value) in Attributes)
+            result.Attributes[key] = value;
 
         foreach (var node in Nodes())
             result.AddChild(node.Clone());
@@ -217,21 +213,19 @@ public class XmppElement : XmppNode
     public bool HasAttribute(string name)
     {
         Throw.IfStringNullOrWhiteSpace(name);
-
-        lock (_attributes)
-            return _attributes.ContainsKey(name);
+        return Attributes.ContainsKey(name);
     }
 
     public string? GetAttribute(XmppName name)
     {
         Throw.IfStringNullOrWhiteSpace(name);
-        return _attributes.GetValueOrDefault(name);
+        return Attributes.GetValueOrDefault(name);
     }
 
     public bool RemoveAttribute(string name)
     {
         Throw.IfStringNullOrWhiteSpace(name);
-        return _attributes.Remove(name, out _);
+        return Attributes.Remove(name, out _);
     }
 
     public string? GetNamespace(string? prefix = default)
@@ -305,7 +299,7 @@ public class XmppElement : XmppNode
     {
         var sb = new StringBuilder($"<{Xml.EncodeName(TagName)}");
 
-        foreach (var (key, value) in _attributes)
+        foreach (var (key, value) in Attributes)
             sb.AppendFormat(" {0}=\"{1}\"", Xml.EncodeName(key), Xml.EscapeAttribute(value));
 
         return sb.Append('>').ToString();
@@ -394,7 +388,7 @@ public class XmppElement : XmppNode
         => Elements().OfType<T>();
 
     public void RemoveAttributes()
-        => _attributes.Clear();
+        => Attributes.Clear();
 
     public void RemoveAll()
     {

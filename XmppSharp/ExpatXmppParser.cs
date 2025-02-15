@@ -9,10 +9,11 @@ public sealed class ExpatXmppParser : IDisposable
 {
     readonly object _syncRoot = new();
 
-    protected XmppElement? _current;
-    protected ExpatParser? _xmlParser;
-    protected XmppNamespaceStack? _namespaces;
-    protected volatile bool _disposed;
+    internal XmppElement? _current;
+    internal ExpatParser? _xmlParser;
+    internal XmppNamespaceStack? _namespaces;
+    internal volatile bool _disposed;
+    internal volatile bool _isStreamOpened;
 
     public ExpatParser? XmlParser => _xmlParser;
 
@@ -54,7 +55,13 @@ public sealed class ExpatXmppParser : IDisposable
             element.SetAttribute(key, value);
 
         if (element is StreamStream start)
-            OnStreamStart?.Invoke(start);
+        {
+            if (!_isStreamOpened)
+            {
+                OnStreamStart?.Invoke(start);
+                _isStreamOpened = true;
+            }
+        }
         else
         {
             _current?.AddChild(element);
@@ -67,7 +74,13 @@ public sealed class ExpatXmppParser : IDisposable
         _namespaces!.PopScope();
 
         if (name == "stream:stream")
-            OnStreamEnd?.Invoke();
+        {
+            if (_isStreamOpened)
+            {
+                OnStreamEnd?.Invoke();
+                _isStreamOpened = false;
+            }
+        }
         else
         {
             var parent = _current?.Parent;
@@ -126,6 +139,7 @@ public sealed class ExpatXmppParser : IDisposable
         lock (_syncRoot)
         {
             _current = null;
+            _isStreamOpened = false;
             _namespaces!.Reset();
             _xmlParser!.Reset();
         }

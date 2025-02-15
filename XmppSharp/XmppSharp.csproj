@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<XmppSharpVersion>6.0.1</XmppSharpVersion>
+		<XmppSharpVersion>6.0.2</XmppSharpVersion>
 	</PropertyGroup>
 
 	<PropertyGroup>

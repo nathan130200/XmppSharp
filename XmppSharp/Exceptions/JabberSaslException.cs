@@ -11,7 +11,7 @@ public class JabberSaslException : JabberException
         Condition = condition;
     }
 
-    public JabberSaslException(FailureCondition condition, string message) : base(message)
+    public JabberSaslException(FailureCondition condition, string? message) : base(message ?? condition.ToString())
     {
         Condition = condition;
     }

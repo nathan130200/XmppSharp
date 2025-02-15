@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using XmppSharp.Attributes;
 using XmppSharp.Protocol.Base;
@@ -80,33 +79,28 @@ public static class XmppElementFactory
     public static IEnumerable<XmppTagAttribute> LookupTagsFromType(Type targetType)
         => s_ElementTypes.GetValueOrDefault(targetType) ?? s_Empty;
 
-    static bool IsBaseType(string tag, string? ns, [NotNullWhen(true)] out Type? result)
+    static readonly Dictionary<string, Type> s_TagNameToType = new()
     {
-        result = (tag, ns) switch
-        {
-            ("stream:stream", _) => typeof(StreamStream),
-            ("stream:error", _) => typeof(StreamError),
-            ("iq", _) => typeof(Iq),
-            ("message", _) => typeof(Message),
-            ("presence", _) => typeof(Presence),
-            _ => null
-        };
-
-        return result != null;
-    }
+        [("stream:stream")] = typeof(StreamStream),
+        [("stream:error")] = typeof(StreamError),
+        [("stream:features")] = typeof(StreamFeatures),
+        [("iq")] = typeof(Iq),
+        [("message")] = typeof(Message),
+        [("presence")] = typeof(Presence),
+    };
 
     public static Type? ResolveType(string tagName, string? namespaceURI)
     {
         Throw.IfStringNullOrWhiteSpace(tagName);
-
-        if (IsBaseType(tagName, namespaceURI, out var baseType))
-            return baseType;
 
         foreach (var (type, tags) in s_ElementTypes)
         {
             if (tags.Any(t => IsTagMatch(t, tagName, namespaceURI)))
                 return type;
         }
+
+        if (s_TagNameToType.TryGetValue(tagName, out var result))
+            return result;
 
         return null;
     }
