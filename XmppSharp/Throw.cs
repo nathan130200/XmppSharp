@@ -1,28 +1,10 @@
-﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace XmppSharp;
 
 internal static class Throw
 {
-    [StackTraceHidden]
-    public static Exception GetStackTrace(this Exception ex)
-    {
-        Exception result;
-
-        try
-        {
-            throw ex;
-        }
-        catch (Exception after)
-        {
-            result = after;
-        }
-
-        return result;
-    }
-
     public static void IfDisposed(object obj, [DoesNotReturnIf(true)] bool condition)
     {
         IfNull(obj);

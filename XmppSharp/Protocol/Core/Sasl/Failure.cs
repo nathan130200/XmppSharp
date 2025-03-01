@@ -11,13 +11,13 @@ public class Failure : XmppElement
 
     }
 
-    public Failure(FailureCondition? condition, string? text = default) : this()
+    public Failure(FailureCondition condition, string? text = default) : this()
     {
         Condition = condition;
         Text = text;
     }
 
-    public FailureCondition? Condition
+    public FailureCondition Condition
     {
         get
         {
@@ -27,15 +27,14 @@ public class Failure : XmppElement
                     return value;
             }
 
-            return default;
+            return FailureCondition.Aborted;
         }
         set
         {
             foreach (var name in XmppEnum.GetXmlNames<FailureCondition>())
                 RemoveTag(name, Namespaces.Sasl);
 
-            if (value.HasValue)
-                SetTag(XmppEnum.ToXml(value)!, Namespaces.Sasl);
+            SetTag(XmppEnum.ToXml(value)!, Namespaces.Sasl);
         }
     }
 

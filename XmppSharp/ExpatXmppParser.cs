@@ -3,7 +3,7 @@ using XmppSharp.Collections;
 using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
 
-namespace XmppSharp.Parser;
+namespace XmppSharp;
 
 public sealed class ExpatXmppParser : IDisposable
 {
@@ -13,7 +13,7 @@ public sealed class ExpatXmppParser : IDisposable
     internal ExpatParser? _xmlParser;
     internal XmppNamespaceStack? _namespaces;
     internal volatile bool _disposed;
-    internal volatile bool _isStreamOpened;
+    internal volatile bool _started;
 
     public ExpatParser? XmlParser => _xmlParser;
 
@@ -56,10 +56,10 @@ public sealed class ExpatXmppParser : IDisposable
 
         if (element is StreamStream start)
         {
-            if (!_isStreamOpened)
+            if (!_started)
             {
+                _started = true;
                 OnStreamStart?.Invoke(start);
-                _isStreamOpened = true;
             }
         }
         else
@@ -75,10 +75,10 @@ public sealed class ExpatXmppParser : IDisposable
 
         if (name == "stream:stream")
         {
-            if (_isStreamOpened)
+            if (_started)
             {
+                _started = false;
                 OnStreamEnd?.Invoke();
-                _isStreamOpened = false;
             }
         }
         else
@@ -139,7 +139,7 @@ public sealed class ExpatXmppParser : IDisposable
         lock (_syncRoot)
         {
             _current = null;
-            _isStreamOpened = false;
+            _started = false;
             _namespaces!.Reset();
             _xmlParser!.Reset();
         }
@@ -150,7 +150,9 @@ public sealed class ExpatXmppParser : IDisposable
         ThrowIfDisposed();
 
         lock (_syncRoot)
+        {
             return _xmlParser!.TryParse(buffer, length, out error, isFinalBlock);
+        }
     }
 
     public void Parse(byte[] buffer, int length, bool isFinalBlock = false)
@@ -158,6 +160,8 @@ public sealed class ExpatXmppParser : IDisposable
         ThrowIfDisposed();
 
         lock (_syncRoot)
+        {
             _xmlParser!.Parse(buffer, length, isFinalBlock);
+        }
     }
 }

@@ -8,7 +8,6 @@ using Expat;
 using XmppSharp;
 using XmppSharp.Collections;
 using XmppSharp.Dom;
-using XmppSharp.Parser;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Core;
 using XmppSharp.Protocol.Core.Client;
@@ -27,11 +26,10 @@ public sealed class Connection : IDisposable
     public Jid Jid { get; private set; }
     private volatile byte _disposed;
     private volatile FileAccess _access;
+    readonly ConcurrentQueue<Func<CancellationToken, Task>> _taskQueue = [];
     private readonly ConcurrentQueue<(string? xml, byte[] buffer)> _writeQueue = [];
     private X509Certificate2? _cert;
     public bool IsAuthenticated { get; private set; }
-    private readonly Task? _receiveTask;
-    private readonly Task? _sendTask;
 
     public Connection(Socket socket)
     {
@@ -44,42 +42,30 @@ public sealed class Connection : IDisposable
         _parser.OnStreamElement += OnStreamElement;
     }
 
-    internal async Task StartAsync()
+    internal async Task StartAsync(CancellationToken token)
     {
         _access = FileAccess.ReadWrite;
-        Reset();
-        await Task.WhenAll(BeginReceive(), BeginSend());
+        await Task.WhenAll(BeginReceive(token), BeginSend(token));
     }
 
-    void Reset()
-    {
-        if (_disposed > 0)
-            return;
-
-        _parser?.Reset();
-        _access = FileAccess.ReadWrite;
-    }
-
-    async Task BeginSend()
+    async Task BeginSend(CancellationToken token)
     {
         try
         {
             while (_disposed < 2)
             {
+                await Task.Delay(16, token);
+
                 if (!_access.HasFlag(FileAccess.Write))
                     continue;
 
-                await Task.Delay(1);
-
-                while (_writeQueue.TryDequeue(out var entry))
+                if (_writeQueue.TryDequeue(out var entry))
                 {
-                    if (_stream == null)
-                        return;
-
-                    await _stream.WriteAsync(entry.buffer);
+                    await _stream!.WriteAsync(entry.buffer, token);
 
                     if (!string.IsNullOrEmpty(entry.xml))
                         Console.WriteLine("<{0}> send >>\n{1}\n", Jid, entry.xml);
+
                 }
             }
         }
@@ -93,7 +79,7 @@ public sealed class Connection : IDisposable
         }
     }
 
-    async Task BeginReceive()
+    async Task BeginReceive(CancellationToken token)
     {
         var buf = new byte[1024];
 
@@ -101,17 +87,21 @@ public sealed class Connection : IDisposable
         {
             while (_disposed < 1)
             {
-                await Task.Delay(1);
+                await Task.Delay(16, token);
+
+                if (_taskQueue.TryDequeue(out var action))
+                {
+                    await action(token);
+                    continue;
+                }
 
                 if (!_access.HasFlag(FileAccess.Read))
                     continue;
 
-                var len = await _stream!.ReadAsync(buf);
+                var len = await _stream!.ReadAsync(buf, token);
 
                 if (len <= 0)
                     break;
-
-                //Console.WriteLine("push to parser {0} byte(s)", len);
 
                 _parser!.Parse(buf, len);
             }
@@ -157,11 +147,9 @@ public sealed class Connection : IDisposable
     public void Send(string xml)
         => _writeQueue.Enqueue((xml, xml.GetBytes()));
 
-    public void Send(XmppElement e)
-        => _writeQueue.Enqueue((e.ToString(true), e.GetBytes()));
+    public void Send(XmppElement e) => _writeQueue.Enqueue((e.ToString(true), e.GetBytes()));
 
-    public void Route(XmppElement e)
-        => _writeQueue.Enqueue((null, e.GetBytes()));
+    public void Route(XmppElement e) => _writeQueue.Enqueue((null, e.GetBytes()));
 
     void OnStreamStart(StreamStream e)
     {
@@ -225,21 +213,30 @@ public sealed class Connection : IDisposable
             Send(new Proceed());
 
             while (!_writeQueue.IsEmpty)
-                await Task.Delay(100);
+                await Task.Delay(16);
 
-            _access &= ~FileAccess.Write;
-
-            _ = Task.Run(async () =>
+            _taskQueue.Enqueue(async (token) =>
             {
+                await Task.Yield();
+
                 try
                 {
                     Console.WriteLine("<{0}> Starting TLS handshake...", _socket!.RemoteEndPoint);
                     _cert = Server.GenerateCertificate();
 
                     _stream = new SslStream(_stream!, false);
-                    await ((SslStream)_stream).AuthenticateAsServerAsync(_cert);
+
+                    await ((SslStream)_stream).AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = _cert,
+                        CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                        ClientCertificateRequired = false
+                    }, token);
+
                     Console.WriteLine("<{0}> TLS handshake completed!", _socket!.RemoteEndPoint);
-                    Reset();
+
+                    _parser?.Reset();
+                    _access = FileAccess.ReadWrite;
                 }
                 catch (Exception ex)
                 {
@@ -281,10 +278,17 @@ public sealed class Connection : IDisposable
                 return;
             }
 
+            _access &= ~FileAccess.Read;
             Jid = new($"{user}@{Server.Hostname}");
             IsAuthenticated = true;
-            Send(new Success());
-            Reset();
+
+            _taskQueue.Enqueue(async (token) =>
+            {
+                await Task.Yield();
+                Send(new Success());
+                _parser!.Reset();
+                _access |= FileAccess.Read;
+            });
         }
         else if (e is Stanza stz)
         {

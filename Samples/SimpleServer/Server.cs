@@ -31,7 +31,7 @@ public static class Server
     public static X509Certificate2 GenerateCertificate()
         => X509CertificateLoader.LoadPkcs12(s_CertData, s_CertPass, loaderLimits: Pkcs12LoaderLimits.DangerousNoLimits);
 
-    public static void StartListen()
+    public static void StartListen(CancellationToken token)
     {
         var pfx = Path.Combine(Directory.GetCurrentDirectory(), "cert.pfx");
 
@@ -57,17 +57,17 @@ public static class Server
         s_Socket.Bind(new IPEndPoint(IPAddress.Any, 5222));
         s_Socket.Listen(10);
 
-        _ = BeginAccept();
+        _ = BeginAccept(token);
     }
 
-    static async Task BeginAccept()
+    static async Task BeginAccept(CancellationToken token)
     {
         while (true)
         {
             try
             {
-                var client = await s_Socket.AcceptAsync();
-                _ = Task.Run(async () => await EndAccept(client));
+                var client = await s_Socket.AcceptAsync(token);
+                _ = EndAccept(client, token);
             }
             catch (Exception ex)
             {
@@ -78,7 +78,7 @@ public static class Server
         }
     }
 
-    static async Task EndAccept(Socket s)
+    static async Task EndAccept(Socket s, CancellationToken token)
     {
         var connection = new Connection(s);
 
@@ -89,7 +89,7 @@ public static class Server
 
         try
         {
-            await connection.StartAsync();
+            await connection.StartAsync(token);
         }
         catch (Exception ex)
         {

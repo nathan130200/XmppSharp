@@ -4,7 +4,9 @@ static class Program
 {
     static async Task Main(string[] args)
     {
-        Server.StartListen();
+        using var cts = new CancellationTokenSource();
+
+        Server.StartListen(cts.Token);
 
         while (true)
             await Task.Delay(100);

@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+
 using XmppSharp.Dom;
 
 namespace XmppSharp;
