@@ -133,7 +133,7 @@ public abstract class XmppConnection
                 {
                     var (bytes, xml) = tuple;
 
-                    await _stream!.WriteAsync(bytes, token);
+                    await _stream!.WriteAsync(bytes);
 
                     if (!string.IsNullOrWhiteSpace(xml))
                         FireOnWriteXml(xml);
@@ -152,7 +152,7 @@ public abstract class XmppConnection
 
     protected virtual void QueueTask(Func<CancellationToken, Task> action)
     {
-        if (_disposed > 0)
+        if (_disposed >= 1)
             return;
 
         _taskQueue.Enqueue(action);
@@ -160,7 +160,7 @@ public abstract class XmppConnection
 
     public virtual void Send(string xml)
     {
-        if (_disposed > 1) // cannot write anymore
+        if (_disposed >= 2) // cannot write anymore
             return;
 
         QueueWrite(xml.GetBytes(), Options.Verbose ? xml : default);
@@ -168,7 +168,7 @@ public abstract class XmppConnection
 
     public virtual void Send(XmppElement element)
     {
-        if (_disposed > 1) // cannot write anymore
+        if (_disposed >= 2) // cannot write anymore
             return;
 
         var xml = element.GetBytes();
@@ -190,20 +190,27 @@ public abstract class XmppConnection
         Dispose();
     }
 
+    volatile bool _isConnecting = false;
+
     public virtual async Task ConnectAsync(CancellationToken token = default)
     {
+        if (_isConnecting)
+            return;
+
+        _isConnecting = true;
+
         if (_state.HasFlag(XmppConnectionState.Connected))
             return;
 
         _disposed = 0;
         _access = FileAccess.ReadWrite;
 
-        ChangeState(_ => XmppConnectionState.Connected);
-
         try
         {
             _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             await _socket.ConnectAsync(Options.EndPoint, token);
+
+            ChangeState(_ => XmppConnectionState.Connected);
 
             _stream = new NetworkStream(_socket, true);
 
@@ -224,6 +231,11 @@ public abstract class XmppConnection
         {
             FireOnError(ex);
             ChangeState(_ => XmppConnectionState.Disconnected);
+            Dispose();
+        }
+        finally
+        {
+            _isConnecting = false;
         }
     }
 
@@ -315,17 +327,29 @@ public abstract class XmppConnection
 
         Disposing();
 
-        _ = Task.Delay(Options.DisconnectTimeout)
-                .ContinueWith(_ =>
-                {
-                    _parser?.Dispose();
-                    _parser = null;
+        _ = Task.Run(async () =>
+        {
+            var timeout = Task.Delay(Options.DisconnectTimeout);
 
-                    _stream?.Dispose();
-                    _stream = null;
+            while (!_sendQueue.IsEmpty)
+            {
+                await Task.Delay(160);
 
-                    ChangeState(_ => XmppConnectionState.Disconnected);
-                });
+                if (timeout.IsCompleted)
+                    break;
+            }
+
+            _disposed = 2;
+            _access &= ~FileAccess.Write;
+
+            _parser?.Dispose();
+            _parser = null;
+
+            _stream?.Dispose();
+            _stream = null;
+
+            ChangeState(_ => XmppConnectionState.Disconnected);
+        });
     }
 
     public virtual void Disconnect(XmppElement element)

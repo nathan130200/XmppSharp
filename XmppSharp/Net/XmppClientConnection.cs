@@ -41,7 +41,13 @@ public class XmppClientConnection : XmppConnection
 
     protected override void Disposing()
     {
-        _authHandler = null;
+        _phase = PHASE_INIT;
+
+        if (_authHandler != null)
+        {
+            _authHandler._connection = null!;
+            _authHandler = null;
+        }
     }
 
     protected override void HandleStreamElement(XmppElement e)
@@ -129,6 +135,7 @@ public class XmppClientConnection : XmppConnection
         {
             if (_authHandler!.Invoke(e))
             {
+                _authHandler._connection = null!;
                 _authHandler = null;
                 _access &= ~FileAccess.Read;
 

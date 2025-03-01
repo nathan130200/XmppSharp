@@ -6,10 +6,12 @@ namespace XmppSharp.Sasl;
 
 public abstract class XmppSaslMechanismHandler
 {
-    protected XmppClientConnection Connection { get; }
+    internal XmppClientConnection _connection;
+
+    protected XmppClientConnection Connection => _connection;
 
     public XmppSaslMechanismHandler(XmppClientConnection connection)
-        => Connection = connection;
+        => _connection = connection;
 
     protected internal virtual void Init()
     {

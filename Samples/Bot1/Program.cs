@@ -1,39 +1,106 @@
-﻿using System.IO.Pipes;
+﻿using System.Collections.Concurrent;
+using System.IO.Pipes;
 using System.Net;
+using XmppSharp;
 using XmppSharp.Net;
 using XmppSharp.Protocol.Core.Tls;
 
-var client = new XmppClientConnection
+ConcurrentStack<ConsoleColor> _colorStack = [];
+
+using var cts = new CancellationTokenSource();
+var clients = new List<XmppClientConnection>();
+
+for (int i = 0; i < 16; i++)
 {
-    Options =
+    var jid = new Jid($"stresstest@localhost/bot-{i}");
+
+    var client = new XmppClientConnection
     {
-        Jid = "csharp@visualstudio/bot",
-        EndPoint = new IPEndPoint(IPAddress.Loopback, 5222),
-        TlsPolicy = StartTlsPolicy.Optional,
-        Verbose = true,
-        TlsOptions =
+        Options =
         {
-            TargetHost = "warface"
+            Jid = jid,
+            EndPoint = new IPEndPoint(IPAddress.Loopback, 5222),
+            TlsPolicy = StartTlsPolicy.Optional,
+            Verbose = true,
+            DisconnectTimeout = TimeSpan.FromSeconds(5),
+            TlsOptions =
+            {
+                TargetHost = "localhost"
+            }
         }
+    };
+
+
+    client.OnDebugXml += (sender, e) =>
+    {
+        PushColor(e.Direction == PipeDirection.In ? ConsoleColor.Green : ConsoleColor.Red);
+        var prefix = e.Direction == PipeDirection.In ? "recv <<" : "send >>";
+        Console.WriteLine($"({jid}) {prefix}:\n{e.Xml}\n");
+        PopColor();
+    };
+
+
+    client.OnError += (sender, ex) =>
+    {
+        PushColor(ConsoleColor.Yellow);
+        Console.WriteLine(ex);
+        PopColor();
+    };
+
+    PushColor(ConsoleColor.Cyan);
+    Console.WriteLine("New client added: " + jid);
+    clients.Add(client);
+    PopColor();
+}
+
+Console.CancelKeyPress += (s, e) =>
+{
+    e.Cancel = true;
+    cts.Cancel();
+};
+
+_ = Task.Run(async () =>
+{
+    foreach (var client in clients)
+    {
+        await client.ConnectAsync();
+        await Task.Delay(160);
     }
-};
+});
 
-client.OnDebugXml += (sender, e) =>
+var once = false;
+
+while (!cts.IsCancellationRequested)
 {
-    var prefix = e.Direction == PipeDirection.In ? "recv <<" : "send >>";
-    Console.WriteLine($"{prefix}:\n{e.Xml}\n");
-};
+    if (clients.All(x => x.IsConnected) && !once)
+    {
+        PushColor(ConsoleColor.Magenta);
+        Console.WriteLine("All clients connected");
+        PopColor();
+        once = true;
+    }
 
-client.OnError += (sender, ex) =>
+    await Task.Delay(1000);
+}
+
+foreach (var client in clients)
+    client.Disconnect();
+
+while (clients.Any(x => x.IsConnected))
+    await Task.Delay(160);
+
+Console.ReadKey(true);
+
+void PushColor(ConsoleColor newColor)
 {
-    Console.WriteLine(ex);
-};
+    _colorStack.Push(Console.ForegroundColor);
+    Console.ForegroundColor = newColor;
+}
 
-client.OnStateChanged += (sender, e) =>
+void PopColor()
 {
-    Console.WriteLine("{0} -> {1}", e.Before, e.After);
-};
-
-await client.ConnectAsync();
-
-await Task.Delay(-1);
+    if (_colorStack.TryPop(out var old))
+        Console.ForegroundColor = old;
+    else
+        Console.ForegroundColor = ConsoleColor.White;
+}
