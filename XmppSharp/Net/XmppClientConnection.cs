@@ -178,7 +178,7 @@ public class XmppClientConnection : XmppConnection
         var request = new Iq(IqType.Set);
         request.AddChild(new Bind(Options.Jid.Resource ?? Environment.MachineName));
 
-        var response = await RequestIqAsync(request) ?? throw new JabberException("Unexpected response.");
+        var response = await RequestStanzaAsync(request) ?? throw new JabberException("Unexpected response.");
 
         if (response.Type == IqType.Error)
             throw new JabberException("Resource bind failed: " + (response.Error?.Condition ?? StanzaErrorCondition.UndefinedCondition));
@@ -191,7 +191,7 @@ public class XmppClientConnection : XmppConnection
         var request = new Iq(IqType.Set);
         request.AddChild(new Session());
 
-        var response = await RequestIqAsync(request) ?? throw new JabberException("Unexpected response.");
+        var response = await RequestStanzaAsync(request) ?? throw new JabberException("Unexpected response.");
 
         if (response.Type == IqType.Error)
             throw new JabberException("Session start failed: " + (response.Error?.Condition ?? StanzaErrorCondition.UndefinedCondition));

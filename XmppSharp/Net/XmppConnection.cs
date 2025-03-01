@@ -5,7 +5,6 @@ using System.Net.Sockets;
 using System.Text;
 using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
-using XmppSharp.Protocol.Core;
 
 namespace XmppSharp.Net;
 
@@ -99,40 +98,25 @@ public abstract class XmppConnection
         buf = null;
     }
 
-    public async Task<Iq?> RequestIqAsync(Iq stz, TimeSpan timeout = default, CancellationToken token = default)
+    public async Task<TStanza?> RequestStanzaAsync<TStanza>(TStanza request, TimeSpan timeout = default, CancellationToken token = default)
+        where TStanza : Stanza
     {
-        var result = await RequestStanzaAsync(stz, timeout, token); ;
-        return result as Iq;
-    }
-
-    public async Task<Message?> RequestMessageAsync(Message stz, TimeSpan timeout = default, CancellationToken token = default)
-    {
-        var result = await RequestStanzaAsync(stz, timeout, token); ;
-        return result as Message;
-    }
-
-    public async Task<Presence?> RequestPresenceAsync(Presence stz, TimeSpan timeout = default, CancellationToken token = default)
-    {
-        var result = await RequestStanzaAsync(stz, timeout, token);
-        return result as Presence;
-    }
-
-    public async Task<Stanza> RequestStanzaAsync(Stanza stz, TimeSpan timeout = default, CancellationToken token = default)
-    {
-        if (string.IsNullOrWhiteSpace(stz.Id))
-            stz.GenerateId();
-
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
+        if (string.IsNullOrWhiteSpace(request.Id))
+            request.GenerateId();
 
         var tcs = new TaskCompletionSource<Stanza>();
-        _callbacks[stz.Id!] = tcs;
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
+        cts.Token.Register(() => tcs.TrySetCanceled());
+
+        _callbacks[request.Id!] = tcs;
 
         if (timeout != default)
             cts.CancelAfter(timeout);
 
-        Send(stz);
+        Send(request);
 
-        return await tcs.Task;
+        return (await tcs.Task) as TStanza;
     }
 
     protected abstract void SendStreamHeader();
