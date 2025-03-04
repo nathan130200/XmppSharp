@@ -5,7 +5,15 @@ using XmppSharp.Protocol.Base;
 
 namespace XmppSharp;
 
-public sealed class ExpatXmppParser : IDisposable
+public interface IXmppParser : IDisposable
+{
+    event Action<StreamStream>? OnStreamStart;
+    event Action<XmppElement>? OnStreamElement;
+    event Action? OnStreamEnd;
+    void Reset();
+}
+
+public sealed class ExpatXmppParser : IXmppParser
 {
     readonly object _syncRoot = new();
 

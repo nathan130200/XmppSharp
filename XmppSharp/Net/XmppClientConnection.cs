@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Net.Security;
+using Microsoft.Extensions.Logging;
 using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Core;
@@ -12,26 +13,38 @@ namespace XmppSharp.Net;
 
 public class XmppClientConnection : XmppConnection
 {
+    public new XmppClientConnectionOptions Options
+        => (base.Options as XmppClientConnectionOptions)!;
+
+    public XmppClientConnection(XmppClientConnectionOptions options) : base(options)
+    {
+
+    }
+
     volatile byte _phase;
 
     protected override void SendStreamHeader()
     {
         var xml = new StreamStream
         {
-            To = Options.Jid.Domain,
+            To = Options.Domain,
             DefaultNamespace = Namespaces.Client,
             Language = CultureInfo.CurrentCulture.Name,
             Version = "1.0",
         };
 
+        Logger.LogDebug("Sending stream start to {Hostname}", Options.Domain);
+
         Send(xml.StartTag());
     }
 
-    XmppSaslMechanismHandler? _authHandler;
+    XmppSaslHandler? _saslHandler;
 
     protected override void HandleStreamStart(StreamStream e)
     {
+        StreamId = e.Id;
 
+        Logger.LogDebug("Stream start received from remote server. StreamID: {Id}", StreamId);
     }
 
     const int PHASE_INIT = 0;
@@ -41,39 +54,53 @@ public class XmppClientConnection : XmppConnection
 
     protected override void Disposing()
     {
-        _phase = PHASE_INIT;
+        base.Disposing();
 
-        if (_authHandler != null)
-        {
-            _authHandler._connection = null!;
-            _authHandler = null;
-        }
+        _phase = PHASE_INIT;
+        _saslHandler?.Dispose();
+        _saslHandler = null;
     }
 
     protected override void HandleStreamElement(XmppElement e)
     {
-        if (e is StreamError se)
-            throw new JabberStreamException(se.Condition ?? StreamErrorCondition.InternalServerError, se.Text);
-
         if (_phase == PHASE_INIT)
         {
             if (e is StreamFeatures features)
             {
                 if (!IsAuthenticated)
                 {
+                    Logger.LogDebug("Server features received. Client is not authenticated");
+
                     if (!IsEncrypted)
                     {
-                        bool isServerSupported = false;
-                        bool isClientRequired = Options.TlsPolicy == StartTlsPolicy.Required;
+                        var isServerSupported = false;
+                        var isServerRequired = false;
+                        var isClientRequired = Options.TlsPolicy == TlsPolicy.Required;
 
                         if (features.StartTls != null)
+                        {
                             isServerSupported = true;
+                            isServerRequired = features.StartTls.Policy == TlsPolicy.Required;
+                            Logger.LogDebug("The server offers TLS encryption ({Type}).", isServerRequired ? "required" : "optional");
+                        }
 
                         if (isClientRequired && !isServerSupported)
-                            throw new JabberStreamException(StreamErrorCondition.UnsupportedFeature, "The client requires TLS but the server did not offer it.");
+                        {
+                            Logger.LogDebug("The client needs the secure channel, but the server does not offer it.");
+                            Disconnect();
+                            return;
+                        }
+
+                        if (!isClientRequired && isServerRequired)
+                        {
+                            Logger.LogDebug("The server offers but the client does not want to establish a secure channel.");
+                            Disconnect();
+                            return;
+                        }
 
                         if (isServerSupported)
                         {
+                            Logger.LogDebug("Sending start TLS");
                             _phase = PHASE_TLS;
                             Send(new StartTls());
                             return;
@@ -81,62 +108,110 @@ public class XmppClientConnection : XmppConnection
                     }
 
                     if (features.Mechanisms == null)
+                    {
+                        Logger.LogDebug("Server did not offer any authentication mechanism?");
                         throw new JabberStreamException(StreamErrorCondition.UnsupportedFeature, "The server did not offer any authentication mechanism.");
+                    }
 
                     var mechanismName = Options.AuthenticationMechanism;
-                    var useKnownMechanism = false;
 
                     if (string.IsNullOrWhiteSpace(Options.AuthenticationMechanism))
                     {
                         mechanismName = features.Mechanisms.SupportedMechanisms.FirstOrDefault()?.Value;
-                        useKnownMechanism = true;
+                        Logger.LogDebug("Using server provided authentication mechanism: {Name}", mechanismName);
                     }
-
-                    if (!useKnownMechanism)
+                    else
                     {
+                        Logger.LogDebug("Trying to use client provided authentication mechanism: {Name}", Options.AuthenticationMechanism);
+
                         var isSupported = features.Mechanisms.SupportedMechanisms.Any(x => x.Value == Options.AuthenticationMechanism);
 
                         if (!isSupported)
+                        {
+                            Logger.LogDebug("Server does not support client provided authentication mechanism: {Name}", mechanismName);
                             throw new JabberSaslException(FailureCondition.InvalidMechanism, "Unable to authenticate with a known mechanism.");
+                        }
                     }
 
                     _phase = PHASE_AUTH;
-                    _authHandler = XmppSaslMechanismFactory.CreateNew(this, mechanismName!);
-                    _authHandler.Init();
+
+                    if (!XmppSaslMechanismFactory.TryCreate(mechanismName!, this, out _saslHandler))
+                    {
+                        Logger.LogDebug("The requested authentication mechanism '{Name}' was selected, but is not implemented.", mechanismName);
+                        throw new JabberSaslException(FailureCondition.InvalidMechanism, $"Mechanism '{mechanismName}' is not registered in SASL factory.");
+                    }
+
+                    Logger.LogDebug("Begin SASL.");
+
+                    _saslHandler.Init();
                 }
                 else
                 {
+                    Logger.LogDebug("Server features received. Client is authenticated. Init session");
                     InitSession(features.SupportBind, features.SupportSession);
                 }
             }
         }
         else if (_phase == PHASE_TLS)
         {
-            if (e is not Proceed)
-                throw new JabberStreamException(StreamErrorCondition.UnsupportedStanzaType);
+            Logger.LogDebug("Begin TLS");
 
+            if (e is not Proceed)
+            {
+                Logger.LogDebug("Unexpected XML element during start TLS");
+                throw new JabberStreamException(StreamErrorCondition.InvalidXml);
+            }
+
+            Logger.LogDebug("Pause IO read");
             _access &= ~FileAccess.Read;
 
             QueueTask(async token =>
             {
+                Logger.LogDebug("new SSLStream");
                 var temp = new SslStream(_stream!);
+
                 await temp.AuthenticateAsClientAsync(Options.TlsOptions, token);
+                Logger.LogDebug("Encrypt TLS as client");
+
                 _stream = temp;
                 temp = null;
 
+                Logger.LogDebug("Reset parser");
                 _parser!.Reset();
+
                 ChangeState(x => x | XmppConnectionState.Encrypted);
+
                 SendStreamHeader();
+
+                Logger.LogDebug("Resume IO read");
                 _access |= FileAccess.Read;
+
+                Logger.LogDebug("Restart xmpp cycle");
                 _phase = PHASE_INIT;
             });
         }
         else if (_phase == PHASE_AUTH)
         {
-            if (_authHandler!.Invoke(e))
+            // true = auth success
+            // false = continue processing auth elements
+            // auth failed = JabberSaslException is thrown
+
+            var result = _saslHandler!.Invoke(e);
+
+            Logger.LogDebug("SASL Handler result: {State}", result);
+
+            if (!result)
+                Logger.LogDebug("SASL handler update: not authenticated yet (continue)");
+            else
             {
-                _authHandler._connection = null!;
-                _authHandler = null;
+                Logger.LogDebug("SASL handler update: authentication success (finish)");
+
+                Jid = new Jid(Options.Username, Options.Domain, default);
+
+                _saslHandler.Dispose();
+                _saslHandler = null;
+
+                Logger.LogDebug($"Pause IO read");
                 _access &= ~FileAccess.Read;
 
                 QueueTask(async _ =>
@@ -144,17 +219,20 @@ public class XmppClientConnection : XmppConnection
                     await Task.Yield();
 
                     ChangeState(x => x | XmppConnectionState.Authenticated);
+
+                    Logger.LogDebug($"Restart xmpp cycle");
                     _phase = PHASE_INIT;
                     _parser!.Reset();
                     SendStreamHeader();
+
+                    Logger.LogDebug($"Resume IO read");
                     _access |= FileAccess.Read;
                 });
             }
         }
         else if (_phase == PHASE_READY)
         {
-            if (e is Stanza stz)
-                _ = Task.Run(() => FireOnStanza(stz));
+            FireOnElement(e);
         }
     }
 
@@ -165,16 +243,34 @@ public class XmppClientConnection : XmppConnection
             try
             {
                 if (supportBind)
+                {
+                    Logger.LogDebug($"Post-Features: Server support resource binding...");
                     await DoResourceBind();
+                }
 
                 if (supportSession)
+                {
+                    Logger.LogDebug($"Post-Features: Server support session init...");
                     await DoSessionStart();
+                }
+
+                if (Options.InitialPresence != null)
+                {
+                    Logger.LogDebug("Sending initial presence set.");
+                    var el = new Presence(Options.InitialPresence);
+                    el.GenerateId();
+                    _ = RequestStanzaAsync(el);
+                }
+
+                FireOnOnline();
+
+                Logger.LogDebug("{Jid} Client is online.", Jid);
 
                 _phase = PHASE_READY;
             }
             catch (Exception ex)
             {
-                FireOnError(ex);
+                Logger.LogDebug(ex, "An error occurred during session initialization.");
                 Disconnect();
             }
         });
@@ -183,12 +279,26 @@ public class XmppClientConnection : XmppConnection
     async Task DoResourceBind()
     {
         var request = new Iq(IqType.Set);
-        request.AddChild(new Bind(Options.Jid.Resource ?? Environment.MachineName));
 
-        var response = await RequestStanzaAsync(request) ?? throw new JabberException("Unexpected response.");
+        request.AddChild(new Bind(Options.Resource));
+
+        if (string.IsNullOrWhiteSpace(Options.Resource))
+            Logger.LogDebug("Resource bind was requested with empty resource");
+
+        var response = await RequestStanzaAsync(request);
 
         if (response.Type == IqType.Error)
-            throw new JabberException("Resource bind failed: " + (response.Error?.Condition ?? StanzaErrorCondition.UndefinedCondition));
+            throw new JabberException("Resource bind failed - " + (response.Error?.Condition ?? StanzaErrorCondition.UndefinedCondition));
+
+        var serverResource = response.Element<Bind>()?.Jid?.Resource;
+
+        if (string.IsNullOrWhiteSpace(serverResource))
+            throw new JabberStreamException(StreamErrorCondition.InvalidXml, "Server did not send a valid JID.");
+
+        Logger.LogDebug("Server {Action} client resource to: {Value}",
+            serverResource == Options.Resource ? "authorized" : "replaced", serverResource);
+
+        Jid = Jid with { Resource = serverResource };
 
         ChangeState(x => x | XmppConnectionState.ResourceBinded);
     }
@@ -196,12 +306,13 @@ public class XmppClientConnection : XmppConnection
     async Task DoSessionStart()
     {
         var request = new Iq(IqType.Set);
+
         request.AddChild(new Session());
 
-        var response = await RequestStanzaAsync(request) ?? throw new JabberException("Unexpected response.");
+        var response = await RequestStanzaAsync(request);
 
         if (response.Type == IqType.Error)
-            throw new JabberException("Session start failed: " + (response.Error?.Condition ?? StanzaErrorCondition.UndefinedCondition));
+            throw new JabberException("Session start failed - " + (response.Error?.Condition ?? StanzaErrorCondition.UndefinedCondition));
 
         ChangeState(x => x | XmppConnectionState.SessionStarted);
     }

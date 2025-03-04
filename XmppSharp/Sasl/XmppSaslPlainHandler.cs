@@ -4,7 +4,7 @@ using XmppSharp.Protocol.Core.Sasl;
 
 namespace XmppSharp.Sasl;
 
-public class XmppSaslPlainHandler : XmppSaslMechanismHandler
+public class XmppSaslPlainHandler : XmppSaslHandler
 {
     public XmppSaslPlainHandler(XmppClientConnection connection) : base(connection)
     {
@@ -14,18 +14,18 @@ public class XmppSaslPlainHandler : XmppSaslMechanismHandler
     {
         var buf = new StringBuilder()
             .Append('\0')
-            .Append(Connection.Options.Jid.Local)
+            .Append(Connection.Options.Username)
             .Append('\0')
             .Append(Connection.Options.Password)
             .ToString()
             .GetBytes();
 
-        var tag = new Auth
+        var el = new Auth
         {
             Mechanism = "PLAIN",
             Value = Convert.ToBase64String(buf)
         };
 
-        Connection.Send(tag);
+        Connection.Send(el);
     }
 }

@@ -11,7 +11,7 @@ public class Bind : XmppElement
 
     }
 
-    public Bind(string resource) : this()
+    public Bind(string? resource) : this()
         => Resource = resource;
 
     public Bind(Jid jid) : this()

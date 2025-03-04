@@ -1,26 +1,31 @@
 ﻿using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using XmppSharp.Net;
-using XmppSharp.Protocol.Core.Sasl;
 
 namespace XmppSharp.Sasl;
 
 public static class XmppSaslMechanismFactory
 {
-    static readonly ConcurrentDictionary<string, Func<XmppClientConnection, XmppSaslMechanismHandler>> s_SaslFactory = new(StringComparer.OrdinalIgnoreCase);
+    static readonly ConcurrentDictionary<string, Func<XmppClientConnection, XmppSaslHandler>> s_SaslFactory = new(StringComparer.OrdinalIgnoreCase);
 
     static XmppSaslMechanismFactory()
     {
         s_SaslFactory["PLAIN"] = c => new XmppSaslPlainHandler(c);
     }
 
-    public static void RegisterMechanism(string mechanismName, Func<XmppClientConnection, XmppSaslMechanismHandler> factory)
+    public static void RegisterMechanism(string mechanismName, Func<XmppClientConnection, XmppSaslHandler> factory)
         => s_SaslFactory[mechanismName] = factory;
 
-    public static XmppSaslMechanismHandler CreateNew(XmppClientConnection connection, string mechanism)
+    public static bool TryCreate(string mechanism, XmppClientConnection connection, [NotNullWhen(true)] out XmppSaslHandler? handler)
     {
-        if (s_SaslFactory.TryGetValue(mechanism, out var result))
-            return result(connection);
+        handler = default;
 
-        throw new JabberSaslException(FailureCondition.InvalidMechanism, $"SASL mmechanism '{mechanism}' is not implemented");
+        if (connection == null)
+            return false;
+
+        if (s_SaslFactory.TryGetValue(mechanism, out var result))
+            handler = result(connection);
+
+        return handler != null;
     }
 }

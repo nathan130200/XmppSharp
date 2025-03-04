@@ -21,7 +21,7 @@ public class Presence : Stanza
 
     }
 
-    public Presence(PresenceType type, PresenceShow? show = default, byte? priority = default) : this()
+    public Presence(PresenceType type, PresenceShow? show = default, int? priority = default) : this()
     {
         Type = type;
         Show = show;
@@ -63,10 +63,6 @@ public class Presence : Stanza
         }
     }
 
-    // priority: -1, 0~255
-    // where -1 exclude from bare JID routing
-    // 0~255 client priority in bare JID routing
-
     public int? Priority
     {
         get
@@ -74,7 +70,7 @@ public class Presence : Stanza
             if (int.TryParse(GetTag("priority"), out var result))
                 return Math.Clamp(result, -1, 255);
 
-            return null;
+            return default;
         }
         set
         {

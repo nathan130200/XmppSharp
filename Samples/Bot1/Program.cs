@@ -1,106 +1,69 @@
-﻿using System.Collections.Concurrent;
-using System.IO.Pipes;
-using System.Net;
-using XmppSharp;
+﻿using System.Net;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Sinks.SystemConsole.Themes;
 using XmppSharp.Net;
+using XmppSharp.Protocol.Core;
 using XmppSharp.Protocol.Core.Tls;
 
-ConcurrentStack<ConsoleColor> _colorStack = [];
+const string DefaultTemplate = "[{Timestamp:HH:mm:ss} <{SourceContext}> {Level:u3}] {Message:lj}{NewLine}{Exception}";
 
-using var cts = new CancellationTokenSource();
-var clients = new List<XmppClientConnection>();
+var bots = new List<XmppConnection>();
 
-for (int i = 0; i < 16; i++)
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.Console(theme: AnsiConsoleTheme.Code, outputTemplate: DefaultTemplate)
+    .MinimumLevel.Verbose()
+    .CreateLogger();
+
+var loggerFactory = LoggerFactory.Create(builder =>
 {
-    var jid = new Jid($"stresstest@localhost/bot-{i}");
+    builder.AddSerilog();
+    builder.SetMinimumLevel(LogLevel.Debug);
+});
 
-    var client = new XmppClientConnection
+for (int i = 0; i < 1; i++)
+{
+    var resource = $"bot-{i + 1}";
+
+    var options = new XmppClientConnectionOptions
     {
-        Options =
+        Username = "stresstest",
+        Domain = "localhost",
+        Resource = resource,
+        Password = "youshallnotpass",
+        EndPoint = new IPEndPoint(IPAddress.Loopback, 5222),
+        TlsPolicy = TlsPolicy.Required,
+        DisconnectTimeout = TimeSpan.FromSeconds(5),
+        InitialPresence = new(PresenceType.Available, priority: i),
+        Logger = loggerFactory.CreateLogger(resource),
+        TlsOptions =
         {
-            Jid = jid,
-            EndPoint = new IPEndPoint(IPAddress.Loopback, 5222),
-            TlsPolicy = StartTlsPolicy.Optional,
-            Verbose = true,
-            DisconnectTimeout = TimeSpan.FromSeconds(5),
-            TlsOptions =
-            {
-                TargetHost = "localhost"
-            }
+            TargetHost = "localhost"
         }
     };
 
+    bots.Add(new XmppClientConnection(options));
+}
 
-    client.OnDebugXml += (sender, e) =>
+bots.Add(new XmppComponentConnection(new()
+{
+    Domain = "stresstest",
+    Password = "youshallnotpass",
+    Logger = loggerFactory.CreateLogger("StressTest/Component"),
+    EndPoint = new IPEndPoint(IPAddress.Loopback, 5275)
+}));
+
+foreach (var bot in bots)
+{
+    try
     {
-        PushColor(e.Direction == PipeDirection.In ? ConsoleColor.Green : ConsoleColor.Red);
-        var prefix = e.Direction == PipeDirection.In ? "recv <<" : "send >>";
-        Console.WriteLine($"({jid}) {prefix}:\n{e.Xml}\n");
-        PopColor();
-    };
-
-
-    client.OnError += (sender, ex) =>
+        await bot.ConnectAsync();
+    }
+    catch (Exception ex)
     {
-        PushColor(ConsoleColor.Yellow);
         Console.WriteLine(ex);
-        PopColor();
-    };
-
-    PushColor(ConsoleColor.Cyan);
-    Console.WriteLine("New client added: " + jid);
-    clients.Add(client);
-    PopColor();
-}
-
-Console.CancelKeyPress += (s, e) =>
-{
-    e.Cancel = true;
-    cts.Cancel();
-};
-
-_ = Task.Run(async () =>
-{
-    foreach (var client in clients)
-    {
-        await client.ConnectAsync();
-        await Task.Delay(160);
     }
-});
-
-var once = false;
-
-while (!cts.IsCancellationRequested)
-{
-    if (clients.All(x => x.IsConnected) && !once)
-    {
-        PushColor(ConsoleColor.Magenta);
-        Console.WriteLine("All clients connected");
-        PopColor();
-        once = true;
-    }
-
-    await Task.Delay(1000);
 }
 
-foreach (var client in clients)
-    client.Disconnect();
-
-while (clients.Any(x => x.IsConnected))
-    await Task.Delay(160);
-
-Console.ReadKey(true);
-
-void PushColor(ConsoleColor newColor)
-{
-    _colorStack.Push(Console.ForegroundColor);
-    Console.ForegroundColor = newColor;
-}
-
-void PopColor()
-{
-    if (_colorStack.TryPop(out var old))
-        Console.ForegroundColor = old;
-    else
-        Console.ForegroundColor = ConsoleColor.White;
-}
+await Task.Delay(-1);
