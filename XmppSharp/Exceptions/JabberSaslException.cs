@@ -1,6 +1,6 @@
-﻿using XmppSharp.Protocol.Core.Sasl;
+﻿using XmppSharp.Protocol.Sasl;
 
-namespace XmppSharp;
+namespace XmppSharp.Exceptions;
 
 public class JabberSaslException : JabberException
 {

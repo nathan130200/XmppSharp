@@ -1,8 +1,7 @@
 ﻿using System.Globalization;
-
 using XmppSharp.Dom;
 
-namespace XmppSharp;
+namespace XmppSharp.Extensions;
 
 public static class XmppElementExtensions
 {

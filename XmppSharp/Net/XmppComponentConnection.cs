@@ -1,8 +1,10 @@
 ﻿using System.Globalization;
 using Microsoft.Extensions.Logging;
 using XmppSharp.Dom;
+using XmppSharp.Entities;
+using XmppSharp.Entities.Options;
 using XmppSharp.Protocol.Base;
-using XmppSharp.Protocol.Core.Component;
+using XmppSharp.Protocol.Component;
 
 namespace XmppSharp.Net;
 

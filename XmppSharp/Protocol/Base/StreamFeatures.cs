@@ -1,7 +1,7 @@
 ﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
-using XmppSharp.Protocol.Core.Sasl;
-using XmppSharp.Protocol.Core.Tls;
+using XmppSharp.Protocol.Sasl;
+using XmppSharp.Protocol.Tls;
 
 namespace XmppSharp.Protocol.Base;
 

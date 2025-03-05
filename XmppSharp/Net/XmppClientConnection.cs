@@ -2,11 +2,14 @@
 using System.Net.Security;
 using Microsoft.Extensions.Logging;
 using XmppSharp.Dom;
+using XmppSharp.Entities;
+using XmppSharp.Entities.Options;
+using XmppSharp.Protocol;
 using XmppSharp.Protocol.Base;
-using XmppSharp.Protocol.Core;
-using XmppSharp.Protocol.Core.Client;
-using XmppSharp.Protocol.Core.Sasl;
+using XmppSharp.Protocol.Client;
 using XmppSharp.Protocol.Core.Tls;
+using XmppSharp.Protocol.Sasl;
+using XmppSharp.Protocol.Tls;
 using XmppSharp.Sasl;
 
 namespace XmppSharp.Net;
@@ -256,7 +259,7 @@ public class XmppClientConnection : XmppConnection
 
                 if (Options.InitialPresence != null)
                 {
-                    Logger.LogDebug("Sending initial presence set.");
+                    Logger.LogDebug("Sending initial presence.");
                     var el = new Presence(Options.InitialPresence);
                     el.GenerateId();
                     _ = RequestStanzaAsync(el);
@@ -267,6 +270,8 @@ public class XmppClientConnection : XmppConnection
                 Logger.LogDebug("{Jid} Client is online.", Jid);
 
                 _phase = PHASE_READY;
+
+                InitKeepAlive();
             }
             catch (Exception ex)
             {

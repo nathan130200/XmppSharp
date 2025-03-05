@@ -5,6 +5,9 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XmppSharp.Dom;
+using XmppSharp.Entities;
+using XmppSharp.Entities.Options;
+using XmppSharp.Exceptions;
 using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Net;
@@ -13,6 +16,8 @@ public abstract class XmppConnection
 {
     volatile XmppConnectionState _state;
 
+    protected Timer? _keepAliveTimer;
+    protected SemaphoreSlim _writeSemaphore = new(1, 1);
     protected ConcurrentDictionary<string, TaskCompletionSource<Stanza>> _callbacks = new();
     protected ConcurrentQueue<Func<CancellationToken, Task>> _taskQueue = new();
     protected ConcurrentQueue<(byte[] Bytes, string? Xml)> _sendQueue = new();
@@ -78,7 +83,7 @@ public abstract class XmppConnection
             {
                 await Task.Delay(16, token);
 
-                if (_taskQueue.TryDequeue(out var action))
+                while (_taskQueue.TryDequeue(out var action))
                 {
                     await action(token);
                     continue;
@@ -137,14 +142,16 @@ public abstract class XmppConnection
             {
                 await Task.Delay(16, token);
 
-                if (_sendQueue.TryDequeue(out var tuple))
+                while (_sendQueue.TryDequeue(out var tuple))
                 {
                     var (bytes, xml) = tuple;
 
                     await _stream!.WriteAsync(bytes);
 
-                    if (Logger.IsEnabled(LogLevel.Trace) && !string.IsNullOrWhiteSpace(tuple.Xml))
+                    if (!string.IsNullOrWhiteSpace(tuple.Xml))
                         Logger.LogTrace("send >>\n{Xml}\n", tuple.Xml);
+
+                    await Task.Delay(16, token);
                 }
             }
         }

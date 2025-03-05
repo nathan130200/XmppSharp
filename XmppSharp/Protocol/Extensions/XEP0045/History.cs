@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using XmppSharp.Attributes;
 using XmppSharp.Dom;
+using XmppSharp.Extensions;
 
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 

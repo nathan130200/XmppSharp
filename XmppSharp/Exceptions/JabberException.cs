@@ -1,4 +1,4 @@
-﻿namespace XmppSharp;
+﻿namespace XmppSharp.Exceptions;
 
 public class JabberException : Exception
 {

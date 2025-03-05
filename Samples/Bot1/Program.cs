@@ -3,8 +3,8 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 using XmppSharp.Net;
-using XmppSharp.Protocol.Core;
-using XmppSharp.Protocol.Core.Tls;
+using XmppSharp.Protocol;
+using XmppSharp.Protocol.Tls;
 
 const string DefaultTemplate = "[{Timestamp:HH:mm:ss} <{SourceContext}> {Level:u3}] {Message:lj}{NewLine}{Exception}";
 

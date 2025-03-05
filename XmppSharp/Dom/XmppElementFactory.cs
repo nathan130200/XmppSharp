@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
 using XmppSharp.Attributes;
+using XmppSharp.Protocol;
 using XmppSharp.Protocol.Base;
-using XmppSharp.Protocol.Core;
 
 namespace XmppSharp.Dom;
 

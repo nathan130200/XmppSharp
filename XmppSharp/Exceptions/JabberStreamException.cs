@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Protocol.Base;
 
-namespace XmppSharp;
+namespace XmppSharp.Exceptions;
 
 public class JabberStreamException : JabberException
 {
