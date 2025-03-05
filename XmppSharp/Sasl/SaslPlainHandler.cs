@@ -4,9 +4,9 @@ using XmppSharp.Protocol.Sasl;
 
 namespace XmppSharp.Sasl;
 
-public class XmppSaslPlainHandler : XmppSaslHandler
+public class SaslPlainHandler : SaslHandler
 {
-    public XmppSaslPlainHandler(XmppClientConnection connection) : base(connection)
+    public SaslPlainHandler(XmppClientConnection connection) : base(connection)
     {
     }
 

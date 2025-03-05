@@ -31,7 +31,7 @@ public class XmppClientConnectionOptions : XmppConnectionOptions
     /// <summary>
     /// Authentication mechanism. Default: <c>PLAIN</c>
     /// <para>
-    /// For an authentication mechanism to be instantiated, it must be declared and registered correctly via <see cref="Sasl.XmppSaslMechanismFactory" />
+    /// For an authentication mechanism to be instantiated, it must be declared and registered correctly via <see cref="Sasl.SaslFactory" />
     /// </para>
     /// </summary>
     public string? AuthenticationMechanism { get; set; } = "PLAIN";

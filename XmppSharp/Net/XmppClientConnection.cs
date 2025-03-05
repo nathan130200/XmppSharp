@@ -41,7 +41,7 @@ public class XmppClientConnection : XmppConnection
         Send(xml.StartTag());
     }
 
-    XmppSaslHandler? _saslHandler;
+    SaslHandler? _saslHandler;
 
     protected override void HandleStreamStart(StreamStream e)
     {
@@ -138,7 +138,7 @@ public class XmppClientConnection : XmppConnection
 
                     _phase = PHASE_AUTH;
 
-                    if (!XmppSaslMechanismFactory.TryCreate(mechanismName!, this, out _saslHandler))
+                    if (!SaslFactory.TryCreate(mechanismName!, this, out _saslHandler))
                     {
                         Logger.LogDebug("The requested authentication mechanism '{Name}' was selected, but is not implemented.", mechanismName);
                         throw new JabberSaslException(FailureCondition.InvalidMechanism, $"Mechanism '{mechanismName}' is not registered in SASL factory.");
