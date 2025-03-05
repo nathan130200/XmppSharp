@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
+using XmppSharp.Entities.Options;
 using XmppSharp.Net;
 using XmppSharp.Protocol;
 using XmppSharp.Protocol.Tls;

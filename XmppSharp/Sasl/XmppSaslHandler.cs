@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using XmppSharp.Dom;
+using XmppSharp.Exceptions;
 using XmppSharp.Net;
 using XmppSharp.Protocol.Sasl;
 

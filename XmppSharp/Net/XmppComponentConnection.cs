@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using XmppSharp.Dom;
 using XmppSharp.Entities;
 using XmppSharp.Entities.Options;
+using XmppSharp.Exceptions;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Component;
 

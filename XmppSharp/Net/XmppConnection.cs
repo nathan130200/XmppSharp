@@ -42,6 +42,11 @@ public abstract class XmppConnection
     public XmppConnection(XmppConnectionOptions options)
         => Options = options;
 
+    protected virtual void InitKeepAlive()
+    {
+
+    }
+
     public bool IsConnected => _state.HasFlag(XmppConnectionState.Connected);
     public bool IsEncrypted => _state.HasFlag(XmppConnectionState.Encrypted);
     public bool IsAuthenticated => _state.HasFlag(XmppConnectionState.Authenticated);

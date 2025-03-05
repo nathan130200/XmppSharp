@@ -1,13 +1,4 @@
 ﻿using XmppSharp.Attributes;
-
-
-<<<<<<< TODO: Unmerged change from project 'XmppSharp (net8.0)', Before:
-using XmppSharp.Protocol.Base;
-=======
-using XmppSharp.Protocol;
-using XmppSharp.Protocol;
-using XmppSharp.Protocol.Base;
->>>>>>> After
 using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Protocol;

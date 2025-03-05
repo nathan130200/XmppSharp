@@ -181,6 +181,8 @@ public class XmppElement : XmppNode
     {
         Throw.IfStringNullOrWhiteSpace(name);
 
+        ifp ??= CultureInfo.InvariantCulture;
+
         if (value is null)
             RemoveAttribute(name);
         else

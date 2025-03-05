@@ -1,14 +1,6 @@
 ﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
-
-<<<<<<< TODO: Unmerged change from project 'XmppSharp (net8.0)', Before:
-=======
-using XmppSharp.Protocol;
-using XmppSharp.Protocol;
-using XmppSharp.Protocol.Core;
->>>>>>> After
-
 namespace XmppSharp.Protocol;
 
 [XmppTag("query", Namespaces.IqRoster)]

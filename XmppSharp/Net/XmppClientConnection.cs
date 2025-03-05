@@ -4,10 +4,10 @@ using Microsoft.Extensions.Logging;
 using XmppSharp.Dom;
 using XmppSharp.Entities;
 using XmppSharp.Entities.Options;
+using XmppSharp.Exceptions;
 using XmppSharp.Protocol;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Client;
-using XmppSharp.Protocol.Core.Tls;
 using XmppSharp.Protocol.Sasl;
 using XmppSharp.Protocol.Tls;
 using XmppSharp.Sasl;
@@ -150,7 +150,7 @@ public class XmppClientConnection : XmppConnection
                 }
                 else
                 {
-                    Logger.LogDebug("Server features received. Client is authenticated. Init session");
+                    Logger.LogDebug("Server features received. Client is authenticated.");
                     InitSession(features.SupportBind, features.SupportSession);
                 }
             }

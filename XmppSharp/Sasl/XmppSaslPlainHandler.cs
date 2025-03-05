@@ -1,6 +1,6 @@
 ﻿using System.Text;
 using XmppSharp.Net;
-using XmppSharp.Protocol.Core.Sasl;
+using XmppSharp.Protocol.Sasl;
 
 namespace XmppSharp.Sasl;
 
