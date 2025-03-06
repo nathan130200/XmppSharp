@@ -16,6 +16,11 @@ public class StreamError : XmppElement
         Condition = condition;
     }
 
+    public StreamError(StreamErrorCondition? condition, string? text) : this(condition)
+    {
+        Text = text;
+    }
+
     public StreamErrorCondition? Condition
     {
         get

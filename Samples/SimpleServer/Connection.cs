@@ -8,13 +8,13 @@ using Expat;
 using XmppSharp;
 using XmppSharp.Collections;
 using XmppSharp.Dom;
+using XmppSharp.Protocol;
 using XmppSharp.Protocol.Base;
-using XmppSharp.Protocol.Core;
-using XmppSharp.Protocol.Core.Client;
-using XmppSharp.Protocol.Core.Sasl;
-using XmppSharp.Protocol.Core.Tls;
+using XmppSharp.Protocol.Client;
 using XmppSharp.Protocol.Extensions.XEP0030;
 using XmppSharp.Protocol.Extensions.XEP0199;
+using XmppSharp.Protocol.Sasl;
+using XmppSharp.Protocol.Tls;
 
 namespace SimpleServer;
 
@@ -164,7 +164,7 @@ public sealed class Connection : IDisposable
         if (!IsAuthenticated)
         {
             if (_stream is not SslStream)
-                features.StartTls = new(StartTlsPolicy.Optional);
+                features.StartTls = new(TlsPolicy.Optional);
 
             features.Mechanisms = new()
             {

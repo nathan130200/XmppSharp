@@ -235,7 +235,25 @@ public class XmppClientConnection : XmppConnection
         }
         else if (_phase == PHASE_READY)
         {
-            FireOnElement(e);
+            if (e is Stanza stz)
+            {
+                if (stz is Iq iq && iq.HasTag("ping", Namespaces.Ping) && Options.AutoReplyPing)
+                {
+                    iq.SwitchDirection();
+                    iq.Type = IqType.Result;
+                    Send(iq);
+                    return;
+                }
+
+                FireOnStanza(stz);
+            }
+            else
+            {
+                if (!Options.TreatUnknownElementAsProtocolViolation)
+                    Logger.LogWarning("Received unknown stanza type: {TagName} (namespace: {NamespaceURI})", e.TagName, e.DefaultNamespace);
+                else
+                    throw new JabberStreamException(StreamErrorCondition.PolicyViolation, "Unexpected XML element");
+            }
         }
     }
 
@@ -247,25 +265,26 @@ public class XmppClientConnection : XmppConnection
             {
                 if (supportBind)
                 {
-                    Logger.LogDebug($"Post-Features: Server support resource binding...");
+                    Logger.LogDebug($"Server support resource binding...");
                     await DoResourceBind();
                 }
 
                 if (supportSession)
                 {
-                    Logger.LogDebug($"Post-Features: Server support session init...");
+                    Logger.LogDebug($"Server support session init...");
                     await DoSessionStart();
                 }
 
                 if (Options.InitialPresence != null)
                 {
                     Logger.LogDebug("Sending initial presence.");
+
                     var el = new Presence(Options.InitialPresence);
                     el.GenerateId();
-                    _ = RequestStanzaAsync(el);
+                    await SendAsync(el);
                 }
 
-                FireOnOnline();
+                FireOnReady();
 
                 Logger.LogDebug("{Jid} Client is online.", Jid);
 

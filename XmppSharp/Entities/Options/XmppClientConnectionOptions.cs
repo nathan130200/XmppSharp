@@ -37,12 +37,20 @@ public class XmppClientConnectionOptions : XmppConnectionOptions
     public string? AuthenticationMechanism { get; set; } = "PLAIN";
 
     /// <summary>
-    /// Determines whether the connection will respond to ping requests automatically.
+    /// Determines whether the connection will respond to ping requests automatically. Default: <see langword="true" />
     /// </summary>
-    public bool AutoPing { get; set; }
+    public bool AutoReplyPing { get; set; } = true;
 
     /// <summary>
     /// Determines the initial presence that will be sent after connecting (visibility, status, etc).
     /// </summary>
     public Presence InitialPresence { get; set; }
+
+    protected internal override void Validate()
+    {
+        base.Validate();
+
+        if (string.IsNullOrWhiteSpace(TlsOptions.TargetHost))
+            TlsOptions.TargetHost = Domain;
+    }
 }

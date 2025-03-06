@@ -5,6 +5,9 @@ using XmppSharp.Collections;
 
 namespace XmppSharp;
 
+/// <summary>
+/// Represents the jabber identifier. <c>local@domain/resource</c>
+/// </summary>
 [DebuggerDisplay("{ToString(),nq}")]
 public sealed record Jid : IEquatable<Jid>
 {
@@ -45,12 +48,18 @@ public sealed record Jid : IEquatable<Jid>
         }
     }
 
+    /// <summary>
+    /// Local part
+    /// </summary>
     public string? Local
     {
         get => _local;
         init => _local = value;
     }
 
+    /// <summary>
+    /// Domain part
+    /// </summary>
     public string Domain
     {
         get => _domain;
@@ -66,6 +75,9 @@ public sealed record Jid : IEquatable<Jid>
         }
     }
 
+    /// <summary>
+    /// Resource part
+    /// </summary>
     public string? Resource
     {
         get => _resource;

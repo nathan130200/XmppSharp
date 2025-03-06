@@ -57,14 +57,20 @@ public class XmppComponentConnection : XmppConnection
             Logger.LogDebug("Component authenticated.");
 
             ChangeState(x => x | XmppConnectionState.Authenticated | XmppConnectionState.SessionStarted);
-
-            //InitKeepAlive();
-
-            FireOnOnline();
+            InitKeepAlive();
+            FireOnReady();
         }
         else
         {
-            FireOnElement(e);
+            if (e is Stanza stz)
+                FireOnStanza(stz);
+            else
+            {
+                if (!Options.TreatUnknownElementAsProtocolViolation)
+                    Logger.LogWarning("Received unknown stanza type: {TagName} (namespace: {NamespaceURI})", e.TagName, e.DefaultNamespace);
+                else
+                    throw new JabberStreamException(StreamErrorCondition.PolicyViolation, "Unexpected XML element");
+            }
         }
     }
 }

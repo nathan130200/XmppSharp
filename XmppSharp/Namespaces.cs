@@ -1,5 +1,8 @@
 ﻿namespace XmppSharp;
 
+/// <summary>
+/// Collection of common namespaces used in the XMPP protocol.
+/// </summary>
 public static class Namespaces
 {
     /// <summary>
@@ -368,7 +371,7 @@ public static class Namespaces
     public const string vCardUpdate = "vcard-temp:x:update";
 
     /// <summary>
-    /// <c>urn:cryonline:k01</c>
+    /// <a href="">Cry Online</a> - <c>urn:cryonline:k01</c>
     /// </summary>
     public const string CryOnline = "urn:cryonline:k01";
 }
