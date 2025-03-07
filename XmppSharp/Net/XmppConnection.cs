@@ -2,6 +2,7 @@
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
+using Expat;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XmppSharp.Dom;
@@ -121,8 +122,8 @@ public abstract class XmppConnection
     public XmppConnectionState State => _state;
 
     public event Action<XmppConnection, (XmppConnectionState Before, XmppConnectionState After)> OnStateChanged;
-    public event Action<XmppConnection, Stanza> OnStanza;
-    public event Action<XmppConnection> OnReady;
+    public event Action<XmppConnection, XmppElement> OnElement;
+    public event Action<XmppConnection> OnConnected;
     public event Action<XmppConnection> OnDisconnected;
 
     protected void ChangeState(Func<XmppConnectionState, XmppConnectionState> updateVaue)
@@ -143,9 +144,9 @@ public abstract class XmppConnection
 
     protected void FireOnDisconnected() => OnDisconnected?.Invoke(this);
 
-    protected void FireOnReady() => OnReady?.Invoke(this);
+    protected void FireOnConnected() => OnConnected?.Invoke(this);
 
-    protected void FireOnStanza(Stanza stz) => OnStanza?.Invoke(this, stz);
+    protected void FireOnElement(XmppElement element) => OnElement?.Invoke(this, element);
 
     protected virtual async Task BeginReceive()
     {
@@ -178,6 +179,11 @@ public abstract class XmppConnection
             }
 
             Logger.LogDebug("Read loop task terminated gracefully.");
+        }
+        catch (ExpatException ee)
+        {
+            if (ee.Code != ExpatParserError.Finished || ee.Code != ExpatParserError.Aborted || ee.Code != ExpatParserError.Suspended)
+                Logger.LogError(ee, "XML parsing error.");
         }
         catch (Exception ex)
         {
@@ -216,13 +222,11 @@ public abstract class XmppConnection
 
     protected virtual async Task BeginSend()
     {
-        var token = _tokenSource.Token;
-
         try
         {
             while (_disposed < 2)
             {
-                await Task.Delay(16, token);
+                await Task.Delay(16);
 
                 if (_sendQueue == null)
                     break;
@@ -233,7 +237,7 @@ public abstract class XmppConnection
 
                     try
                     {
-                        await _stream!.WriteAsync(bytes, CancellationToken.None);
+                        await _stream!.WriteAsync(bytes);
 
                         if (!string.IsNullOrWhiteSpace(tuple.Xml))
                             Logger.LogTrace("send >>\n{Xml}\n", tuple.Xml);
@@ -373,6 +377,8 @@ public abstract class XmppConnection
 
             _ = BeginReceive();
             _ = BeginSend();
+
+            _isConnecting = false;
         }
         catch (Exception ex)
         {
@@ -498,6 +504,7 @@ public abstract class XmppConnection
         _disposed = 1;
         _access &= ~FileAccess.Read;
 
+        _isConnecting = false;
         _tokenSource?.Cancel();
         _tokenSource?.Dispose();
         _tokenSource = null!;
@@ -520,8 +527,6 @@ public abstract class XmppConnection
         {
             var timeout = Task.Delay(Options.DisconnectTimeout);
 
-            Logger.LogDebug("Flush send queue...");
-
             while (!_sendQueue.IsEmpty)
             {
                 await Task.Delay(160);
@@ -530,10 +535,12 @@ public abstract class XmppConnection
                     break;
             }
 
-            _sendQueue.Clear();
+            while (_sendQueue.TryDequeue(out var tuple))
+                tuple.Completion?.TrySetCanceled();
+
             _sendQueue = null!;
 
-            Logger.LogDebug("Send queue {State}!", timeout.IsCompleted ? "timed out" : "completed");
+            Logger.LogDebug("Flush send queue {State}!", timeout.IsCompleted ? "timed out" : "completed");
 
             _disposed = 2;
             _access &= ~FileAccess.Write;

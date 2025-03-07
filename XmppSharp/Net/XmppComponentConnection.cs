@@ -59,12 +59,12 @@ public class XmppComponentConnection : XmppConnection
             Jid = new(Options.Domain);
             ChangeState(x => x | XmppConnectionState.Authenticated | XmppConnectionState.SessionStarted);
             InitKeepAlive();
-            FireOnReady();
+            FireOnConnected();
         }
         else
         {
             if (e is Stanza stz)
-                FireOnStanza(stz);
+                FireOnElement(stz);
             else
             {
                 if (!Options.TreatUnknownElementAsProtocolViolation)

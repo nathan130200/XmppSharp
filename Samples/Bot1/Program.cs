@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
-using XmppSharp.Entities;
 using XmppSharp.Entities.Options;
 using XmppSharp.Net;
 using XmppSharp.Protocol.Tls;
@@ -40,37 +39,28 @@ TaskCompletionSource? reconnecTcs = default;
 
 var bot = new XmppClientConnection(options);
 
-bot.OnStateChanged += (sender, e) =>
+bot.OnConnected += e =>
 {
-    if (e.After == XmppConnectionState.Connected)
-        reconnecTcs?.TrySetResult();
+    reconnecTcs?.TrySetResult();
 };
 
-bot.OnDisconnected += sender =>
+bot.OnDisconnected += e =>
 {
     reconnecTcs?.TrySetResult();
     reconnecTcs = new();
-    InitReconnect();
+    DoReconnect();
 };
 
 _ = bot.ConnectAsync();
 
 await Task.Delay(-1);
 
-void InitReconnect()
+void DoReconnect()
 {
     _ = Task.Run(async () =>
     {
-        try
-        {
-            await bot.ConnectAsync();
-            await reconnecTcs.Task;
-        }
-        catch (Exception ex)
-        {
-            Log.Warning(ex.ToString());
-        }
-
+        await bot.ConnectAsync();
+        await reconnecTcs.Task;
         await Task.Delay(5000);
     });
 }

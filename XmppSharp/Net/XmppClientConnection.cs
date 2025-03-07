@@ -66,12 +66,16 @@ public class XmppClientConnection : XmppConnection
 
     protected override void HandleStreamElement(XmppElement e)
     {
+        #region Handle STREAM FEATURES
+
         if (_phase == PHASE_INIT)
         {
             if (e is StreamFeatures features)
             {
                 if (!IsAuthenticated)
                 {
+                    #region Setup TLS phase
+
                     Logger.LogDebug("Server features received. Client is not authenticated");
 
                     if (!IsEncrypted)
@@ -110,6 +114,10 @@ public class XmppClientConnection : XmppConnection
                         }
                     }
 
+                    #endregion
+
+                    #region Setup SASL phase
+
                     if (features.Mechanisms == null)
                     {
                         Logger.LogDebug("Server did not offer any authentication mechanism?");
@@ -147,6 +155,8 @@ public class XmppClientConnection : XmppConnection
                     Logger.LogDebug("Begin SASL.");
 
                     _saslHandler.Init();
+
+                    #endregion
                 }
                 else
                 {
@@ -155,6 +165,11 @@ public class XmppClientConnection : XmppConnection
                 }
             }
         }
+
+        #endregion
+
+        #region Handle STARTTLS
+
         else if (_phase == PHASE_TLS)
         {
             Logger.LogDebug("Begin TLS");
@@ -193,6 +208,11 @@ public class XmppClientConnection : XmppConnection
                 _phase = PHASE_INIT;
             });
         }
+
+        #endregion
+
+        #region Handle AUTH
+
         else if (_phase == PHASE_AUTH)
         {
             // true = auth success
@@ -233,6 +253,9 @@ public class XmppClientConnection : XmppConnection
                 });
             }
         }
+
+        #endregion
+
         else if (_phase == PHASE_READY)
         {
             if (e is Stanza stz)
@@ -245,17 +268,19 @@ public class XmppClientConnection : XmppConnection
                     return;
                 }
 
-                FireOnStanza(stz);
+                FireOnElement(stz);
             }
             else
             {
-                if (!Options.TreatUnknownElementAsProtocolViolation)
-                    Logger.LogWarning("Received unknown stanza type: {TagName} (namespace: {NamespaceURI})", e.TagName, e.DefaultNamespace);
-                else
+                if (Options.TreatUnknownElementAsProtocolViolation)
                     throw new JabberStreamException(StreamErrorCondition.PolicyViolation, "Unexpected XML element");
+
+                FireOnElement(e);
             }
         }
     }
+
+    #region Handle BIND & SESSION
 
     void InitSession(bool supportBind, bool supportSession)
     {
@@ -284,7 +309,7 @@ public class XmppClientConnection : XmppConnection
                     await SendAsync(el);
                 }
 
-                FireOnReady();
+                FireOnConnected();
 
                 Logger.LogDebug("{Jid} Client is online.", Jid);
 
@@ -340,4 +365,6 @@ public class XmppClientConnection : XmppConnection
 
         ChangeState(x => x | XmppConnectionState.SessionStarted);
     }
+
+    #endregion
 }
