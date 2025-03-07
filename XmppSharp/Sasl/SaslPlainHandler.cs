@@ -1,4 +1,6 @@
 ﻿using System.Text;
+using XmppSharp.Dom;
+using XmppSharp.Exceptions;
 using XmppSharp.Net;
 using XmppSharp.Protocol.Sasl;
 
@@ -27,5 +29,16 @@ public class SaslPlainHandler : SaslHandler
         };
 
         Connection.Send(el);
+    }
+
+    protected internal override bool Invoke(XmppElement e)
+    {
+        if (e is Success)
+            return true;
+
+        if (e is Failure failure)
+            throw new JabberSaslException(failure.Condition, failure.Text);
+
+        return false;
     }
 }

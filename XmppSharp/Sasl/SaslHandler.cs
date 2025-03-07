@@ -60,19 +60,11 @@ public abstract class SaslHandler : IDisposable
     /// <summary>
     /// Invokes the SASL handler to process the element.
     /// </summary>
-    /// <param name="tag">Element that will be processed by the handler.</param>
+    /// <param name="e">Element that will be processed by the handler.</param>
     /// <returns><see langword="true"/> if the SASL handler has finished and authentication was successful; otherwise the handler will continue processing the next elements (in the case of authentication mechanisms that have more than one auth step).</returns>
     /// <exception cref="JabberSaslException">If authentication fails.</exception>
     /// <remarks>
     /// <para>Once the SASL Handler is declared as authenticated the connection will proceed normally.</para>
     /// </remarks>
-    protected internal virtual bool Invoke(XmppElement tag)
-    {
-        if (tag is Success)
-            return true;
-        else if (tag is Failure failure)
-            throw new JabberSaslException(failure.Condition, failure.Text);
-        else
-            return false;
-    }
+    protected internal abstract bool Invoke(XmppElement e);
 }
