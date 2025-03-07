@@ -16,7 +16,6 @@ public abstract class XmppConnection
 {
     volatile XmppConnectionState _state;
 
-    protected Timer? _keepAliveTimer;
     protected ConcurrentDictionary<string, TaskCompletionSource<Stanza>> _callbacks = new();
     protected ConcurrentQueue<Func<CancellationToken, Task>> _taskQueue = new();
     protected ConcurrentQueue<(byte[] Bytes, string? Xml, TaskCompletionSource? Completion)> _sendQueue = new();
@@ -47,10 +46,6 @@ public abstract class XmppConnection
         _tokenSource?.Cancel();
         _tokenSource = null!;
 
-        _keepAliveTimer?.Change(-1, -1);
-        _keepAliveTimer?.Dispose();
-        _keepAliveTimer = null;
-
         _callbacks?.Clear();
         _callbacks = new();
 
@@ -71,47 +66,53 @@ public abstract class XmppConnection
         if (!Options.EnableKeepAlive)
             return;
 
-        _keepAliveTimer?.Dispose();
-        _keepAliveTimer = new Timer(KeepAliveTimer_OnTick, null, TimeSpan.Zero, Options.KeepAliveInterval);
-    }
+        var buf = " ".GetBytes();
 
-    // single whitespace, because it does not break any xml parser.
-    static readonly byte[] s_KeepAliveBytes = " ".GetBytes();
+        var token = _tokenSource.Token;
 
-    async void KeepAliveTimer_OnTick(object? _)
-    {
-        try
+        _ = Task.Run(async () =>
         {
-            var tcs = new TaskCompletionSource();
-
-            Logger.LogDebug("Begin keep alive task");
-
-            QueueWrite(s_KeepAliveBytes, default, tcs);
-
-            var tasks = new Task[]
+            while (!_tokenSource.IsCancellationRequested)
             {
-                tcs.Task,
-                Task.Delay(Options.KeepAliveTimeout)
-            };
+                if (_disposed > 0)
+                {
+                    Logger.LogDebug("Keep alive aborted! Connection is disposing...");
+                    break;
+                }
 
-            var now = DateTime.Now;
-            var result = await Task.WhenAny(tasks);
-            var elapsed = DateTime.Now - now;
+                var tcs = new TaskCompletionSource();
 
-            var hasTimedOut = result == tasks[1];
+                try
+                {
+                    Logger.LogDebug("Sending keep alive...");
 
-            Logger.LogDebug("End keep alive task: {State} (elapsed: {Time:F2} sec)",
-                hasTimedOut ? "timed out" : "success",
-                elapsed.TotalSeconds);
+                    _sendQueue.Enqueue((buf, null, tcs));
 
-            if (hasTimedOut)
-                throw new JabberStreamException(StreamErrorCondition.HostGone, "Timed out sending keep alive packet.");
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "An error occurred while processing keep alive.");
-            Disconnect();
-        }
+                    var delayTask = Task.Delay(Options.KeepAliveTimeout, token);
+
+                    var result = await Task.WhenAny(
+                        delayTask,
+                        tcs.Task);
+
+                    if (result == delayTask)
+                    {
+                        Logger.LogDebug("Keep alive timeout! Connection is dead.");
+                        Dispose();
+                        return;
+                    }
+
+                    Logger.LogDebug("Keep alive sent! Connection is alive.");
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogDebug(ex, "Sending keep alive failed.");
+                    Dispose();
+                    break;
+                }
+
+                await Task.Delay(Options.KeepAliveInterval, token);
+            }
+        });
     }
 
     public bool IsConnected => _state.HasFlag(XmppConnectionState.Connected);
@@ -122,6 +123,7 @@ public abstract class XmppConnection
     public event Action<XmppConnection, (XmppConnectionState Before, XmppConnectionState After)> OnStateChanged;
     public event Action<XmppConnection, Stanza> OnStanza;
     public event Action<XmppConnection> OnReady;
+    public event Action<XmppConnection> OnDisconnected;
 
     protected void ChangeState(Func<XmppConnectionState, XmppConnectionState> updateVaue)
     {
@@ -139,12 +141,15 @@ public abstract class XmppConnection
         }
     }
 
+    protected void FireOnDisconnected() => OnDisconnected?.Invoke(this);
+
     protected void FireOnReady() => OnReady?.Invoke(this);
 
     protected void FireOnStanza(Stanza stz) => OnStanza?.Invoke(this, stz);
 
-    protected virtual async Task BeginReceive(CancellationToken token)
+    protected virtual async Task BeginReceive()
     {
+        var token = _tokenSource.Token;
         var buf = new byte[Math.Max(1024, Options.RecvBufferSize)];
 
         try
@@ -177,6 +182,9 @@ public abstract class XmppConnection
         catch (Exception ex)
         {
             Logger.LogError(ex, "An error occurred in the read loop task.");
+        }
+        finally
+        {
             Disconnect();
         }
     }
@@ -206,13 +214,18 @@ public abstract class XmppConnection
 
     protected abstract void SendStreamHeader();
 
-    protected virtual async Task BeginSend(CancellationToken token)
+    protected virtual async Task BeginSend()
     {
+        var token = _tokenSource.Token;
+
         try
         {
             while (_disposed < 2)
             {
                 await Task.Delay(16, token);
+
+                if (_sendQueue == null)
+                    break;
 
                 if (_sendQueue.TryDequeue(out var tuple))
                 {
@@ -242,7 +255,10 @@ public abstract class XmppConnection
         catch (Exception ex)
         {
             Logger.LogError(ex, "An error occurred in the write loop task.");
-            Disconnect();
+        }
+        finally
+        {
+            Dispose();
         }
     }
 
@@ -251,7 +267,7 @@ public abstract class XmppConnection
 
     protected virtual void QueueTask(Func<CancellationToken, Task> action)
     {
-        if (_disposed >= 1)
+        if (_disposed > 0)
             return;
 
         _taskQueue.Enqueue(action);
@@ -259,7 +275,7 @@ public abstract class XmppConnection
 
     public virtual void Send(string xml)
     {
-        if (_disposed >= 2)
+        if (_disposed > 1)
             return;
 
         if (string.IsNullOrEmpty(xml))
@@ -271,7 +287,7 @@ public abstract class XmppConnection
 
     public virtual void Send(XmppElement element)
     {
-        if (_disposed >= 2)
+        if (_disposed > 1)
             return;
 
         Throw.IfNull(element);
@@ -283,8 +299,8 @@ public abstract class XmppConnection
 
     public Task SendAsync(string xml)
     {
-        if (_disposed >= 2)
-            return Task.CompletedTask;
+        if (_disposed > 1)
+            return Task.FromCanceled(CancellationToken.None);
 
         if (string.IsNullOrEmpty(xml))
             return Task.CompletedTask;
@@ -298,8 +314,8 @@ public abstract class XmppConnection
 
     public Task SendAsync(XmppElement element)
     {
-        if (_disposed >= 2)
-            return Task.CompletedTask;
+        if (_disposed > 1)
+            return Task.FromCanceled(CancellationToken.None);
 
         Throw.IfNull(element);
 
@@ -317,7 +333,10 @@ public abstract class XmppConnection
     public virtual async Task ConnectAsync(CancellationToken token = default)
     {
         if (_isConnecting)
+        {
+            Logger.LogDebug("Trying to connect while connection attempt is already in progress.");
             return;
+        }
 
         _isConnecting = true;
 
@@ -352,13 +371,12 @@ public abstract class XmppConnection
             InitParser();
             SendStreamHeader();
 
-            _ = BeginReceive(token);
-            _ = BeginSend(token);
+            _ = BeginReceive();
+            _ = BeginSend();
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "An error occurred while connecting to the server.");
-            ChangeState(_ => XmppConnectionState.Disconnected);
+            Logger.LogError(ex, "Connection failed");
             Dispose();
         }
         finally
@@ -480,15 +498,9 @@ public abstract class XmppConnection
         _disposed = 1;
         _access &= ~FileAccess.Read;
 
-        _keepAliveTimer?.Change(-1, -1);
-        _keepAliveTimer?.Dispose();
-        _keepAliveTimer = null;
-
         _tokenSource?.Cancel();
         _tokenSource?.Dispose();
         _tokenSource = null!;
-
-        Logger.LogDebug("~{TypeName}(): Disconnected", GetType().Name);
 
         {
             Logger.LogDebug("Cancel {Num} pending stanza callbacks.", _callbacks.Count);
@@ -533,6 +545,8 @@ public abstract class XmppConnection
             _stream = null;
 
             ChangeState(_ => XmppConnectionState.Disconnected);
+
+            FireOnDisconnected();
         });
     }
 

@@ -14,7 +14,7 @@ public class Iq : Stanza
 
     }
 
-    public Iq() : base("iq", Namespaces.Client)
+    public Iq() : base("iq")
     {
 
     }

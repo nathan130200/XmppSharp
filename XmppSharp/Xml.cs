@@ -122,10 +122,10 @@ public static class Xml
         return child;
     }
 
-    public static XmppElement? Up(this XmppElement child)
+    public static XmppElement Up(this XmppElement child)
     {
         Throw.IfNull(child);
-        return child.Parent;
+        return child.Parent!;
     }
 
     public static XmlWriter CreateWriter(TextWriter textWriter, XmppFormatting formatting, Encoding? encoding = default)

@@ -56,6 +56,7 @@ public class XmppComponentConnection : XmppConnection
 
             Logger.LogDebug("Component authenticated.");
 
+            Jid = new(Options.Domain);
             ChangeState(x => x | XmppConnectionState.Authenticated | XmppConnectionState.SessionStarted);
             InitKeepAlive();
             FireOnReady();

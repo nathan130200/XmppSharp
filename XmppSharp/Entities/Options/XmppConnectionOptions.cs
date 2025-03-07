@@ -22,7 +22,7 @@ public class XmppConnectionOptions
     /// (i.e. not part of the rules defined in RFC-6120) as a violation of the XMPP protocol and immediately disconnect from the server.
     /// Default: <see langword="true" />
     /// </summary>
-    public bool TreatUnknownElementAsProtocolViolation { get; set; } = true;
+    public bool TreatUnknownElementAsProtocolViolation { get; set; } = false;
 
     /// <summary>
     /// Gets or sets a value indicating whether the keep-alive mechanism is enabled.
@@ -35,7 +35,7 @@ public class XmppConnectionOptions
     /// <remarks>
     /// The default value is 15 seconds.
     /// </remarks>
-    public TimeSpan KeepAliveInterval { get; set; } = TimeSpan.FromSeconds(15);
+    public TimeSpan KeepAliveInterval { get; set; } = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// Gets or sets the timeout duration before a keep-alive failure is detected.
@@ -43,7 +43,7 @@ public class XmppConnectionOptions
     /// <remarks>
     /// The default value is 5 seconds.
     /// </remarks>
-    public TimeSpan KeepAliveTimeout { get; set; } = TimeSpan.FromSeconds(5);
+    public TimeSpan KeepAliveTimeout { get; set; } = TimeSpan.FromSeconds(15);
 
     /// <summary>
     /// Input buffer size. Default: <c>4096</c>.
@@ -102,6 +102,8 @@ public class XmppConnectionOptions
 
         TlsOptions.RemoteCertificateValidationCallback ??= DefaultRemoteServerCertificateValidator;
     }
+
+    protected internal virtual string DefaultNamespace { get; }
 
     static bool DefaultRemoteServerCertificateValidator(object sender,
         X509Certificate? certificate,

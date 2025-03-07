@@ -7,6 +7,8 @@ namespace XmppSharp.Entities.Options;
 /// </summary>
 public class XmppClientConnectionOptions : XmppConnectionOptions
 {
+    protected internal override string DefaultNamespace => Namespaces.Client;
+
     /// <summary>
     /// Host qualified domain name of the server.
     /// </summary>

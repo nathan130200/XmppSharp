@@ -9,4 +9,6 @@ public class XmppComponentConnectionOptions : XmppConnectionOptions
     /// Host qualified domain name of the component.
     /// </summary>
     public string Domain { get; set; }
+
+    protected internal override string DefaultNamespace => Namespaces.Accept;
 }
