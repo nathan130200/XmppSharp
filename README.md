@@ -18,6 +18,7 @@ ____
 - [XEP-0045](https://xmpp.org/extensions/xep-0045.html) - Multi User Chat
 - [XEP-0047](https://xmpp.org/extensions/xep-0047.html) - In-Band Bytestreams
 - [XEP-0085](https://xmpp.org/extensions/xep-0085.html) - Chat States Notifications
+- [XEP-0092](https://xmpp.org/extensions/xep-0092.html) - Software Version
 - [XEP-0172](https://xmpp.org/extensions/xep-0172.html) - User Nickname
 - [XEP-0199](https://xmpp.org/extensions/xep-0199.html) - Ping
 - [XEP-0202](https://xmpp.org/extensions/xep-0202.html) - Entity Time
@@ -41,30 +42,52 @@ Consider the example table below demonstrating how this mapping works:
 
 | Qualified Tag Name | Namespace(s) | Mapped Class |
 | ------------------ | ------------ | ------------ |
-iq|*see note below*|XmppSharp.Protocol.Core.Iq
-message|*see note below*|XmppSharp.Protocol.Core.Message
-presence|*see note below*|XmppSharp.Protocol.Core.Presence
-error|*see note below*|XmppSharp.Protocol.Base.StanzaError
-starttls|urn:ietf:params:xml:ns:xmpp-tls|XmppSharp.Protocol.Tls.StartTls
-success|urn:ietf:params:xml:ns:xmpp-sasl|XmppSharp.Protocol.Sasl.Success
+stream:stream|http://etherx.jabber.org/streams|XmppSharp.Protocol.Base.StreamStream
 stream:features|http://etherx.jabber.org/streams|XmppSharp.Protocol.Base.StreamFeatures
+starttls|urn:ietf:params:xml:ns:xmpp-tls|XmppSharp.Protocol.Tls.StartTls
+auth|urn:ietf:params:xml:ns:xmpp-sasl|XmppSharp.Protocol.Sasl.Auth
+success|urn:ietf:params:xml:ns:xmpp-sasl|XmppSharp.Protocol.Sasl.Success
+iq|*see note below*|XmppSharp.Protocol.Iq
+message|*see note below*|XmppSharp.Protocol.Message
+presence|*see note below*|XmppSharp.Protocol.Presence
+error|*see note below*|XmppSharp.Protocol.Base.StanzaError
 ...|...|...
 
 > [!NOTE]
-> Some cases like `iq`, `message`, `presence`, `error` (error element inside an stanza), have more than one namespace defined (because it depends on each specific namespace URI), but they are declared in the same way. The difference is that more than one namespace is assigned to this element, so the `XmppElementFactory` can correctly map which one it will instantiate.
+> Some cases like `iq`, `message`, `presence` have more than one namespace defined (because it depends on each specific namespace URI), but they are declared in the same way. The difference is that more than one namespace is assigned to this element, so the `XmppElementFactory` can correctly map which one it will instantiate.
 
 <hr/>
 
 Defining your XML elements is simple, just create a class that inherits the base class `XmppSharp.Dom.XmppElement` or similar, call the base constructor of the class to initialize the tag name correctly. And add the attribute `[XmppTag(tagName, namespace)]` for each desired tag and namespace and register the type by calling `XmppElementFactory.RegisterType` (or to register an entire assembly `XmppElementFacotry.RegisterAssembly`), eg:
 
 ```cs
-// define xmpp tags
-[XmppTag("bind", Namespaces.Bind)]
-public class Bind : XmppElement
+// Declare namespace constant somewhere.
+const string XMLNS_TODOLIST = "urn:todolist:app";
+
+[XmppTag("todo_item", XMLNS_TODOLIST)]
+public class TodoItem : XmppElement
 {
-    public Bind() : base("bind", Namespaces.Bind) // call base constructor to setup this element instance.
+    // Call base constructor to setup this element instance.
+    public TodoItem() : base("todo_item", XMLNS_TODOLIST)
     {
-        // setup other properties...
+    }
+
+    // Define other properties for new custom element.
+
+    public bool HasDone
+    {
+        get => HasTag("done");
+        set 
+        {
+            if(!value) RemoveTag("done");
+            else SetTag("done");
+        }
+    }
+
+    public string? Name
+    {
+        get => GetAttribute("name");
+        set => SetAttribute("name", value);
     }
 }
 ```
