@@ -33,6 +33,7 @@ public class XmppElement : XmppNode
     public string LocalName => QualifiedName.LocalName;
 
     public XmppElement? this[XmppName name] => Element(name);
+    public XmppElement? this[XmppName name, string? namespaceURI] => Element(name, namespaceURI);
 
     public string TagName
     {

@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Security;
 using System.Text;
 using System.Web;
@@ -34,23 +35,8 @@ public static class Xml
     [ThreadStatic]
     private static string? s_NewLineChars;
 
-    public static string NewLineChars
-    {
-        get
-        {
-            s_NewLineChars ??= "\n";
-            return s_NewLineChars;
-        }
-    }
-
-    public static string IndentChars
-    {
-        get
-        {
-            s_IndentChars ??= "  ";
-            return s_IndentChars;
-        }
-    }
+    public static string NewLineChars => s_NewLineChars ?? "\n";
+    public static string IndentChars => s_IndentChars ?? "  ";
 
     public static string? EncodeName(string? s)
         => XmlConvert.EncodeName(s);
@@ -112,12 +98,48 @@ public static class Xml
         return parent.Elements().Where(predicate);
     }
 
-    public static XmppElement C(this XmppElement parent, string tagName, string? namespaceURI = default, object? value = default)
+    public static XmppElement C(this XmppElement parent, XmppName tagName, string? namespaceURI = default, object? value = default)
     {
         Throw.IfNull(parent);
 
         var child = XmppElementFactory.Create(tagName, namespaceURI, parent);
         child.SetValue(value);
+        parent.AddChild(child);
+        return child;
+    }
+
+    public static XmppElement Element(XmppName tagName, Dictionary<string, object>? attrs = default)
+    {
+        var ns = attrs?.GetValueOrDefault(!tagName.HasPrefix ? "xmlns"
+            : $"xmlns:{tagName.Prefix}")?.ToString();
+
+        var result = XmppElementFactory.Create(tagName, ns);
+
+        if (attrs != null)
+        {
+            foreach (var (key, value) in attrs)
+            {
+                result.SetAttribute(key, value is string str ? str
+                    : Convert.ToString(value, CultureInfo.InvariantCulture));
+            }
+        }
+
+        return result;
+    }
+
+    public static XmppElement C(this XmppElement parent, XmppName tagName, Dictionary<string, object>? attrs = default)
+    {
+        var child = new XmppElement(tagName);
+
+        if (attrs != null)
+        {
+            foreach (var (key, value) in attrs)
+            {
+                child.SetAttribute(key, value is string str ? str
+                    : Convert.ToString(value, CultureInfo.InvariantCulture));
+            }
+        }
+
         parent.AddChild(child);
         return child;
     }
