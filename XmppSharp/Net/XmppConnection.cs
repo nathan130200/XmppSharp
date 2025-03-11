@@ -469,7 +469,7 @@ public abstract class XmppConnection
             Logger.LogDebug("XMPP stream end received from the server. Closing connection...");
 
             if (Logger.IsEnabled(LogLevel.Trace))
-                Logger.LogTrace("recv <<\n{Xml}\n", Xml.XmppStreamEnd);
+                Logger.LogTrace("recv <<\n{Xml}\n", Xml.XmppEndTag);
 
             try
             {
@@ -588,7 +588,7 @@ public abstract class XmppConnection
         if (element != null)
             buf.Append(element.ToString(false));
 
-        var xml = buf.Append(Xml.XmppStreamEnd).ToString();
+        var xml = buf.Append(Xml.XmppEndTag).ToString();
         var isVerbose = Logger.IsEnabled(LogLevel.Trace) == true;
         QueueSend(xml.GetBytes(), isVerbose ? xml : default);
 

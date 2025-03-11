@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Security;
 using System.Text;
 using System.Web;
@@ -11,7 +10,7 @@ namespace XmppSharp;
 
 public static class Xml
 {
-    public const string XmppStreamEnd = "</stream:stream>";
+    public const string XmppEndTag = "</stream:stream>";
     public const string XmppTimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffK";
 
 #if NET6_0
@@ -64,27 +63,7 @@ public static class Xml
         return source;
     }
 
-    public static bool FindChild(this XmppElement parent, string tagName, string? namespaceURI, [NotNullWhen(true)] out XmppElement? result)
-    {
-        Throw.IfNull(parent);
-        Throw.IfStringNullOrWhiteSpace(tagName);
-
-        result = parent.Element(tagName, namespaceURI);
-
-        return result != null;
-    }
-
-    public static bool FindChild(this XmppElement parent, string tagName, [NotNullWhen(true)] out XmppElement? result)
-    {
-        Throw.IfNull(parent);
-        Throw.IfStringNullOrWhiteSpace(tagName);
-
-        result = parent.Element(tagName);
-
-        return result != null;
-    }
-
-    public static XmppElement? Child(this XmppElement parent, Func<XmppElement, bool> predicate)
+    public static XmppElement? Element(this XmppElement parent, Func<XmppElement, bool> predicate)
     {
         Throw.IfNull(parent);
         Throw.IfNull(predicate);
@@ -101,6 +80,9 @@ public static class Xml
     public static XmppElement C(this XmppElement parent, XmppName tagName, string? namespaceURI = default, object? value = default)
     {
         Throw.IfNull(parent);
+
+        if (namespaceURI == null)
+            namespaceURI = parent.GetNamespace(tagName.Prefix);
 
         var child = XmppElementFactory.Create(tagName, namespaceURI, parent);
         child.SetValue(value);
@@ -129,7 +111,10 @@ public static class Xml
 
     public static XmppElement C(this XmppElement parent, XmppName tagName, Dictionary<string, object>? attrs = default)
     {
-        var child = new XmppElement(tagName);
+        var ns = attrs?.GetValueOrDefault(!tagName.HasPrefix ? "xmlns"
+           : $"xmlns:{tagName.Prefix}")?.ToString();
+
+        var child = XmppElementFactory.Create(tagName, ns);
 
         if (attrs != null)
         {
