@@ -9,6 +9,7 @@ using XmppSharp.Dom;
 using XmppSharp.Entities;
 using XmppSharp.Entities.Options;
 using XmppSharp.Exceptions;
+using XmppSharp.Helpers;
 using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Net;
@@ -18,9 +19,8 @@ public abstract class XmppConnection
     volatile XmppConnectionState _state;
 
     protected ConcurrentDictionary<string, TaskCompletionSource<Stanza>> _callbacks = new();
-    protected ConcurrentQueue<Func<CancellationToken, Task>> _taskQueue = new();
-    protected ConcurrentQueue<(byte[] Bytes, string? Xml, TaskCompletionSource? Completion)> _sendQueue = new();
-    protected IXmppParser? _parser;
+    protected ConcurrentQueue<(byte[]? Bytes, string? Xml, TaskCompletionSource? Completion)> _sendQueue = new();
+    protected XmppStreamReader? _parser;
     protected Stream? _stream;
     protected Socket? _socket;
 
@@ -49,9 +49,6 @@ public abstract class XmppConnection
 
         _callbacks?.Clear();
         _callbacks = new();
-
-        _taskQueue?.Clear();
-        _taskQueue = new();
 
         if (_sendQueue != null)
         {
@@ -148,7 +145,7 @@ public abstract class XmppConnection
 
     protected void FireOnElement(XmppElement element) => OnElement?.Invoke(this, element);
 
-    protected virtual async Task BeginReceive()
+    /*protected virtual async Task BeginReceive()
     {
         var token = _tokenSource.Token;
         var buf = new byte[Math.Max(1024, Options.RecvBufferSize)];
@@ -193,7 +190,7 @@ public abstract class XmppConnection
         {
             Disconnect();
         }
-    }
+    }*/
 
     public async Task<TStanza> RequestStanzaAsync<TStanza>(TStanza request, TimeSpan timeout = default, CancellationToken token = default)
         where TStanza : Stanza
@@ -237,7 +234,8 @@ public abstract class XmppConnection
 
                     try
                     {
-                        await _stream!.WriteAsync(bytes);
+                        if (bytes?.Length > 0)
+                            await _stream!.WriteAsync(bytes);
 
                         if (!string.IsNullOrWhiteSpace(tuple.Xml))
                             Logger.LogTrace("send >>\n{Xml}\n", tuple.Xml);
@@ -266,15 +264,15 @@ public abstract class XmppConnection
         }
     }
 
-    protected virtual void QueueWrite(byte[] bytes, string? xml = default, TaskCompletionSource? completion = default)
-        => _sendQueue.Enqueue((bytes, xml, completion));
-
-    protected virtual void QueueTask(Func<CancellationToken, Task> action)
+    protected virtual void QueueSend(byte[]? bytes = default, string? xml = default, TaskCompletionSource? completion = default)
     {
-        if (_disposed > 0)
+        if (_sendQueue == null)
+        {
+            completion?.TrySetCanceled();
             return;
+        }
 
-        _taskQueue.Enqueue(action);
+        _sendQueue.Enqueue((bytes, xml, completion));
     }
 
     public virtual void Send(string xml)
@@ -286,7 +284,7 @@ public abstract class XmppConnection
             return;
 
         var verbose = Logger.IsEnabled(LogLevel.Trace);
-        QueueWrite(xml.GetBytes(), verbose ? xml : default);
+        QueueSend(xml.GetBytes(), verbose ? xml : default);
     }
 
     public virtual void Send(XmppElement element)
@@ -298,7 +296,7 @@ public abstract class XmppConnection
 
         var xml = element.GetBytes();
         var isVerbose = Logger.IsEnabled(LogLevel.Trace);
-        QueueWrite(xml, isVerbose ? element.ToString(true) : default);
+        QueueSend(xml, isVerbose ? element.ToString(true) : default);
     }
 
     public Task SendAsync(string xml)
@@ -312,7 +310,7 @@ public abstract class XmppConnection
         var verbose = Logger.IsEnabled(LogLevel.Trace);
 
         var tcs = new TaskCompletionSource();
-        QueueWrite(xml.GetBytes(), verbose ? xml : default, tcs);
+        QueueSend(xml.GetBytes(), verbose ? xml : default, tcs);
         return tcs.Task;
     }
 
@@ -326,13 +324,13 @@ public abstract class XmppConnection
         var xml = element.GetBytes();
         var isVerbose = Logger.IsEnabled(LogLevel.Trace);
         var tcs = new TaskCompletionSource();
-        QueueWrite(xml, isVerbose ? element.ToString(true) : default, tcs);
+        QueueSend(xml, isVerbose ? element.ToString(true) : default, tcs);
         return tcs.Task;
     }
 
     volatile bool _isConnecting = false;
 
-    CancellationTokenSource _tokenSource;
+    protected CancellationTokenSource _tokenSource;
 
     public virtual async Task ConnectAsync(CancellationToken token = default)
     {
@@ -372,10 +370,10 @@ public abstract class XmppConnection
                 _state |= XmppConnectionState.Encrypted;
             }
 
-            InitParser();
             SendStreamHeader();
 
-            _ = BeginReceive();
+            InitParser();
+
             _ = BeginSend();
 
             _isConnecting = false;
@@ -401,7 +399,10 @@ public abstract class XmppConnection
 
     protected virtual void InitParser()
     {
-        _parser = new ExpatXmppParser(Options.Encoding);
+        if (Options.XmppParserFactory != null)
+            _parser = Options.XmppParserFactory(Options);
+        else
+            _parser = new ExpatXmppStreamReader(Options);
 
         _parser.OnStreamStart += e =>
         {
@@ -483,6 +484,33 @@ public abstract class XmppConnection
                 Disconnect();
             }
         };
+
+        _parser.OnError += ex =>
+        {
+            if (ex is ExpatException ee)
+            {
+                if (ee.Code == ExpatParserError.Aborted
+                || ee.Code == ExpatParserError.Finished
+                || ee.Code == ExpatParserError.Suspended)
+                    goto _next;
+            }
+
+            if (ex is IOException && _disposed > 0)
+                goto _next;
+
+            Logger.LogError(ex, "XML parsing error.");
+
+        _next:
+            Disconnect();
+        };
+
+        _parser.OnDisposed += () =>
+        {
+            Logger.LogDebug("XML parser disposed");
+            Disconnect();
+        };
+
+        _parser.Reset(_stream!, _tokenSource.Token);
     }
 
     protected virtual void HandleStreamEnd()
@@ -492,8 +520,7 @@ public abstract class XmppConnection
 
     protected virtual void Disposing()
     {
-        if (_parser is ExpatXmppParser expat)
-            expat.XmlParser?.Suspend(false);
+
     }
 
     public void Dispose()
@@ -517,9 +544,6 @@ public abstract class XmppConnection
 
             _callbacks.Clear();
         }
-
-        if (!_taskQueue.IsEmpty)
-            Logger.LogDebug("There are still {Num} pending tasks in the queue (may cause memory leaks)", _taskQueue.Count);
 
         Disposing();
 
@@ -566,7 +590,7 @@ public abstract class XmppConnection
 
         var xml = buf.Append(Xml.XmppStreamEnd).ToString();
         var isVerbose = Logger.IsEnabled(LogLevel.Trace) == true;
-        QueueWrite(xml.GetBytes(), isVerbose ? xml : default);
+        QueueSend(xml.GetBytes(), isVerbose ? xml : default);
 
         Dispose();
     }

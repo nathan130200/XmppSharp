@@ -183,19 +183,28 @@ public class XmppClientConnection : XmppConnection
             Logger.LogDebug("Pause IO read");
             _access &= ~FileAccess.Read;
 
-            QueueTask(async token =>
+            _parser!.Pause();
+
+            _ = Task.Run(async () =>
             {
+                // Await untill parser is really paused.
+                await _parser;
+
+                var tcs = new TaskCompletionSource();
+                QueueSend(completion: tcs);
+                await tcs.Task;
+
                 Logger.LogDebug("new SSLStream");
                 var temp = new SslStream(_stream!);
 
-                await temp.AuthenticateAsClientAsync(Options.TlsOptions, token);
+                await temp.AuthenticateAsClientAsync(Options.TlsOptions, _tokenSource.Token);
                 Logger.LogDebug("Encrypt TLS as client");
 
                 _stream = temp;
                 temp = null;
 
                 Logger.LogDebug("Reset parser");
-                _parser!.Reset();
+                _parser!.Reset(_stream!, _tokenSource.Token);
 
                 ChangeState(x => x | XmppConnectionState.Encrypted);
 
@@ -237,15 +246,17 @@ public class XmppClientConnection : XmppConnection
                 Logger.LogDebug($"Pause IO read");
                 _access &= ~FileAccess.Read;
 
-                QueueTask(async _ =>
+                _ = Task.Run(async () =>
                 {
-                    await Task.Yield();
+                    var tcs = new TaskCompletionSource();
+                    QueueSend(completion: tcs);
+                    await tcs.Task;
 
                     ChangeState(x => x | XmppConnectionState.Authenticated);
 
                     Logger.LogDebug($"Restart xmpp cycle");
                     _phase = PHASE_INIT;
-                    _parser!.Reset();
+                    _parser!.Reset(_stream!, _tokenSource.Token);
                     SendStreamHeader();
 
                     Logger.LogDebug($"Resume IO read");

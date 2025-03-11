@@ -1,8 +1,8 @@
 ﻿using System.Net;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
-using Expat;
 using Microsoft.Extensions.Logging;
+using XmppSharp.Helpers;
 using XmppSharp.Protocol.Tls;
 
 namespace XmppSharp.Entities.Options;
@@ -13,14 +13,9 @@ namespace XmppSharp.Entities.Options;
 public class XmppConnectionOptions
 {
     /// <summary>
-    /// XML char encoding. Default: <see cref="ExpatEncoding.UTF8"/>
-    /// </summary>
-    public ExpatEncoding Encoding { get; set; } = ExpatEncoding.UTF8;
-
-    /// <summary>
     /// Determines whether the xmpp connection will treat unknown elements 
     /// (i.e. not part of the rules defined in RFC-6120) as a violation of the XMPP protocol and immediately disconnect from the server.
-    /// Default: <see langword="true" />
+    /// Default: <see langword="false" />
     /// </summary>
     public bool TreatUnknownElementAsProtocolViolation { get; set; } = false;
 
@@ -87,6 +82,11 @@ public class XmppConnectionOptions
     /// </para>
     /// </summary>
     public TimeSpan DisconnectTimeout { get; set; } = TimeSpan.FromSeconds(2.5d);
+
+    /// <summary>
+    /// Determines the function used to create the XMPP parser instance.
+    /// </summary>
+    public Func<XmppConnectionOptions, XmppStreamReader> XmppParserFactory { get; set; }
 
     protected internal virtual void Validate()
     {
