@@ -77,19 +77,6 @@ public static class Xml
         return parent.Elements().Where(predicate);
     }
 
-    public static XmppElement C(this XmppElement parent, XmppName tagName, string? namespaceURI = default, object? value = default)
-    {
-        Throw.IfNull(parent);
-
-        if (namespaceURI == null)
-            namespaceURI = parent.GetNamespace(tagName.Prefix);
-
-        var child = XmppElementFactory.Create(tagName, namespaceURI, parent);
-        child.SetValue(value);
-        parent.AddChild(child);
-        return child;
-    }
-
     public static XmppElement Element(XmppName tagName, Dictionary<string, object>? attrs = default)
     {
         var ns = attrs?.GetValueOrDefault(!tagName.HasPrefix ? "xmlns"
@@ -109,12 +96,25 @@ public static class Xml
         return result;
     }
 
-    public static XmppElement C(this XmppElement parent, XmppName tagName, Dictionary<string, object>? attrs = default)
+    public static XmppElement C(this XmppElement parent, XmppName tagName, string? namespaceURI = default, object? value = default)
     {
-        var ns = attrs?.GetValueOrDefault(!tagName.HasPrefix ? "xmlns"
+        Throw.IfNull(parent);
+
+        if (namespaceURI == null)
+            namespaceURI = parent.GetNamespace(tagName.Prefix);
+
+        var child = XmppElementFactory.Create(tagName, namespaceURI, parent);
+        child.SetValue(value);
+        parent.AddChild(child);
+        return child;
+    }
+
+    public static XmppElement C(this XmppElement parent, XmppName tagName, Dictionary<string, object>? attrs)
+    {
+        var namespaceURI = attrs?.GetValueOrDefault(!tagName.HasPrefix ? "xmlns"
            : $"xmlns:{tagName.Prefix}")?.ToString();
 
-        var child = XmppElementFactory.Create(tagName, ns);
+        var child = XmppElementFactory.Create(tagName, namespaceURI);
 
         if (attrs != null)
         {
