@@ -1,15 +1,11 @@
-﻿using System.Collections.Concurrent;
-using System.ComponentModel;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Xml;
-using System.Xml.Linq;
-using XmppSharp.Collections;
 
 namespace XmppSharp.Dom;
 
-[DebuggerDisplay("{StartTag(),nq}")]
+[DebuggerDisplay("{StartTag,nq}")]
 internal class XmppElementDebuggerProxy
 {
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -22,41 +18,70 @@ internal class XmppElementDebuggerProxy
     public string? StartTag => _element?.StartTag();
     public string? EndTag => _element?.EndTag();
     public IReadOnlyDictionary<string, string>? Attributes => _element?.Attributes;
-    public IEnumerable<XmppNode>? Children => _element?.Nodes();
+    public IEnumerable<XmppNode>? ChildNodes => _element?.Nodes();
 }
 
 [DebuggerTypeProxy(typeof(XmppElementDebuggerProxy))]
 public class XmppElement : XmppNode
 {
-    public XmppName QualifiedName { get; set; } = default!;
-    public string? Prefix => QualifiedName.Prefix;
-    public string LocalName => QualifiedName.LocalName;
+    private string _localName;
+    private string? _prefix;
 
-    public XmppElement? this[XmppName name] => Element(name);
-    public XmppElement? this[XmppName name, string? namespaceURI] => Element(name, namespaceURI);
+    public string? Prefix
+    {
+        get => _prefix;
+        set => _prefix = string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    public string LocalName
+    {
+        get => _localName;
+        set
+        {
+            Throw.IfNullOrWhiteSpace(value);
+            _localName = value;
+        }
+    }
+
+    public XmppElement? this[string tagName] => Element(tagName);
+    public XmppElement? this[string tagName, string? xmlns] => Element(tagName, xmlns);
 
     public string TagName
     {
-        get => QualifiedName;
-        set => QualifiedName = new(value);
+        get
+        {
+            if (_prefix == null)
+                return _localName;
+
+            return string.Concat(_prefix, ':', _localName);
+        }
+        set
+        {
+            Throw.IfNullOrWhiteSpace(value);
+
+            var hasPrefix = Xml.ExtractQualifiedName(value, out var prefix, out var localName);
+
+            if (hasPrefix)
+                Prefix = prefix;
+
+            LocalName = localName;
+        }
     }
 
-    internal readonly List<XmppNode> _children;
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public ConcurrentDictionary<string, string> Attributes { get; }
+    protected internal readonly List<XmppNode> _children;
+    protected internal readonly Dictionary<string, string> _attributes;
 
     internal XmppElement()
     {
         _children = new List<XmppNode>();
-        Attributes = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+        _attributes = new Dictionary<string, string>(StringComparer.Ordinal);
     }
 
-    public XmppElement(XmppName tagName, string? namespaceURI = default, object? value = default) : this()
+    public XmppElement(string tagName, string? namespaceURI = default, object? value = default) : this()
     {
         Throw.IfNull(tagName);
 
-        QualifiedName = tagName;
+        TagName = tagName;
 
         if (namespaceURI != null)
         {
@@ -69,15 +94,9 @@ public class XmppElement : XmppNode
         SetValue(value);
     }
 
-    public XmppElement(XmppElement other) : this()
+    protected internal virtual XmppNode TransformNode(XmppNode node)
     {
-        QualifiedName = new(other.QualifiedName);
-
-        foreach (var (key, value) in other.Attributes)
-            Attributes[key] = value;
-
-        foreach (var node in other.Nodes())
-            _children.Add(node.Clone());
+        return node;
     }
 
     public bool IsRootElement
@@ -122,7 +141,7 @@ public class XmppElement : XmppNode
         lock (_children)
         {
             node._parent = this;
-            _children.Add(node);
+            _children.Add(TransformNode(node));
         }
     }
 
@@ -138,21 +157,35 @@ public class XmppElement : XmppNode
         }
     }
 
-    public IEnumerable<XmppElement> Descendants(bool includeSelf = false)
+    public IEnumerable<XmppElement> Descendants()
     {
         var result = new List<XmppElement>();
-        BuildDescendantElements(this, result, includeSelf);
+        CollectAllElements(this, result, false);
         return result;
     }
 
-    public IEnumerable<XmppElement> DescendantNodes(bool includeSelf = false)
+    public IEnumerable<XmppElement> DescendantsAndSelf()
     {
         var result = new List<XmppElement>();
-        BuildDescendantElements(this, result, includeSelf);
+        CollectAllElements(this, result, true);
         return result;
     }
 
-    static void BuildDescendantNodes(XmppElement parent, List<XmppNode> result, bool includeSelf = false)
+    public IEnumerable<XmppNode> DescendantNodes()
+    {
+        var result = new List<XmppNode>();
+        CollectAllNodes(this, result, false);
+        return result;
+    }
+
+    public IEnumerable<XmppNode> DescendantNodesAndSelf()
+    {
+        var result = new List<XmppNode>();
+        CollectAllNodes(this, result, true);
+        return result;
+    }
+
+    static void CollectAllNodes(XmppElement parent, List<XmppNode> result, bool includeSelf = false)
     {
         if (includeSelf)
             result.Add(parent);
@@ -162,11 +195,11 @@ public class XmppElement : XmppNode
             result.Add(child);
 
             if (child is XmppElement e)
-                BuildDescendantNodes(e, result, false);
+                CollectAllNodes(e, result, false);
         }
     }
 
-    static void BuildDescendantElements(XmppElement parent, List<XmppElement> result, bool includeSelf = false)
+    static void CollectAllElements(XmppElement parent, List<XmppElement> result, bool includeSelf = false)
     {
         if (includeSelf)
             result.Add(parent);
@@ -174,36 +207,34 @@ public class XmppElement : XmppNode
         foreach (var child in parent.Elements())
         {
             result.Add(child);
-            BuildDescendantElements(child, result, false);
+            CollectAllElements(child, result, false);
         }
     }
 
-    public XmppElement SetAttribute(string name, object? value, string? format = default, IFormatProvider? ifp = default)
+    public void SetAttribute(string name, object? value, IFormatProvider? ifp = default)
     {
-        Throw.IfStringNullOrWhiteSpace(name);
+        Throw.IfNullOrWhiteSpace(name);
 
         ifp ??= CultureInfo.InvariantCulture;
 
-        if (value is null)
-            RemoveAttribute(name);
-        else
+        lock (_attributes)
         {
-            string str;
-            if (value is IFormattable fmt) str = fmt.ToString(format, ifp);
-            else if (value is IConvertible conv) str = conv.ToString(ifp);
-            else str = Convert.ToString(value, ifp) ?? string.Empty;
-            Attributes[name] = str;
+            if (value is null)
+                _attributes.Remove(name);
+            else
+                _attributes[name] = Convert.ToString(value, ifp ?? CultureInfo.InvariantCulture) ?? string.Empty;
         }
-
-        return this;
     }
 
     public override XmppNode Clone()
     {
-        var result = XmppElementFactory.Create(TagName, Namespace);
+        var result = (XmppElement)Activator.CreateInstance(GetType())!;
 
-        foreach (var (key, value) in Attributes)
-            result.Attributes[key] = value;
+        lock (_attributes)
+        {
+            foreach (var (key, value) in _attributes)
+                result._attributes[key] = value;
+        }
 
         foreach (var node in Nodes())
             result.AddChild(node.Clone());
@@ -213,22 +244,37 @@ public class XmppElement : XmppNode
         return result;
     }
 
-    public bool HasAttribute(string name)
+    public IReadOnlyDictionary<string, string> Attributes
     {
-        Throw.IfStringNullOrWhiteSpace(name);
-        return Attributes.ContainsKey(name);
+        get
+        {
+            lock (_attributes)
+                return _attributes.ToDictionary(x => x.Key, x => x.Value);
+        }
     }
 
-    public string? GetAttribute(XmppName name)
+    public bool HasAttribute(string name)
     {
-        Throw.IfStringNullOrWhiteSpace(name);
-        return Attributes.GetValueOrDefault(name);
+        Throw.IfNullOrWhiteSpace(name);
+
+        lock (_attributes)
+            return _attributes.ContainsKey(name);
+    }
+
+    public string? GetAttribute(string name, string? defaultValue = default)
+    {
+        Throw.IfNullOrWhiteSpace(name);
+
+        lock (_attributes)
+            return _attributes.GetValueOrDefault(name, defaultValue!);
     }
 
     public bool RemoveAttribute(string name)
     {
-        Throw.IfStringNullOrWhiteSpace(name);
-        return Attributes.Remove(name, out _);
+        Throw.IfNullOrWhiteSpace(name);
+
+        lock (_attributes)
+            return _attributes.Remove(name, out _);
     }
 
     public string? GetNamespace(string? prefix = default)
@@ -249,7 +295,7 @@ public class XmppElement : XmppNode
 
     public void SetNamespace(string prefix, string? namespaceURI)
     {
-        Throw.IfStringNullOrWhiteSpace(prefix);
+        Throw.IfNullOrWhiteSpace(prefix);
         Throw.IfNull(namespaceURI);
         SetAttribute($"xmlns:{prefix}", namespaceURI);
     }
@@ -313,7 +359,7 @@ public class XmppElement : XmppNode
 
     public override string ToString() => ToString(false);
 
-    public string ToString(bool indented)
+    public virtual string ToString(bool indented)
     {
         var sb = new StringBuilder();
 
@@ -331,13 +377,13 @@ public class XmppElement : XmppNode
     public IEnumerable<XmppElement> Elements()
         => Nodes().OfType<XmppElement>();
 
-    public IEnumerable<XmppElement> Elements(XmppName tagName, string? namespaceURI = default)
+    public IEnumerable<XmppElement> Elements(string tagName, string? namespaceURI = default)
     {
-        Throw.IfNull(tagName);
-        return LookupElements(this, tagName, namespaceURI, false);
+        Throw.IfNullOrWhiteSpace(tagName);
+        return FindElements(this, tagName, namespaceURI, false);
     }
 
-    static IEnumerable<XmppElement> LookupElements(XmppElement self, XmppName tagName, string? ns, bool once)
+    static IEnumerable<XmppElement> FindElements(XmppElement self, string tagName, string? ns, bool findOne)
     {
         foreach (var element in self.Elements())
         {
@@ -345,43 +391,46 @@ public class XmppElement : XmppNode
             {
                 yield return element;
 
-                if (once)
+                if (findOne)
                     yield break;
             }
         }
     }
 
-    public XmppElement? Element(XmppName tagName, string? namespaceURI = default)
+    public XmppElement? Element(string tagName, string? namespaceURI = default)
     {
-        Throw.IfNull(tagName);
-        return LookupElements(this, tagName, namespaceURI, true).FirstOrDefault();
+        Throw.IfNullOrWhiteSpace(tagName);
+        return FindElements(this, tagName, namespaceURI, true).FirstOrDefault();
     }
 
-    public bool HasTag(XmppName tagName, string? namespaceURI = default)
+    public XmppElement? Element(Func<XmppElement, bool> match)
+        => Elements().FirstOrDefault(match);
+
+    public bool HasTag(string tagName, string? namespaceURI = default)
     {
-        Throw.IfNull(tagName);
-        return LookupElements(this, tagName, namespaceURI, true).Any();
+        Throw.IfNullOrWhiteSpace(tagName);
+        return FindElements(this, tagName, namespaceURI, true).Any();
     }
 
-    public XmppElement SetTag(XmppName name, string? xmlns = default, object? value = default)
+    public XmppElement SetTag(string tagName, string? xmlns = default, object? value = default)
     {
-        Throw.IfNull(name);
+        Throw.IfNullOrWhiteSpace(tagName);
 
-        var e = new XmppElement(name, xmlns, value);
+        var e = new XmppElement(tagName, xmlns, value);
         AddChild(e);
         return e;
     }
 
-    public void RemoveTag(XmppName tagName, string? namespaceURI = default)
+    public void RemoveTag(string tagName, string? namespaceURI = default)
         => Element(tagName, namespaceURI)?.Remove();
 
-    public void RemoveTags(XmppName tagName, string? namespaceURI = default)
+    public void RemoveTags(string tagName, string? namespaceURI = default)
         => Elements(tagName, namespaceURI).Remove();
 
-    public string? GetTag(XmppName tagName, string? namespaceURI = default)
+    public string? GetTag(string tagName, string? namespaceURI = default)
         => Element(tagName, namespaceURI)?.Value;
 
-    public IEnumerable<string> GetTags(XmppName tagName, string? namespaceURI = default)
+    public IEnumerable<string> GetTags(string tagName, string? namespaceURI = default)
         => Elements(tagName, namespaceURI).Select(x => x.Value!);
 
     public T? Element<T>() where T : XmppElement
@@ -391,7 +440,10 @@ public class XmppElement : XmppNode
         => Elements().OfType<T>();
 
     public void RemoveAttributes()
-        => Attributes.Clear();
+    {
+        lock (_attributes)
+            _attributes.Clear();
+    }
 
     public void RemoveAll()
     {

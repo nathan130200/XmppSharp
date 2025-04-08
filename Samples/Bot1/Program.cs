@@ -2,9 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
-using XmppSharp.Entities.Options;
 using XmppSharp.Net;
-using XmppSharp.Protocol.Tls;
 
 const string DefaultTemplate = "[{Timestamp:HH:mm:ss}|{SourceContext}|{Level:u3}] {Message:lj}{NewLine}{Exception}";
 
@@ -14,60 +12,144 @@ Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
     .CreateLogger();
 
+Console.Title = "STRESS TEST BOT";
+
+Console.SetBufferSize(Console.BufferWidth, Console.BufferHeight);
+
 var logging = LoggerFactory.Create(builder =>
 {
     builder.AddSerilog();
     builder.SetMinimumLevel(LogLevel.Critical);
 });
 
-var clients = new List<XmppClientConnection>();
+var bots = new List<StressTestBot>();
 
 for (int i = 0; i < 512; i++)
+    bots.Add(new StressTestBot(i));
+
+_ = Task.Run(async () =>
 {
-    var resource = "bot_" + i;
-
-    var options = new XmppClientConnectionOptions
+    while (true)
     {
-        Username = "stresstest",
-        Domain = "stresstest",
-        Resource = resource,
-        Password = "youshallnotpass",
-        //EndPoint = new IPEndPoint(IPAddress.Loopback, 5275),
-        EndPoint = new IPEndPoint(IPAddress.Loopback, 5222),
-        TlsPolicy = TlsPolicy.Required,
-        DisconnectTimeout = TimeSpan.FromSeconds(5),
-        //Logger = logging.CreateLogger($"stresstest@localhost/{resource}"),
-    };
+        var numBots = bots.Count;
 
-    TaskCompletionSource? reconnecTcs = default;
+        var numConnected = bots.Count(x => x.IsConnected);
+        var ratioConnected = (numConnected / (float)numBots) * 100f;
 
-    var bot = new XmppClientConnection(options);
+        var numOnline = bots.Count(x => x.IsOnline);
+        var ratioOnline = (numOnline / (float)numBots) * 100f;
 
-    bot.OnConnected += e =>
-    {
-        reconnecTcs?.TrySetResult();
-        Console.WriteLine($"client '{e.Jid}' online");
-    };
 
-    bot.OnDisconnected += e =>
-    {
-        Console.WriteLine($"client '{e.Jid}' offline");
-        reconnecTcs?.TrySetResult();
-        reconnecTcs = new();
-        DoReconnect();
-    };
-
-    await bot.ConnectAsync();
-
-    void DoReconnect()
-    {
-        _ = Task.Run(async () =>
-        {
-            await bot.ConnectAsync();
-            await reconnecTcs.Task;
-            await Task.Delay(5000);
-        });
+        var buf = string.Format("\rStress Test - connected: {0:F1}% - online: {1:F1}%", ratioConnected, ratioOnline).PadRight(Console.BufferWidth);
+        Console.WriteLine(buf);
+        await Task.Delay(16);
     }
-}
+});
+
+foreach (var bot in bots)
+    bot.Start();
 
 await Task.Delay(-1);
+
+class StressTestBot : IDisposable
+{
+    int _botId;
+    XmppClientConnection? _connection;
+    Timer _timer;
+
+    public StressTestBot(int botId)
+    {
+        _botId = botId;
+        _timer = new(Timer_OnTick, null, -1, -1);
+    }
+
+    public void Dispose()
+    {
+        _connection?.Dispose();
+        _connection = null;
+    }
+
+    const int DefaultReconnectTime = 3000;
+
+    volatile bool _isOnline;
+
+    public bool IsConnected => _connection?.IsConnected == true;
+
+    public bool IsOnline => IsConnected && _isOnline;
+
+    void Init()
+    {
+        _connection = new XmppClientConnection
+        {
+            User = "stresstest",
+            Password = "youshallnotpass",
+            Resource = $"bot_{_botId}",
+            ConnectServer = new IPEndPoint(IPAddress.Loopback, 5222),
+            Server = "localhost",
+            AuthenticationMechanism = "PLAIN",
+            SslOptions =
+            {
+                RemoteCertificateValidationCallback = delegate { return true; }
+            }
+        };
+
+        _connection.OnConnected += () =>
+        {
+            _timer.Change(-1, -1);
+        };
+
+        _connection.OnSessionStarted += () =>
+        {
+            //Console.WriteLine("[bot {0}] online", _botId);
+            _isOnline = true;
+        };
+
+        _connection.OnDisconnected += () =>
+        {
+            //Console.WriteLine("[bot {0}] offline", _botId);
+            Dispose();
+            _timer.Change(0, DefaultReconnectTime);
+            _isOnline = false;
+        };
+
+        if (_botId == -1)
+        {
+            _connection.OnError += ex =>
+            {
+                Console.WriteLine("[bot {0}] {1}", _botId, ex);
+            };
+
+            _connection.OnReadXml += e =>
+            {
+                Console.WriteLine("[bot {0}] recv <<\n{1}\n", _botId, e);
+            };
+
+            _connection.OnWriteXml += e =>
+            {
+                Console.WriteLine("[bot {0}] send >>\n{1}\n", _botId, e);
+            };
+        }
+    }
+
+    public void Start()
+        => _timer.Change(0, DefaultReconnectTime);
+
+    async void Timer_OnTick(object? state)
+    {
+        try
+        {
+            if (_connection == null)
+            {
+                Init();
+                await _connection!.ConnectAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            if (_botId == -1)
+                Console.WriteLine(ex);
+
+            Dispose();
+        }
+    }
+}

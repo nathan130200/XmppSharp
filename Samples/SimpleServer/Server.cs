@@ -10,16 +10,16 @@ namespace SimpleServer;
 public static class Server
 {
     static readonly Socket s_Socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-    static readonly List<Connection> s_Connections = [];
+    static readonly List<XmppServerConnection> s_Connections = [];
     static byte[] s_CertData = default!;
     static readonly string s_CertPass = "localhost";
     public static readonly Jid Hostname = "localhost";
 
-    public static IEnumerable<Connection> Connections
+    public static IEnumerable<XmppServerConnection> Connections
     {
         get
         {
-            Connection[] result;
+            XmppServerConnection[] result;
 
             lock (s_Connections)
                 result = s_Connections.ToArray();
@@ -55,7 +55,7 @@ public static class Server
         }
 
         s_Socket.Bind(new IPEndPoint(IPAddress.Any, 5222));
-        s_Socket.Listen(10);
+        s_Socket.Listen(32);
 
         _ = BeginAccept(token);
     }
@@ -64,6 +64,8 @@ public static class Server
     {
         while (true)
         {
+            await Task.Delay(1, CancellationToken.None);
+
             try
             {
                 var client = await s_Socket.AcceptAsync(token);
@@ -73,19 +75,17 @@ public static class Server
             {
                 Console.WriteLine(ex);
             }
-
-            Thread.Sleep(1);
         }
     }
 
     static async Task EndAccept(Socket s, CancellationToken token)
     {
-        var connection = new Connection(s);
+        var connection = new XmppServerConnection(s);
 
         lock (s_Connections)
             s_Connections.Add(connection);
 
-        Console.WriteLine("client connected: " + s.RemoteEndPoint);
+        //Console.WriteLine("client connected: " + s.RemoteEndPoint);
 
         try
         {
@@ -99,6 +99,6 @@ public static class Server
         lock (s_Connections)
             s_Connections.Remove(connection);
 
-        Console.WriteLine("client disconnected: " + s.RemoteEndPoint);
+        //Console.WriteLine("client disconnected: " + s.RemoteEndPoint);
     }
 }

@@ -25,7 +25,7 @@ public class StreamError : XmppElement
     {
         get
         {
-            foreach (var (name, value) in XmppEnum.GetXmlMapping<StreamErrorCondition>())
+            foreach (var (name, value) in XmppEnum.XmlMapping<StreamErrorCondition>())
             {
                 if (HasTag(name))
                     return value;

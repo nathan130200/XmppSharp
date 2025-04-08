@@ -1,5 +1,5 @@
-﻿using Expat;
-using XmppSharp.Collections;
+﻿using System.Xml;
+using Expat;
 using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
 
@@ -13,13 +13,13 @@ public interface IXmppParser : IDisposable
     void Reset();
 }
 
-public sealed class ExpatXmppParser : IXmppParser
+public sealed class XmppParser : IXmppParser
 {
     readonly object _syncRoot = new();
 
     internal XmppElement? _current;
     internal ExpatParser? _xmlParser;
-    internal XmppNamespaceStack? _namespaces;
+    internal XmlNamespaceManager? _namespaces;
     internal volatile bool _disposed;
     internal volatile bool _started;
 
@@ -29,9 +29,9 @@ public sealed class ExpatXmppParser : IXmppParser
     public event Action<XmppElement>? OnStreamElement;
     public event Action? OnStreamEnd;
 
-    public ExpatXmppParser(ExpatEncoding encoding, bool strict = true)
+    public XmppParser(ExpatEncoding? encoding = default, bool strict = true)
     {
-        _namespaces = new();
+        _namespaces = new(new NameTable());
 
         _xmlParser = new ExpatParser(encoding, strict);
         _xmlParser.OnStartElement += HandleStartElement;
@@ -41,39 +41,42 @@ public sealed class ExpatXmppParser : IXmppParser
         _xmlParser.OnCdata += HandleCdata;
     }
 
-    void HandleStartElement(string name, IReadOnlyDictionary<string, string> attrs)
+    void HandleStartElement(string tagName, IReadOnlyDictionary<string, string> attrs)
     {
         _namespaces!.PushScope();
 
-        XmppName tagName = name;
-
-        foreach (var (key, value) in attrs)
+        foreach (var (key, value) in attrs
+            .Where(x => x.Key == "xmlns" || x.Key.StartsWith("xmlns:")))
         {
-            XmppName attrName = key;
+            var hasPrefix = Xml.ExtractQualifiedName(key, out _, out var prefix);
 
-            if (attrName == "xmlns")
+            if (!hasPrefix)
                 _namespaces.AddNamespace(string.Empty, value);
-            else if (attrName.Prefix == "xmlns")
-                _namespaces.AddNamespace(attrName.LocalName, value);
+            else
+                _namespaces.AddNamespace(prefix, value);
         }
 
-        var element = XmppElementFactory.Create(tagName, _namespaces.LookupNamespace(tagName.Prefix), _current);
-
-        foreach (var (key, value) in attrs)
-            element.SetAttribute(key, value);
-
-        if (element is StreamStream start)
         {
-            if (!_started)
+            var hasPrefix = Xml.ExtractQualifiedName(tagName, out var prefix, out _);
+
+            var element = XmppElementFactory.Create(tagName, _namespaces.LookupNamespace(hasPrefix ? prefix! : string.Empty), _current);
+
+            foreach (var (key, value) in attrs)
+                element.SetAttribute(key, value);
+
+            if (element is StreamStream start)
             {
-                _started = true;
-                OnStreamStart?.Invoke(start);
+                if (!_started)
+                {
+                    _started = true;
+                    OnStreamStart?.Invoke(start);
+                }
             }
-        }
-        else
-        {
-            _current?.AddChild(element);
-            _current = element;
+            else
+            {
+                _current?.AddChild(element);
+                _current = element;
+            }
         }
     }
 
@@ -132,7 +135,9 @@ public sealed class ExpatXmppParser : IXmppParser
 
         lock (_syncRoot)
         {
-            _namespaces?.Clear();
+            while (_namespaces?.PopScope() == true)
+                ;
+
             _namespaces = null;
 
             _xmlParser?.Dispose();
@@ -148,7 +153,10 @@ public sealed class ExpatXmppParser : IXmppParser
         {
             _current = null;
             _started = false;
-            _namespaces!.Reset();
+
+            while (_namespaces?.PopScope() == true)
+                ;
+
             _xmlParser!.Reset();
         }
     }

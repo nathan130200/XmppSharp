@@ -18,20 +18,14 @@ public class Message : Stanza
     public new MessageType Type
     {
         get => XmppEnum.FromXmlOrDefault(base.Type, MessageType.Normal);
-        set
-        {
-            if (!Enum.IsDefined(value))
-                throw new ArgumentException(null, nameof(Type));
-
-            base.Type = XmppEnum.ToXml(value);
-        }
+        set => base.Type = XmppEnum.ToXmlOrThrow(value);
     }
 
     public ChatStates? ChatState
     {
         get
         {
-            foreach (var (key, value) in XmppEnum.GetXmlMapping<ChatStates>())
+            foreach (var (key, value) in XmppEnum.XmlMapping<ChatStates>())
             {
                 if (HasTag(key, Namespaces.ChatStates))
                     return value;

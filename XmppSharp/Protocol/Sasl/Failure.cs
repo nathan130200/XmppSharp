@@ -21,7 +21,7 @@ public class Failure : XmppElement
     {
         get
         {
-            foreach (var (name, value) in XmppEnum.GetXmlMapping<FailureCondition>())
+            foreach (var (name, value) in XmppEnum.XmlMapping<FailureCondition>())
             {
                 if (HasTag(name, Namespaces.Sasl))
                     return value;

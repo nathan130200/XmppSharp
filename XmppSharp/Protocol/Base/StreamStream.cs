@@ -2,11 +2,6 @@
 
 public class StreamStream : DirectionalElement
 {
-    public StreamStream(StreamStream other) : base(other)
-    {
-
-    }
-
     public StreamStream() : base("stream:stream", Namespaces.Stream)
     {
 
@@ -32,4 +27,7 @@ public class StreamStream : DirectionalElement
 
     public void GenerateId()
         => Id = Guid.NewGuid().ToString("d");
+
+    public override string ToString(bool indented)
+        => StartTag();
 }

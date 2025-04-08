@@ -19,8 +19,8 @@ public class AttributeParsingTests
     [TestMethod]
     public void ShouldBeNotNull()
     {
-        var el = new XmppElement("sample")
-            .SetAttribute("count", 1);
+        var el = new XmppElement("sample");
+        el.SetAttribute("count", 1);
 
         var item = el.GetAttributeInt32("count");
         Assert.AreEqual(1, item);
@@ -29,11 +29,11 @@ public class AttributeParsingTests
     [TestMethod]
     public void ShouldParseTheValues()
     {
-        var el = new XmppElement("sample")
-            .SetAttribute("my_float", 1.25f)
-            .SetAttribute("my_double", double.Epsilon)
-            .SetAttribute("my_bool_as_int", 1)
-            .SetAttribute("my_bool_as_string", "false");
+        var el = new XmppElement("sample");
+        el.SetAttribute("my_float", 1.25f);
+        el.SetAttribute("my_double", double.Epsilon);
+        el.SetAttribute("my_bool_as_int", 1);
+        el.SetAttribute("my_bool_as_string", "false"); ;
 
         Console.WriteLine(el.ToString());
 

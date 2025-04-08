@@ -23,4 +23,6 @@ public abstract class XmppNode : ICloneable
 
     public void Remove()
         => _parent?.RemoveChild(this);
+
+    public static string operator +(XmppNode left, object right) => string.Concat(left, right);
 }

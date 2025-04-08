@@ -5,10 +5,6 @@ namespace XmppSharp.Protocol.Base;
 
 public abstract class Stanza : DirectionalElement
 {
-    protected Stanza(Stanza other) : base(other)
-    {
-    }
-
     protected Stanza(string tagName, string? namespaceURI = null, object? value = null) : base(tagName, namespaceURI, value)
     {
     }

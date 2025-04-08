@@ -12,10 +12,7 @@ namespace XmppSharp;
 public sealed record Jid : IEquatable<Jid>
 {
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private string? _local, _resource;
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private string _domain = default!;
+    private string? _local, _domain, _resource;
 
     public Jid(Jid other)
     {
@@ -24,7 +21,7 @@ public sealed record Jid : IEquatable<Jid>
         _resource = other._resource;
     }
 
-    public Jid(string? local, string domain, string? resource)
+    public Jid(string? local = default, string? domain = default, string? resource = default)
     {
         Local = local;
         Domain = domain;
@@ -60,7 +57,7 @@ public sealed record Jid : IEquatable<Jid>
     /// <summary>
     /// Domain part
     /// </summary>
-    public string Domain
+    public string? Domain
     {
         get => _domain;
         init
@@ -68,7 +65,7 @@ public sealed record Jid : IEquatable<Jid>
             if (!string.IsNullOrWhiteSpace(value))
             {
                 if (Uri.CheckHostName(value) == UriHostNameType.Unknown)
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("Invalid XMPP domain.");
             }
 
             _domain = value;

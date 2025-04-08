@@ -16,12 +16,7 @@ public class Presence : Stanza
 
     }
 
-    public Presence(Presence other) : base(other)
-    {
-
-    }
-
-    public Presence(PresenceType type, PresenceShow? show = default, int? priority = default) : this()
+    public Presence(PresenceType type, PresenceShow? show = default, sbyte? priority = default) : this()
     {
         Type = type;
         Show = show;
@@ -63,12 +58,12 @@ public class Presence : Stanza
         }
     }
 
-    public int? Priority
+    public sbyte? Priority
     {
         get
         {
-            if (int.TryParse(GetTag("priority"), out var result))
-                return Math.Clamp(result, -1, 255);
+            if (sbyte.TryParse(GetTag("priority"), out var result))
+                return result;
 
             return default;
         }
@@ -77,10 +72,7 @@ public class Presence : Stanza
             RemoveTag("priority");
 
             if (value.HasValue)
-            {
-                var priority = Math.Clamp((int)value, -1, 255);
-                SetTag("priority", value: priority);
-            }
+                SetTag("priority", value: (sbyte)value);
         }
     }
 

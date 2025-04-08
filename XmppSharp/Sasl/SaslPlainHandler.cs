@@ -16,9 +16,9 @@ public class SaslPlainHandler : SaslHandler
     {
         var buf = new StringBuilder()
             .Append('\0')
-            .Append(Connection.Options.Username)
+            .Append(Connection.User)
             .Append('\0')
-            .Append(Connection.Options.Password)
+            .Append(Connection.Password)
             .ToString()
             .GetBytes();
 

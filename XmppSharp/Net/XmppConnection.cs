@@ -1,413 +1,67 @@
-﻿using System.Collections.Concurrent;
-using System.Net.Security;
-using System.Net.Sockets;
+﻿#nullable enable annotations
+
+using System.Buffers;
+using System.Collections.Concurrent;
 using System.Text;
-using Expat;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using XmppSharp.Dom;
-using XmppSharp.Entities;
-using XmppSharp.Entities.Options;
 using XmppSharp.Exceptions;
-using XmppSharp.Helpers;
 using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Net;
 
-public abstract class XmppConnection
+public abstract class XmppConnection : IDisposable
 {
-    volatile XmppConnectionState _state;
-
-    protected ConcurrentDictionary<string, TaskCompletionSource<Stanza>> _callbacks = new();
-    protected ConcurrentQueue<(byte[]? Bytes, string? Xml, TaskCompletionSource? Completion)> _sendQueue = new();
-    protected XmppStreamReader? _parser;
-    protected Stream? _stream;
-    protected Socket? _socket;
-
-    public string? StreamId { get; protected set; }
-    public Jid Jid { get; protected set; }
-
-    // disposed flag:
-    // 0 = not disposed
-    // 1 = half disposed, disallow read
-    // 2 = full disposed, disallow read & write, and cleanup connection.
-    protected volatile byte _disposed = 0;
-    protected volatile FileAccess _access = FileAccess.ReadWrite;
-
-    public XmppConnectionOptions Options { get; }
-
-    protected internal ILogger Logger => Options.Logger ?? NullLogger.Instance;
-
-    public XmppConnection(XmppConnectionOptions options)
-        => Options = options;
-
-    void Setup()
+    protected internal readonly struct SendQueueEntry
     {
-        _tokenSource?.Dispose();
-        _tokenSource?.Cancel();
-        _tokenSource = null!;
-
-        _callbacks?.Clear();
-        _callbacks = new();
-
-        if (_sendQueue != null)
-        {
-            while (_sendQueue.TryDequeue(out var t))
-                t.Completion?.TrySetCanceled();
-        }
-
-        _sendQueue = new();
+        public byte[] Bytes { get; init; }
+        public string? DebugXml { get; init; }
+        public TaskCompletionSource Completion { get; init; }
+        public CancellationToken Token { get; init; }
     }
 
-    protected virtual void InitKeepAlive()
+    private ConcurrentQueue<SendQueueEntry> _sendQueue = new();
+    private ConcurrentDictionary<string, TaskCompletionSource<Stanza>> _callbacks = new();
+
+    protected internal Stream? _stream;
+    protected internal XmppParser? _parser;
+    protected volatile IoState _ioState;
+
+    [Flags]
+    protected enum IoState
     {
-        if (!Options.EnableKeepAlive)
-            return;
-
-        var buf = " ".GetBytes();
-
-        var token = _tokenSource.Token;
-
-        _ = Task.Run(async () =>
-        {
-            while (!_tokenSource.IsCancellationRequested)
-            {
-                if (_disposed > 0)
-                {
-                    Logger.LogDebug("Keep alive aborted! Connection is disposing...");
-                    break;
-                }
-
-                var tcs = new TaskCompletionSource();
-
-                try
-                {
-                    Logger.LogDebug("Sending keep alive...");
-
-                    _sendQueue.Enqueue((buf, null, tcs));
-
-                    var delayTask = Task.Delay(Options.KeepAliveTimeout, token);
-
-                    var result = await Task.WhenAny(
-                        delayTask,
-                        tcs.Task);
-
-                    if (result == delayTask)
-                    {
-                        Logger.LogDebug("Keep alive timeout! Connection is dead.");
-                        Dispose();
-                        return;
-                    }
-
-                    Logger.LogDebug("Keep alive sent! Connection is alive.");
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogDebug(ex, "Sending keep alive failed.");
-                    Dispose();
-                    break;
-                }
-
-                await Task.Delay(Options.KeepAliveInterval, token);
-            }
-        });
+        Read = 0b01,
+        Write = 0b10,
+        ReadWrite = Read | Write
     }
 
-    public bool IsConnected => _state.HasFlag(XmppConnectionState.Connected);
-    public bool IsEncrypted => _state.HasFlag(XmppConnectionState.Encrypted);
-    public bool IsAuthenticated => _state.HasFlag(XmppConnectionState.Authenticated);
-    public XmppConnectionState State => _state;
+    volatile byte _disposed = 2;
 
-    public event Action<XmppConnection, (XmppConnectionState Before, XmppConnectionState After)> OnStateChanged;
-    public event Action<XmppConnection, XmppElement> OnElement;
-    public event Action<XmppConnection> OnConnected;
-    public event Action<XmppConnection> OnDisconnected;
+    public string StreamId { get; protected set; }
+    public virtual Jid Jid { get; protected internal set; }
+    public bool IsAuthenticated { get; protected internal set; }
+    public bool IsConnected => _disposed == 0;
 
-    protected void ChangeState(Func<XmppConnectionState, XmppConnectionState> updateVaue)
+    public event Action OnConnected;
+    public event Action OnSessionStarted;
+    public event Action OnDisconnected;
+
+    protected void FireOnConnected() => OnConnected?.Invoke();
+    protected void FireOnSessionStarted() => OnSessionStarted?.Invoke();
+    protected void FireOnDisconnected() => OnDisconnected?.Invoke();
+
+    public event Action<Exception>? OnError;
+    public event Action<Stanza>? OnStanza;
+    public event Action<string>? OnReadXml, OnWriteXml;
+
+    protected void InitParser()
     {
-        lock (this)
-        {
-            var oldState = _state;
-            var newState = updateVaue(oldState);
-
-            if (oldState != newState)
-            {
-                _state = newState;
-                Logger.LogTrace("Changed state to: {NewState}", newState);
-                OnStateChanged?.Invoke(this, (oldState, newState));
-            }
-        }
-    }
-
-    protected void FireOnDisconnected() => OnDisconnected?.Invoke(this);
-
-    protected void FireOnConnected() => OnConnected?.Invoke(this);
-
-    protected void FireOnElement(XmppElement element) => OnElement?.Invoke(this, element);
-
-    /*protected virtual async Task BeginReceive()
-    {
-        var token = _tokenSource.Token;
-        var buf = new byte[Math.Max(1024, Options.RecvBufferSize)];
-
-        try
-        {
-            int len;
-
-            while (_disposed < 1)
-            {
-                await Task.Delay(16, token);
-
-                while (_taskQueue.TryDequeue(out var action))
-                {
-                    await action(token);
-                    continue;
-                }
-
-                if (!_access.HasFlag(FileAccess.Read))
-                    continue;
-
-                len = await _stream!.ReadAsync(buf, token);
-
-                if (len <= 0)
-                    break;
-
-                ((ExpatXmppParser)_parser!).Parse(buf, len);
-            }
-
-            Logger.LogDebug("Read loop task terminated gracefully.");
-        }
-        catch (ExpatException ee)
-        {
-            if (ee.Code != ExpatParserError.Finished || ee.Code != ExpatParserError.Aborted || ee.Code != ExpatParserError.Suspended)
-                Logger.LogError(ee, "XML parsing error.");
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "An error occurred in the read loop task.");
-        }
-        finally
-        {
-            Disconnect();
-        }
-    }*/
-
-    public async Task<TStanza> RequestStanzaAsync<TStanza>(TStanza request, TimeSpan timeout = default, CancellationToken token = default)
-        where TStanza : Stanza
-    {
-        if (string.IsNullOrWhiteSpace(request.Id))
-            request.GenerateId();
-
-        var tcs = new TaskCompletionSource<Stanza>();
-
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
-        cts.Token.Register(() => tcs.TrySetCanceled());
-
-        _callbacks[request.Id!] = tcs;
-
-        if (timeout != default)
-            cts.CancelAfter(timeout);
-
-        Send(request);
-
-        var result = await tcs.Task;
-
-        return (TStanza)result;
-    }
-
-    protected abstract void SendStreamHeader();
-
-    protected virtual async Task BeginSend()
-    {
-        try
-        {
-            while (_disposed < 2)
-            {
-                await Task.Delay(16);
-
-                if (_sendQueue == null)
-                    break;
-
-                if (_sendQueue.TryDequeue(out var tuple))
-                {
-                    var (bytes, xml, tcs) = tuple;
-
-                    try
-                    {
-                        if (bytes?.Length > 0)
-                            await _stream!.WriteAsync(bytes);
-
-                        if (!string.IsNullOrWhiteSpace(tuple.Xml))
-                            Logger.LogTrace("send >>\n{Xml}\n", tuple.Xml);
-                    }
-                    catch (Exception ex)
-                    {
-                        tcs?.TrySetException(ex);
-                        throw;
-                    }
-                    finally
-                    {
-                        tcs?.TrySetResult();
-                    }
-                }
-            }
-
-            Logger.LogDebug("Write loop task terminated gracefully.");
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "An error occurred in the write loop task.");
-        }
-        finally
-        {
-            Dispose();
-        }
-    }
-
-    protected virtual void QueueSend(byte[]? bytes = default, string? xml = default, TaskCompletionSource? completion = default)
-    {
-        if (_sendQueue == null)
-        {
-            completion?.TrySetCanceled();
-            return;
-        }
-
-        _sendQueue.Enqueue((bytes, xml, completion));
-    }
-
-    public virtual void Send(string xml)
-    {
-        if (_disposed > 1)
-            return;
-
-        if (string.IsNullOrEmpty(xml))
-            return;
-
-        var verbose = Logger.IsEnabled(LogLevel.Trace);
-        QueueSend(xml.GetBytes(), verbose ? xml : default);
-    }
-
-    public virtual void Send(XmppElement element)
-    {
-        if (_disposed > 1)
-            return;
-
-        Throw.IfNull(element);
-
-        var xml = element.GetBytes();
-        var isVerbose = Logger.IsEnabled(LogLevel.Trace);
-        QueueSend(xml, isVerbose ? element.ToString(true) : default);
-    }
-
-    public Task SendAsync(string xml)
-    {
-        if (_disposed > 1)
-            return Task.FromCanceled(CancellationToken.None);
-
-        if (string.IsNullOrEmpty(xml))
-            return Task.CompletedTask;
-
-        var verbose = Logger.IsEnabled(LogLevel.Trace);
-
-        var tcs = new TaskCompletionSource();
-        QueueSend(xml.GetBytes(), verbose ? xml : default, tcs);
-        return tcs.Task;
-    }
-
-    public Task SendAsync(XmppElement element)
-    {
-        if (_disposed > 1)
-            return Task.FromCanceled(CancellationToken.None);
-
-        Throw.IfNull(element);
-
-        var xml = element.GetBytes();
-        var isVerbose = Logger.IsEnabled(LogLevel.Trace);
-        var tcs = new TaskCompletionSource();
-        QueueSend(xml, isVerbose ? element.ToString(true) : default, tcs);
-        return tcs.Task;
-    }
-
-    volatile bool _isConnecting = false;
-
-    protected CancellationTokenSource _tokenSource;
-
-    public virtual async Task ConnectAsync(CancellationToken token = default)
-    {
-        if (_isConnecting)
-        {
-            Logger.LogDebug("Trying to connect while connection attempt is already in progress.");
-            return;
-        }
-
-        _isConnecting = true;
-
-        if (_state.HasFlag(XmppConnectionState.Connected))
-            return;
-
-        Setup();
-
         _disposed = 0;
-        _access = FileAccess.ReadWrite;
 
-        _tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
-
-        try
-        {
-            Options.Validate();
-
-            _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            await _socket.ConnectAsync(Options.EndPoint, token);
-
-            ChangeState(_ => XmppConnectionState.Connected);
-
-            _stream = new NetworkStream(_socket, true);
-
-            if (Options.StartTlsOnConnect)
-            {
-                _stream = new SslStream(_stream);
-                await ((SslStream)_stream).AuthenticateAsClientAsync(Options.TlsOptions, token);
-                _state |= XmppConnectionState.Encrypted;
-            }
-
-            SendStreamHeader();
-
-            InitParser();
-
-            _ = BeginSend();
-
-            _isConnecting = false;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Connection failed");
-            Dispose();
-        }
-        finally
-        {
-            _isConnecting = false;
-        }
-    }
-
-    protected virtual void HandleStreamStart(StreamStream e)
-    {
-    }
-
-    protected virtual void HandleStreamElement(XmppElement e)
-    {
-    }
-
-    protected virtual void InitParser()
-    {
-        if (Options.XmppParserFactory != null)
-            _parser = Options.XmppParserFactory(Options);
-        else
-            _parser = new ExpatXmppStreamReader(Options);
+        _parser = new XmppParser();
 
         _parser.OnStreamStart += e =>
         {
-            if (Logger.IsEnabled(LogLevel.Trace))
-                Logger.LogTrace("recv <<\n{Xml}\n", e.StartTag());
+            OnReadXml?.Invoke(e.ToString());
 
             try
             {
@@ -415,61 +69,38 @@ public abstract class XmppConnection
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "An error occurred while processing XMPP stream start.");
-
-                XmppElement? element = null;
-
-                if (ex is JabberStreamException jse)
-                    element = new StreamError(jse.Condition, jse.Message);
-
-                Disconnect(element);
+                OnError?.Invoke(ex);
+                Disconnect();
             }
         };
 
         _parser.OnStreamElement += e =>
         {
-            if (Logger.IsEnabled(LogLevel.Trace))
-                Logger.LogTrace("recv <<\n{Xml}\n", e.ToString(true));
+            OnReadXml?.Invoke(e.ToString(true));
 
             try
             {
-                if (e is StreamError se)
+                if (e is Stanza stz && !string.IsNullOrEmpty(stz.Id) && _callbacks.TryRemove(stz.Id, out var tcs))
                 {
-                    var condition = se.Condition ?? StreamErrorCondition.UndefinedCondition;
-                    throw new JabberStreamException(condition, se.Text ?? condition.ToString());
-                }
-
-                if (e is Stanza stz && !string.IsNullOrEmpty(stz.Id) && _callbacks.TryRemove(stz.Id, out var cb))
-                {
-                    cb.TrySetResult(stz);
+                    tcs.TrySetResult(stz);
                     return;
                 }
 
+                if (e is StreamError se)
+                    throw new JabberException($"Stream error received (code: {se.Condition}). {se.Text}");
+
                 HandleStreamElement(e);
-            }
-            catch (JabberSaslException ex)
-            {
-                Logger.LogError(ex, "SASL authentication failed.");
-                Disconnect();
-            }
-            catch (JabberStreamException ex)
-            {
-                Logger.LogError(ex, "The remote server closed the connection with an error.");
-                Disconnect();
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "An error occurred while processing XMPP stream element.");
+                OnError?.Invoke(ex);
                 Disconnect();
             }
         };
 
         _parser.OnStreamEnd += () =>
         {
-            Logger.LogDebug("XMPP stream end received from the server. Closing connection...");
-
-            if (Logger.IsEnabled(LogLevel.Trace))
-                Logger.LogTrace("recv <<\n{Xml}\n", Xml.XmppEndTag);
+            OnReadXml?.Invoke(Xml.XmppStreamEnd);
 
             try
             {
@@ -477,48 +108,181 @@ public abstract class XmppConnection
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "An error occurred while processing XMPP stream end.");
+                OnError?.Invoke(ex);
             }
             finally
             {
-                Disconnect();
+                Dispose();
             }
         };
 
-        _parser.OnError += ex =>
-        {
-            if (ex is ExpatException ee)
+        _ioState = IoState.ReadWrite;
+
+        InitConnection();
+
+        _ = Task.WhenAny(ReadLoop(), WriteLoop())
+            .ContinueWith(task =>
             {
-                if (ee.Code == ExpatParserError.Aborted
-                || ee.Code == ExpatParserError.Finished
-                || ee.Code == ExpatParserError.Suspended)
-                    goto _next;
-            }
+                if (task.IsFaulted)
+                    FireOnError(task.Exception!);
 
-            if (ex is IOException && _disposed > 0)
-                goto _next;
-
-            Logger.LogError(ex, "XML parsing error.");
-
-        _next:
-            Disconnect();
-        };
-
-        _parser.OnDisposed += () =>
-        {
-            Logger.LogDebug("XML parser disposed");
-            Disconnect();
-        };
-
-        _parser.Reset(_stream!, _tokenSource.Token);
+                Disconnect();
+            });
     }
 
-    protected virtual void HandleStreamEnd()
+    protected virtual void InitConnection()
     {
 
     }
 
-    protected virtual void Disposing()
+    protected void FireOnError(Exception ex) => OnError?.Invoke(ex);
+    protected void FireOnStanza(Stanza stz) => OnStanza?.Invoke(stz);
+
+    public async Task<Stanza> RequestStanza(Stanza stz, TimeSpan timeout = default, CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(stz);
+
+        if (string.IsNullOrEmpty(stz.Id))
+            stz.GenerateId();
+
+        using (var cts = CancellationTokenSource.CreateLinkedTokenSource(token))
+        {
+            if (timeout > TimeSpan.Zero)
+                cts.CancelAfter(timeout);
+
+            var tcs = new TaskCompletionSource<Stanza>();
+            _callbacks[stz.Id!] = tcs;
+            Send(stz);
+
+            return await tcs.Task;
+        }
+    }
+
+    protected virtual async Task ReadLoop()
+    {
+        var buffer = ArrayPool<byte>.Shared.Rent(1024);
+
+        try
+        {
+            while (_disposed < 1)
+            {
+                await Task.Delay(16);
+
+                if (!_ioState.HasFlag(IoState.Read))
+                    continue;
+
+                int len = await _stream!.ReadAsync(buffer, CancellationToken.None);
+
+                if (len <= 0)
+                    break;
+
+                _parser!.Parse(buffer, len);
+            }
+        }
+        catch (Exception ex)
+        {
+            OnError?.Invoke(ex);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+
+        Disconnect();
+    }
+
+    protected virtual async Task WriteLoop()
+    {
+        try
+        {
+            while (_disposed < 2)
+            {
+                await Task.Delay(16);
+
+                if (!_ioState.HasFlag(IoState.Write))
+                    continue;
+
+                while (_sendQueue.TryDequeue(out var entry))
+                {
+                    await Task.Delay(16);
+
+                    try
+                    {
+                        if (entry.Bytes?.Length > 0)
+                            await _stream!.WriteAsync(entry.Bytes, entry.Token);
+
+                        if (entry.DebugXml != null)
+                            OnWriteXml?.Invoke(entry.DebugXml);
+
+                        entry.Completion?.TrySetResult();
+                    }
+                    catch (Exception ex)
+                    {
+                        entry.Completion?.TrySetException(ex);
+                        throw;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            OnError?.Invoke(ex);
+        }
+        finally
+        {
+            while (_sendQueue.TryDequeue(out var entry))
+                entry.Completion?.TrySetCanceled();
+
+            Dispose();
+        }
+    }
+
+    protected internal void AddToSendQueue(SendQueueEntry entry)
+    {
+        if (_disposed > 1)
+            return;
+
+        _sendQueue.Enqueue(entry);
+    }
+
+    public void Send(string xml)
+    {
+        if (_disposed > 1)
+            return;
+
+        AddToSendQueue(new()
+        {
+            Bytes = xml.GetBytes(),
+            DebugXml = OnWriteXml != null ? xml : null
+        });
+    }
+
+    public void Send(XmppElement element)
+    {
+        if (_disposed > 1)
+            return;
+
+        AddToSendQueue(new()
+        {
+            Bytes = element.ToString().GetBytes(),
+            DebugXml = OnWriteXml != null ? element.ToString(true) : null
+        });
+    }
+
+    public void Disconnect(XmppElement? element = default)
+    {
+        if (_disposed > 0)
+            return;
+
+        var xml = new StringBuilder();
+
+        if (element != null)
+            xml.Append(element);
+
+        Send(xml.Append(Xml.XmppStreamEnd).ToString());
+    }
+
+    protected virtual void Cleanup()
     {
 
     }
@@ -529,69 +293,71 @@ public abstract class XmppConnection
             return;
 
         _disposed = 1;
-        _access &= ~FileAccess.Read;
+        _ioState &= ~IoState.Read;
 
-        _isConnecting = false;
-        _tokenSource?.Cancel();
-        _tokenSource?.Dispose();
-        _tokenSource = null!;
+        Cleanup();
 
+        if (_callbacks != null)
         {
-            Logger.LogDebug("Cancel {Num} pending stanza callbacks.", _callbacks.Count);
-
             foreach (var (_, tcs) in _callbacks)
                 tcs.TrySetCanceled();
 
             _callbacks.Clear();
+            _callbacks = null!;
         }
 
-        Disposing();
+        _parser?.Dispose();
+        _parser = null;
 
         _ = Task.Run(async () =>
         {
-            var timeout = Task.Delay(Options.DisconnectTimeout);
-
-            while (!_sendQueue.IsEmpty)
+            if (_ioState.HasFlag(IoState.Write))
             {
-                await Task.Delay(160);
-
-                if (timeout.IsCompleted)
-                    break;
+                var tcs = new TaskCompletionSource();
+                _sendQueue.Enqueue(new() { Completion = tcs });
+                await Task.WhenAny(Task.Delay(5000), tcs.Task);
+                tcs.TrySetResult();
             }
 
-            while (_sendQueue.TryDequeue(out var tuple))
-                tuple.Completion?.TrySetCanceled();
+            if (_sendQueue != null)
+            {
+                while (_sendQueue.TryDequeue(out var entry))
+                    entry.Completion?.TrySetCanceled();
 
-            _sendQueue = null!;
-
-            Logger.LogDebug("Flush send queue {State}!", timeout.IsCompleted ? "timed out" : "completed");
+                _sendQueue?.Clear();
+                _sendQueue = null!;
+            }
 
             _disposed = 2;
-            _access &= ~FileAccess.Write;
+            _ioState &= ~IoState.Write;
 
-            _parser?.Dispose();
-            _parser = null;
-
-            _stream?.Dispose();
-            _stream = null;
-
-            ChangeState(_ => XmppConnectionState.Disconnected);
+            try
+            {
+                _stream?.Dispose();
+                _stream = null;
+            }
+            catch { }
 
             FireOnDisconnected();
         });
+
+        GC.SuppressFinalize(this);
     }
 
-    public virtual void Disconnect(XmppElement? element = default)
+    protected virtual void HandleStreamStart(StreamStream e)
     {
-        var buf = new StringBuilder();
 
-        if (element != null)
-            buf.Append(element.ToString(false));
+    }
 
-        var xml = buf.Append(Xml.XmppEndTag).ToString();
-        var isVerbose = Logger.IsEnabled(LogLevel.Trace) == true;
-        QueueSend(xml.GetBytes(), isVerbose ? xml : default);
+    protected virtual void HandleStreamElement(XmppElement e)
+    {
 
-        Dispose();
+    }
+
+    protected virtual void HandleStreamEnd()
+    {
+
     }
 }
+
+#nullable restore

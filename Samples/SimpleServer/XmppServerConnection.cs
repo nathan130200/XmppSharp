@@ -18,11 +18,11 @@ using XmppSharp.Protocol.Tls;
 
 namespace SimpleServer;
 
-public sealed class Connection : IDisposable
+public sealed class XmppServerConnection : IDisposable
 {
     private Socket? _socket;
     private Stream? _stream;
-    private ExpatXmppParser? _parser;
+    private XmppParser? _parser;
     public Jid Jid { get; private set; }
     private volatile byte _disposed;
     private volatile FileAccess _access;
@@ -31,12 +31,12 @@ public sealed class Connection : IDisposable
     private X509Certificate2? _cert;
     public bool IsAuthenticated { get; private set; }
 
-    public Connection(Socket socket)
+    public XmppServerConnection(Socket socket)
     {
         Jid = new($"unknown@{Server.Hostname}");
 
         _stream = new NetworkStream(_socket = socket, false);
-        _parser = new ExpatXmppParser(ExpatEncoding.UTF8);
+        _parser = new XmppParser(ExpatEncoding.UTF8);
         _parser.OnStreamStart += OnStreamStart;
         _parser.OnStreamEnd += OnStreamEnd;
         _parser.OnStreamElement += OnStreamElement;
@@ -63,15 +63,15 @@ public sealed class Connection : IDisposable
                 {
                     await _stream!.WriteAsync(entry.buffer, token);
 
-                    if (!string.IsNullOrEmpty(entry.xml))
-                        Console.WriteLine("<{0}> send >>\n{1}\n", Jid, entry.xml);
+                    //if (!string.IsNullOrEmpty(entry.xml))
+                    //    Console.WriteLine("<{0}> send >>\n{1}\n", Jid, entry.xml);
 
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex);
+            //Console.WriteLine(ex);
             _access &= ~FileAccess.Write;
             _writeQueue.Clear();
 
@@ -108,7 +108,7 @@ public sealed class Connection : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex);
+            //Console.WriteLine(ex);
             Dispose();
         }
     }
@@ -141,6 +141,8 @@ public sealed class Connection : IDisposable
 
                 _socket?.Dispose();
                 _socket = null;
+
+                Console.WriteLine("{0} offline!", Jid);
             });
     }
 
@@ -153,7 +155,7 @@ public sealed class Connection : IDisposable
 
     void OnStreamStart(StreamStream e)
     {
-        Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, e.StartTag());
+        //Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, e);
 
         e.From = Server.Hostname;
         e.GenerateId();
@@ -176,8 +178,8 @@ public sealed class Connection : IDisposable
         }
         else
         {
-            features.SupportBind = true;
-            features.SupportSession = true;
+            features.SupportsBind = true;
+            features.SupportsSession = true;
         }
 
         Send(features);
@@ -185,7 +187,7 @@ public sealed class Connection : IDisposable
 
     private void OnStreamEnd()
     {
-        Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, Xml.XmppStreamEnd);
+        //Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, Xml.XmppStreamEnd);
         Send(Xml.XmppStreamEnd);
         Dispose();
     }
@@ -204,7 +206,7 @@ public sealed class Connection : IDisposable
 
     async Task HandleStreamElement(XmppElement e)
     {
-        Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, e.ToString(true));
+        //Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, e.ToString(true));
 
         if (e is StartTls)
         {
@@ -329,6 +331,8 @@ public sealed class Connection : IDisposable
                 }
                 else if (iq.FirstChild is Session)
                 {
+                    Console.WriteLine("{0} online!", Jid);
+
                     iq.SwitchDirection();
                     iq.Type = IqType.Result;
                     Send(iq);
@@ -455,10 +459,9 @@ public sealed class Connection : IDisposable
                     {
                         if (client == this) continue;
 
-                        client.Send(new Presence(p)
-                        {
-                            From = Jid,
-                        });
+                        var newPresencec = (Presence)p.Clone();
+                        newPresencec.From = Jid;
+                        client.Send(newPresencec);
                     }
                 }
                 else

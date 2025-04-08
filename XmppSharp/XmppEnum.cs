@@ -6,19 +6,19 @@ namespace XmppSharp;
 public static class XmppEnum
 {
     public static IEnumerable<T> GetMembers<T>() where T : struct, Enum
-        => XmppEnum<T>.Members;
+        => State<T>.Members;
 
     public static IEnumerable<string> GetNames<T>() where T : struct, Enum
-        => XmppEnum<T>.NameToMember.Select(x => x.Key);
+        => State<T>.NameToMember.Select(x => x.Key);
 
     public static IEnumerable<string> GetXmlNames<T>() where T : struct, Enum
-        => XmppEnum<T>.XmlToMember.Select(x => x.Key);
+        => State<T>.XmlToMember.Select(x => x.Key);
 
-    public static IReadOnlyDictionary<string, T> GetNameMapping<T>() where T : struct, Enum
-        => XmppEnum<T>.NameToMember;
+    public static IReadOnlyDictionary<string, T> NameMapping<T>() where T : struct, Enum
+        => State<T>.NameToMember;
 
-    public static IReadOnlyDictionary<string, T> GetXmlMapping<T>() where T : struct, Enum
-        => XmppEnum<T>.XmlToMember;
+    public static IReadOnlyDictionary<string, T> XmlMapping<T>() where T : struct, Enum
+        => State<T>.XmlToMember;
 
     public static string? ToXml<T>(T? value) where T : struct, Enum
     {
@@ -30,14 +30,21 @@ public static class XmppEnum
 
     public static string? ToXml<T>(T value) where T : struct, Enum
     {
-        var contract = XmppEnum<T>.EqualityContract;
-        var entry = XmppEnum<T>.XmlToMember.FirstOrDefault(x => contract.Equals(x.Value, value));
+        var contract = State<T>.EqualityContract;
+        var entry = State<T>.XmlToMember.FirstOrDefault(x => contract.Equals(x.Value, value));
         return entry.Key;
+    }
+
+    public static string ToXmlOrThrow<T>(T value) where T : struct, Enum
+    {
+        var contract = State<T>.EqualityContract;
+        var entry = State<T>.XmlToMember.FirstOrDefault(x => contract.Equals(x.Value, value));
+        return entry.Key ?? throw new ArgumentException(default, nameof(value));
     }
 
     public static T FromXmlOrThrow<T>(string? s) where T : struct, Enum
     {
-        Throw.IfStringNullOrWhiteSpace(s);
+        Throw.IfNullOrWhiteSpace(s);
 
         var result = FromXml<T>(s);
 
@@ -52,7 +59,7 @@ public static class XmppEnum
         if (string.IsNullOrWhiteSpace(str))
             return defaultValue;
 
-        if (XmppEnum<T>.XmlToMember.TryGetValue(str, out var result))
+        if (State<T>.XmlToMember.TryGetValue(str, out var result))
             return result;
 
         return defaultValue;
@@ -63,56 +70,58 @@ public static class XmppEnum
         if (string.IsNullOrWhiteSpace(str))
             return default;
 
-        if (XmppEnum<T>.XmlToMember.TryGetValue(str, out var result))
+        if (State<T>.XmlToMember.TryGetValue(str, out var result))
             return result;
 
         return default;
     }
 
     public static IEnumerable<Attribute> GetCustomAttributes<T>() where T : struct, Enum
-        => XmppEnum<T>.CustomAttributes;
+        => State<T>.CustomAttributes;
 
     public static IEnumerable<Attribute> GetMemberCustomAttributes<T>(T member) where T : struct, Enum
-        => XmppEnum<T>.MemberCustomAttributes[member];
-}
-public static class XmppEnum<T> where T : struct, Enum
-{
-    public static IEnumerable<T> Members { get; private set; }
-    public static IReadOnlyDictionary<string, T> NameToMember { get; private set; }
-    public static IEnumerable<Attribute> CustomAttributes { get; private set; }
-    public static IReadOnlyDictionary<T, IEnumerable<Attribute>> MemberCustomAttributes { get; private set; }
-    public static IReadOnlyDictionary<string, T> XmlToMember { get; private set; }
-    public static EqualityComparer<T> EqualityContract { get; set; }
+        => State<T>.MemberCustomAttributes[member];
 
-    static XmppEnum()
+    // ------------------------------------------------------------------------ //
+
+    public static class State<T> where T : struct, Enum
     {
-        var thisType = typeof(T);
+        public static Type EnumType { get; } = typeof(T);
+        public static IEnumerable<T> Members { get; private set; }
+        public static IReadOnlyDictionary<string, T> NameToMember { get; private set; }
+        public static IEnumerable<Attribute> CustomAttributes { get; private set; }
+        public static IReadOnlyDictionary<T, IEnumerable<Attribute>> MemberCustomAttributes { get; private set; }
+        public static IReadOnlyDictionary<string, T> XmlToMember { get; private set; }
+        public static EqualityComparer<T> EqualityContract { get; set; }
 
-        if (thisType.GetCustomAttribute<XmppEnumAttribute>() == null)
-            throw new InvalidOperationException($"Type '{thisType.FullName}' is not valid xmpp enum type.");
+        static State()
+        {
+            if (EnumType.GetCustomAttribute<XmppEnumAttribute>() == null)
+                throw new InvalidOperationException($"Type '{EnumType.FullName}' is not valid xmpp enum type.");
 
-        EqualityContract = EqualityComparer<T>.Default;
+            EqualityContract = EqualityComparer<T>.Default;
 
-        Members = Enum.GetValues<T>();
-        CustomAttributes = thisType.GetCustomAttributes();
+            Members = Enum.GetValues<T>();
+            CustomAttributes = EnumType.GetCustomAttributes();
 
-        var fields = from field in typeof(T).GetFields()
-                     where field.FieldType == typeof(T)
-                     let attributes = field.GetCustomAttributes()
-                     let memberAttribute = attributes.OfType<XmppMemberAttribute>().FirstOrDefault()
-                     select new
-                     {
-                         field.Name,
-                         Value = (T)field.GetValue(null)!,
-                         XmlName = memberAttribute?.Value,
-                         Attributes = attributes
-                     };
+            var members = from field in typeof(T).GetFields()
+                          where field.FieldType == typeof(T)
+                          let attributes = field.GetCustomAttributes()
+                          let memberAttribute = attributes.OfType<XmppMemberAttribute>().FirstOrDefault()
+                          select new
+                          {
+                              field.Name,
+                              Value = (T)field.GetValue(null)!,
+                              XmlName = memberAttribute?.Value,
+                              Attributes = attributes
+                          };
 
-        NameToMember = fields.ToDictionary(x => x.Name, x => x.Value);
+            NameToMember = members.ToDictionary(x => x.Name, x => x.Value);
 
-        XmlToMember = fields.Where(x => x.XmlName != null)
-            .ToDictionary(x => x.XmlName, x => x.Value);
+            XmlToMember = members.Where(x => x.XmlName != null)
+                .ToDictionary(x => x.XmlName, x => x.Value);
 
-        MemberCustomAttributes = fields.ToDictionary(x => x.Value, x => x.Attributes);
+            MemberCustomAttributes = members.ToDictionary(x => x.Value, x => x.Attributes);
+        }
     }
 }

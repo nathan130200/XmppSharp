@@ -8,11 +8,6 @@ namespace XmppSharp.Protocol.Base;
 [XmppTag("stream:features", Namespaces.Stream)]
 public class StreamFeatures : XmppElement
 {
-    public StreamFeatures(StreamFeatures other) : base(other)
-    {
-
-    }
-
     public StreamFeatures() : base("stream:features", Namespaces.Stream)
     {
 
@@ -38,7 +33,7 @@ public class StreamFeatures : XmppElement
         }
     }
 
-    public bool SupportBind
+    public bool SupportsBind
     {
         get => HasTag("bind", Namespaces.Bind);
         set
@@ -50,7 +45,7 @@ public class StreamFeatures : XmppElement
         }
     }
 
-    public bool SupportSession
+    public bool SupportsSession
     {
         get => HasTag("session", Namespaces.Session);
         set

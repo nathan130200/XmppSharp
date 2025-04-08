@@ -53,6 +53,9 @@ public class History : XmppElement
     {
         get
         {
+            if (!HasAttribute("since"))
+                return default;
+
             if (DateTimeOffset.TryParseExact(GetAttribute("since"), Xml.XmppTimestampFormat,
                 CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
                 return result;
@@ -64,7 +67,7 @@ public class History : XmppElement
             if (!value.HasValue)
                 RemoveAttribute("since");
             else
-                SetAttribute("since", (DateTimeOffset)value, Xml.XmppTimestampFormat, CultureInfo.InvariantCulture);
+                SetAttribute("since", string.Format(CultureInfo.InvariantCulture, Xml.XmppTimestampFormatTemplate, (DateTimeOffset)value));
         }
     }
 }

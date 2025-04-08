@@ -23,7 +23,7 @@ public static class SaslFactory
     /// <param name="factory">Factory function to build the SASL handler.</param>
     public static void RegisterMechanism(string mechanismName, Func<XmppClientConnection, SaslHandler> factory)
     {
-        Throw.IfStringNullOrWhiteSpace(mechanismName);
+        Throw.IfNullOrWhiteSpace(mechanismName);
         Throw.IfNull(factory);
         s_Mechanisms[mechanismName] = factory;
     }
@@ -37,7 +37,7 @@ public static class SaslFactory
     /// <returns><see langword="true" /> if the mechanism was registered and the handler was instantiated; otherwise <see langword="false" />.</returns>
     public static bool TryCreate(string mechanismName, XmppClientConnection connection, [NotNullWhen(true)] out SaslHandler? handler)
     {
-        Throw.IfStringNullOrWhiteSpace(mechanismName);
+        Throw.IfNullOrWhiteSpace(mechanismName);
         Throw.IfNull(connection);
 
         handler = default;

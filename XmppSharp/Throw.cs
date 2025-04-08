@@ -13,6 +13,14 @@ internal static class Throw
             throw new ObjectDisposedException(obj.GetType().FullName);
     }
 
+    [DoesNotReturn]
+    public static void InvalidArgument(string? paramName = default)
+        => throw new ArgumentException(default, paramName);
+
+    [DoesNotReturn]
+    public static void InvalidArgument(object value, [CallerArgumentExpression(nameof(value))] string? paramName = default)
+        => throw new ArgumentException(default, paramName);
+
     public static void IfStringNotEquals(string? expected, string? current,
         StringComparison comparer = StringComparison.Ordinal,
         [CallerArgumentExpression(nameof(current))] string paramName = default!)
@@ -27,13 +35,13 @@ internal static class Throw
             throw new ArgumentNullException(paramName);
     }
 
-    public static void IfStringNullOrWhiteSpace(string? s, [CallerArgumentExpression(nameof(s))] string? paramName = default)
+    public static void IfNullOrWhiteSpace(string? s, [CallerArgumentExpression(nameof(s))] string? paramName = default)
     {
         if (string.IsNullOrWhiteSpace(s))
             throw new ArgumentException(null, paramName);
     }
 
-    public static void IfStringNullOrEmpty(string? s, [CallerArgumentExpression(nameof(s))] string? paramName = default)
+    public static void IfNullOrEmpty(string? s, [CallerArgumentExpression(nameof(s))] string? paramName = default)
     {
         if (string.IsNullOrEmpty(s))
             throw new ArgumentException(null, paramName);

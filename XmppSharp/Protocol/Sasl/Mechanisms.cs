@@ -6,11 +6,6 @@ namespace XmppSharp.Protocol.Sasl;
 [XmppTag("mechanisms", Namespaces.Sasl)]
 public class Mechanisms : XmppElement
 {
-    public Mechanisms(Mechanisms other) : base(other)
-    {
-
-    }
-
     public Mechanisms() : base("mechanisms", Namespaces.Sasl)
     {
 
@@ -33,7 +28,7 @@ public class Mechanisms : XmppElement
         }
     }
 
-    public bool HasMechanism(string name)
+    public bool IsMechanismSupported(string name)
         => SupportedMechanisms.Any(x => x.Value == name);
 
     public void AddMechanism(string name)

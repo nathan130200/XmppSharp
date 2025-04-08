@@ -43,7 +43,7 @@ public class Delay : XmppElement
             if (!value.HasValue)
                 RemoveAttribute("stamp");
             else
-                SetAttribute("stamp", value.Value, Xml.XmppTimestampFormat, CultureInfo.InvariantCulture);
+                SetAttribute("stamp", string.Format(CultureInfo.InvariantCulture, Xml.XmppTimestampFormatTemplate, (DateTimeOffset)value));
         }
     }
 }

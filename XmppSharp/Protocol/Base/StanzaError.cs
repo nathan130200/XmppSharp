@@ -37,7 +37,7 @@ public class StanzaError : XmppElement
     {
         get
         {
-            foreach (var (name, value) in XmppEnum.GetXmlMapping<StanzaErrorCondition>())
+            foreach (var (name, value) in XmppEnum.XmlMapping<StanzaErrorCondition>())
             {
                 if (HasTag(name, Namespaces.Stanzas))
                     return value;

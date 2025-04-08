@@ -1,17 +1,17 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Security;
 using System.Text;
 using System.Web;
 using System.Xml;
-using XmppSharp.Collections;
 using XmppSharp.Dom;
 
 namespace XmppSharp;
 
 public static class Xml
 {
-    public const string XmppEndTag = "</stream:stream>";
+    public const string XmppStreamEnd = "</stream:stream>";
     public const string XmppTimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffK";
+    public const string XmppTimestampFormatTemplate = $"{{0:{XmppTimestampFormat}}}";
 
 #if NET6_0
 
@@ -28,11 +28,15 @@ public static class Xml
 
 #endif
 
+#pragma warning disable
+
     [ThreadStatic]
     private static string? s_IndentChars;
 
     [ThreadStatic]
     private static string? s_NewLineChars;
+
+#pragma warning restore
 
     public static string NewLineChars => s_NewLineChars ?? "\n";
     public static string IndentChars => s_IndentChars ?? "  ";
@@ -77,54 +81,35 @@ public static class Xml
         return parent.Elements().Where(predicate);
     }
 
-    public static XmppElement Element(XmppName tagName, Dictionary<string, object>? attrs = default)
+    public static bool ExtractQualifiedName(string str, [NotNullWhen(true)] out string? prefix, out string localName)
     {
-        var ns = attrs?.GetValueOrDefault(!tagName.HasPrefix ? "xmlns"
-            : $"xmlns:{tagName.Prefix}")?.ToString();
+        var ofs = str.IndexOf(':');
 
-        var result = XmppElementFactory.Create(tagName, ns);
+        prefix = default;
 
-        if (attrs != null)
-        {
-            foreach (var (key, value) in attrs)
-            {
-                result.SetAttribute(key, value is string str ? str
-                    : Convert.ToString(value, CultureInfo.InvariantCulture));
-            }
-        }
+        if (ofs > 0)
+            prefix = str[0..ofs];
 
-        return result;
+        localName = str[(ofs + 1)..];
+
+        return !string.IsNullOrWhiteSpace(prefix);
     }
 
-    public static XmppElement C(this XmppElement parent, XmppName tagName, string? namespaceURI = default, object? value = default)
+    public static XmppElement Element(string tagName, string? xmlns = default, object? value = default)
+        => new(tagName, xmlns, value);
+
+    public static XmppElement C(this XmppElement parent, string tagName, string? xmlns = default, object? value = default)
     {
         Throw.IfNull(parent);
 
-        if (namespaceURI == null)
-            namespaceURI = parent.GetNamespace(tagName.Prefix);
-
-        var child = XmppElementFactory.Create(tagName, namespaceURI, parent);
-        child.SetValue(value);
-        parent.AddChild(child);
-        return child;
-    }
-
-    public static XmppElement C(this XmppElement parent, XmppName tagName, Dictionary<string, object>? attrs)
-    {
-        var namespaceURI = attrs?.GetValueOrDefault(!tagName.HasPrefix ? "xmlns"
-           : $"xmlns:{tagName.Prefix}")?.ToString();
-
-        var child = XmppElementFactory.Create(tagName, namespaceURI);
-
-        if (attrs != null)
+        if (xmlns == null)
         {
-            foreach (var (key, value) in attrs)
-            {
-                child.SetAttribute(key, value is string str ? str
-                    : Convert.ToString(value, CultureInfo.InvariantCulture));
-            }
+            ExtractQualifiedName(tagName, out var prefix, out _);
+            xmlns = parent.GetNamespace(prefix);
         }
 
+        var child = XmppElementFactory.Create(tagName, xmlns, parent);
+        child.SetValue(value);
         parent.AddChild(child);
         return child;
     }
@@ -158,9 +143,9 @@ public static class Xml
         });
     }
 
-    public static void Remove(this IEnumerable<XmppElement?> e)
+    public static void Remove(this IEnumerable<XmppElement?>? e)
     {
-        if (e.Any())
+        if (e?.Any() == true)
         {
             foreach (var item in e)
                 item?.Remove();
@@ -169,25 +154,21 @@ public static class Xml
 
     public static void WriteTree(XmppElement e, XmlWriter xw)
     {
-        var skipAttribute = e.Prefix == null ? "xmlns" : $"xmlns:{e.Prefix}";
         xw.WriteStartElement(e.Prefix, e.LocalName, e.Namespace);
 
         foreach (var (key, value) in e.Attributes)
         {
-            if (key == skipAttribute)
-                continue;
+            var hasPrefix = ExtractQualifiedName(key, out var prefix, out var localName);
 
-            var name = new XmppName(key);
-
-            if (!name.HasPrefix)
-                xw.WriteAttributeString(name.LocalName, value);
+            if (!hasPrefix)
+                xw.WriteAttributeString(localName, value);
             else
             {
-                xw.WriteAttributeString(name.LocalName, name.Prefix switch
+                xw.WriteAttributeString(localName, prefix switch
                 {
                     "xml" => Namespaces.Xml,
                     "xmlns" => Namespaces.Xmlns,
-                    _ => e.GetNamespace(name.Prefix) ?? string.Empty
+                    _ => e.GetNamespace(prefix) ?? string.Empty
                 }, value);
             }
         }

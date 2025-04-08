@@ -91,7 +91,7 @@ public static class XmppElementFactory
 
     public static Type? ResolveType(string tagName, string? namespaceURI)
     {
-        Throw.IfStringNullOrWhiteSpace(tagName);
+        Throw.IfNullOrWhiteSpace(tagName);
 
         foreach (var (type, tags) in s_ElementTypes)
         {
@@ -136,7 +136,7 @@ public static class XmppElementFactory
 
     public static XmppElement Create(string tagName, string? namespaceURI, XmppElement? context = default)
     {
-        Throw.IfStringNullOrWhiteSpace(tagName);
+        Throw.IfNullOrWhiteSpace(tagName);
 
         var type = ResolveType(tagName, namespaceURI);
 
