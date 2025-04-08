@@ -14,7 +14,9 @@ Log.Logger = new LoggerConfiguration()
 
 Console.Title = "STRESS TEST BOT";
 
+#pragma warning disable
 Console.SetBufferSize(Console.BufferWidth, Console.BufferHeight);
+#pragma warning restore
 
 var logging = LoggerFactory.Create(builder =>
 {
@@ -23,6 +25,37 @@ var logging = LoggerFactory.Create(builder =>
 });
 
 var bots = new List<StressTestBot>();
+
+var comp = new XmppComponentConnection
+{
+    Server = "stresstest",
+    Password = "youshallnotpass",
+    ConnectServer = new IPEndPoint(IPAddress.Loopback, 5275)
+};
+
+/*
+comp.OnReadXml += x
+    => Console.WriteLine("recv <<\n{0}\n", x);
+
+comp.OnWriteXml += x
+    => Console.WriteLine("send >>\n{0}\n", x);*/
+
+comp.OnError += ex =>
+{
+    Console.WriteLine("ERROR: " + ex);
+};
+
+comp.OnSessionStarted += () =>
+{
+    Console.WriteLine("Component stresstest online");
+};
+
+comp.OnDisconnected += () =>
+{
+    Console.WriteLine("Component stresstest offline");
+};
+
+await comp.ConnectAsync();
 
 for (int i = 0; i < 512; i++)
     bots.Add(new StressTestBot(i));
@@ -42,7 +75,7 @@ _ = Task.Run(async () =>
 
         var buf = string.Format("\rStress Test - connected: {0:F1}% - online: {1:F1}%", ratioConnected, ratioOnline).PadRight(Console.BufferWidth);
         Console.WriteLine(buf);
-        await Task.Delay(16);
+        await Task.Delay(500);
     }
 });
 

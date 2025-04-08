@@ -63,15 +63,15 @@ public sealed class XmppServerConnection : IDisposable
                 {
                     await _stream!.WriteAsync(entry.buffer, token);
 
-                    //if (!string.IsNullOrEmpty(entry.xml))
-                    //    Console.WriteLine("<{0}> send >>\n{1}\n", Jid, entry.xml);
+                    if (!string.IsNullOrEmpty(entry.xml))
+                        Console.WriteLine("<{0}> send >>\n{1}\n", Jid, entry.xml);
 
                 }
             }
         }
         catch (Exception ex)
         {
-            //Console.WriteLine(ex);
+            Console.WriteLine(ex);
             _access &= ~FileAccess.Write;
             _writeQueue.Clear();
 
@@ -108,7 +108,7 @@ public sealed class XmppServerConnection : IDisposable
         }
         catch (Exception ex)
         {
-            //Console.WriteLine(ex);
+            Console.WriteLine(ex);
             Dispose();
         }
     }
@@ -155,7 +155,7 @@ public sealed class XmppServerConnection : IDisposable
 
     void OnStreamStart(StreamStream e)
     {
-        //Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, e);
+        Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, e);
 
         e.From = Server.Hostname;
         e.GenerateId();
@@ -187,7 +187,7 @@ public sealed class XmppServerConnection : IDisposable
 
     private void OnStreamEnd()
     {
-        //Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, Xml.XmppStreamEnd);
+        Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, Xml.XmppStreamEnd);
         Send(Xml.XmppStreamEnd);
         Dispose();
     }
@@ -206,7 +206,7 @@ public sealed class XmppServerConnection : IDisposable
 
     async Task HandleStreamElement(XmppElement e)
     {
-        //Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, e.ToString(true));
+        Console.WriteLine("<{0}> recv <<\n{1}\n", Jid, e.ToString(true));
 
         if (e is StartTls)
         {

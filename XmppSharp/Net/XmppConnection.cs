@@ -202,10 +202,8 @@ public abstract class XmppConnection : IDisposable
                 if (!_ioState.HasFlag(IoState.Write))
                     continue;
 
-                while (_sendQueue.TryDequeue(out var entry))
+                if (_sendQueue?.TryDequeue(out var entry) == true)
                 {
-                    await Task.Delay(16);
-
                     try
                     {
                         if (entry.Bytes?.Length > 0)

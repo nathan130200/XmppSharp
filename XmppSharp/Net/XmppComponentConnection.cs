@@ -1,5 +1,6 @@
-﻿using XmppSharp.Dom;
-using XmppSharp.Exceptions;
+﻿using System.Net;
+using System.Net.Sockets;
+using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Component;
 
@@ -9,6 +10,36 @@ public class XmppComponentConnection : XmppConnection
 {
     public string Server { get; set; }
     public string Password { get; set; }
+    public EndPoint ConnectServer { get; set; }
+
+    volatile bool _isConnecting = false;
+
+    public async Task ConnectAsync()
+    {
+        if (_isConnecting)
+            return;
+
+        _isConnecting = true;
+
+        try
+        {
+            var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            await socket.ConnectAsync(ConnectServer);
+            _stream = new NetworkStream(socket, true);
+            FireOnConnected();
+            InitParser();
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
+        finally
+        {
+            _isConnecting = false;
+        }
+    }
+
 
     protected override void InitConnection()
     {
@@ -23,12 +54,11 @@ public class XmppComponentConnection : XmppConnection
 
     protected override void HandleStreamStart(StreamStream e)
     {
-        if (string.IsNullOrWhiteSpace(e.Id))
-            throw new JabberException("Server did not sent Stream ID.");
-
-        StreamId = e.Id;
-
-        Send(new Handshake(e.Id, Password));
+        if (!string.IsNullOrWhiteSpace(e.Id))
+        {
+            StreamId = e.Id;
+            Send(new Handshake(e.Id, Password));
+        }
     }
 
     protected override void HandleStreamElement(XmppElement e)
