@@ -33,7 +33,7 @@ public class StanzaError : XmppElement
         set => SetAttribute("by", value);
     }
 
-    public StanzaErrorCondition? Condition
+    public StanzaErrorCondition Condition
     {
         get
         {
@@ -43,16 +43,16 @@ public class StanzaError : XmppElement
                     return value;
             }
 
-            return default;
+            return StanzaErrorCondition.UndefinedCondition;
         }
         set
         {
             XmppEnum.GetNames<StanzaErrorCondition>()
                 .ForEach(x => Element(x, Namespaces.Stanzas)?.Remove());
 
-            if (value.HasValue)
+            if (Enum.IsDefined(value) && value != StanzaErrorCondition.Unspecified)
             {
-                var name = XmppEnum.ToXml((StanzaErrorCondition)value)!;
+                var name = XmppEnum.ToXml(value)!;
                 SetTag(name, xmlns: Namespaces.Stanzas);
             }
         }

@@ -26,7 +26,7 @@ var logging = LoggerFactory.Create(builder =>
 
 var bots = new List<StressTestBot>();
 
-var comp = new XmppComponentConnection
+/*var comp = new XmppComponentConnection
 {
     Server = "stresstest",
     Password = "youshallnotpass",
@@ -38,7 +38,7 @@ comp.OnReadXml += x
     => Console.WriteLine("recv <<\n{0}\n", x);
 
 comp.OnWriteXml += x
-    => Console.WriteLine("send >>\n{0}\n", x);*/
+    => Console.WriteLine("send >>\n{0}\n", x);
 
 comp.OnError += ex =>
 {
@@ -56,6 +56,7 @@ comp.OnDisconnected += () =>
 };
 
 await comp.ConnectAsync();
+*/
 
 for (int i = 0; i < 512; i++)
     bots.Add(new StressTestBot(i));
@@ -86,9 +87,9 @@ await Task.Delay(-1);
 
 class StressTestBot : IDisposable
 {
-    int _botId;
+    readonly int _botId;
     XmppClientConnection? _connection;
-    Timer _timer;
+    readonly Timer _timer;
 
     public StressTestBot(int botId)
     {
@@ -118,7 +119,7 @@ class StressTestBot : IDisposable
             Password = "youshallnotpass",
             Resource = $"bot_{_botId}",
             ConnectServer = new IPEndPoint(IPAddress.Loopback, 5222),
-            Server = "localhost",
+            Server = "warface",
             AuthenticationMechanism = "PLAIN",
             SslOptions =
             {

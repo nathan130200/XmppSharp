@@ -5,6 +5,8 @@ namespace XmppSharp.Protocol.Base;
 [XmppEnum]
 public enum StanzaErrorCondition
 {
+    Unspecified = -1,
+
     [XmppMember("bad-request")]
     BadRequest,
 

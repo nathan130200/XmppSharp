@@ -11,37 +11,37 @@ public class StreamError : XmppElement
 
     }
 
-    public StreamError(StreamErrorCondition? condition) : this()
+    public StreamError(StreamErrorCondition condition) : this()
     {
         Condition = condition;
     }
 
-    public StreamError(StreamErrorCondition? condition, string? text) : this(condition)
+    public StreamError(StreamErrorCondition condition, string? text) : this(condition)
     {
         Text = text;
     }
 
-    public StreamErrorCondition? Condition
+    public StreamErrorCondition Condition
     {
         get
         {
             foreach (var (name, value) in XmppEnum.XmlMapping<StreamErrorCondition>())
             {
-                if (HasTag(name))
+                if (HasTag(name, Namespaces.Streams))
                     return value;
             }
 
-            return default;
+            return StreamErrorCondition.Unspecified;
         }
         set
         {
             foreach (var name in XmppEnum.GetXmlNames<StreamErrorCondition>())
-                RemoveTag(name);
+                RemoveTag(name, Namespaces.Streams);
 
-            if (value.HasValue)
+            if (Enum.IsDefined(value) && value != StreamErrorCondition.Unspecified)
             {
-                var name = XmppEnum.ToXml((StreamErrorCondition)value)!;
-                SetTag(name);
+                var name = XmppEnum.ToXml(value)!;
+                SetTag(name, Namespaces.Streams);
             }
         }
     }

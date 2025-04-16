@@ -228,7 +228,7 @@ public class XmppElement : XmppNode
 
     public override XmppNode Clone()
     {
-        var result = (XmppElement)Activator.CreateInstance(GetType())!;
+        var result = XmppElementFactory.Create(TagName, GetNamespace(Prefix), Parent);
 
         lock (_attributes)
         {

@@ -6,6 +6,7 @@ using XmppSharp.Exceptions;
 using XmppSharp.Protocol;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Client;
+using XmppSharp.Protocol.Extensions.XEP0199;
 using XmppSharp.Protocol.Sasl;
 using XmppSharp.Protocol.Tls;
 using XmppSharp.Sasl;
@@ -21,6 +22,8 @@ public sealed class XmppClientConnection : XmppConnection
     public string Server { get; set; }
     public string Resource { get; set; }
     public string Password { get; set; }
+    public bool AutoPing { get; set; } = true;
+    public bool AutoPresence { get; set; } = false;
     public EndPoint ConnectServer { get; set; }
     public string AuthenticationMechanism { get; set; }
     public SslClientAuthenticationOptions SslOptions { get; set; } = new();
@@ -111,24 +114,30 @@ public sealed class XmppClientConnection : XmppConnection
                 {
                     if (useSelector && AuthenticationMechanismSelector != null)
                     {
-                        mechanismName = AuthenticationMechanismSelector(features.Mechanisms!.SupportedMechanisms)?.Value;
+                        var selectedMechanismName = AuthenticationMechanismSelector(features.Mechanisms!.SupportedMechanisms)?.Value;
 
-                        if (string.IsNullOrWhiteSpace(mechanismName))
+                        if (!string.IsNullOrWhiteSpace(selectedMechanismName))
                         {
-                            // client rejected all mechanisms
-                            goto _invalidMechanism;
+                            mechanismName = selectedMechanismName;
+                            goto _initMechanism;
                         }
 
                         // attempt to validate mechanism again based on server provided mechanisms.
                         useSelector = false;
                         goto _validateMechanism;
                     }
+                    else if (!useSelector)
+                    {
+                        // server support our mechanism, skip to sasl init.
+                        if (features.Mechanisms.IsMechanismSupported(mechanismName))
+                            goto _initMechanism;
 
-                _invalidMechanism:
-
-                    // we cannot authenticate
-                    throw new JabberException($"SASL mechanism '{mechanismName}' not supported.");
+                        // we cannot authenticate
+                        throw new JabberException($"SASL mechanism '{mechanismName}' not supported.");
+                    }
                 }
+
+            _initMechanism:
 
                 // attempt to create sasl handler from mechanism name.
                 if (!SaslFactory.TryCreate(mechanismName, this, out var handler))
@@ -151,8 +160,10 @@ public sealed class XmppClientConnection : XmppConnection
 
             else if (e is { DefaultNamespace: Namespaces.Sasl } el)
             {
-                if (_saslHandler.Invoke(el)) // auth success == returns true,
-                                             // continue processing sasl = returns false
+                // auth success == returns true,
+                // continue processing sasl = returns false
+
+                if (_saslHandler.Invoke(el))
                 {
                     IsAuthenticated = true;
                     Jid = new(User, Server, default);
@@ -164,24 +175,22 @@ public sealed class XmppClientConnection : XmppConnection
 
                 return;
             }
-
-            else
-            {
-                throw new JabberException("Unsupported stanza type.");
-            }
         }
         else
         {
             if (!IsSessionStarted)
             {
                 if (e is StreamFeatures features)
+                {
                     _ = InitSession(features.SupportsBind, features.SupportsSession);
+                    return;
+                }
             }
             else
             {
                 if (e is Stanza stz)
                 {
-                    if (stz is Iq iq && iq.Query is { TagName: "ping", Namespace: Namespaces.Ping })
+                    if (stz is Iq iq && iq.Query is Ping && AutoPing)
                     {
                         iq.SwitchDirection();
                         iq.Type = IqType.Result;
@@ -248,6 +257,16 @@ public sealed class XmppClientConnection : XmppConnection
                 await DoSessionStart();
 
             IsSessionStarted = true;
+
+            if (AutoPresence)
+            {
+                Send(new Presence
+                {
+                    Type = PresenceType.Available,
+                    To = Server,
+                    Priority = 1
+                });
+            }
 
             FireOnSessionStarted();
         }

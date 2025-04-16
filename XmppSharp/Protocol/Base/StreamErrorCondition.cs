@@ -5,6 +5,8 @@ namespace XmppSharp.Protocol.Base;
 [XmppEnum]
 public enum StreamErrorCondition
 {
+    Unspecified = -1,
+
     [XmppMember("bad-format")]
     BadFormat,
 
