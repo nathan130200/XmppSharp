@@ -49,7 +49,7 @@ public class XmppDocument
 
     public void Load(TextReader textReader)
     {
-        Throw.IfNull(textReader);
+        ArgumentNullException.ThrowIfNull(textReader);
 
         var settings = new XmlReaderSettings
         {

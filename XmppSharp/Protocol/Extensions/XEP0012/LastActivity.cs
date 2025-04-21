@@ -19,7 +19,7 @@ public class LastActivity : XmppElement
 
     public ulong? Seconds
     {
-        get => (ulong?)this.GetAttributeInt64("seconds");
+        get => this.GetAttribute<ulong>("seconds");
         set
         {
             if (!value.HasValue)

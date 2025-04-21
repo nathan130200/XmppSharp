@@ -1,6 +1,7 @@
 ﻿#nullable enable annotations
 
 using Expat;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace XmppSharp;
 

@@ -55,8 +55,8 @@ public static class Xml
 
     public static IEnumerable<T> ForEach<T>(this IEnumerable<T> source, Action<T> callback)
     {
-        Throw.IfNull(source);
-        Throw.IfNull(callback);
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(callback);
 
         if (source.Any())
         {
@@ -69,15 +69,15 @@ public static class Xml
 
     public static XmppElement? Element(this XmppElement parent, Func<XmppElement, bool> predicate)
     {
-        Throw.IfNull(parent);
-        Throw.IfNull(predicate);
+        ArgumentNullException.ThrowIfNull(parent);
+        ArgumentNullException.ThrowIfNull(predicate);
         return parent.Elements().FirstOrDefault(predicate);
     }
 
     public static IEnumerable<XmppElement> Elements(this XmppElement parent, Func<XmppElement, bool> predicate)
     {
-        Throw.IfNull(parent);
-        Throw.IfNull(predicate);
+        ArgumentNullException.ThrowIfNull(parent);
+        ArgumentNullException.ThrowIfNull(predicate);
         return parent.Elements().Where(predicate);
     }
 
@@ -100,7 +100,7 @@ public static class Xml
 
     public static XmppElement C(this XmppElement parent, string tagName, string? xmlns = default, object? value = default)
     {
-        Throw.IfNull(parent);
+        ArgumentNullException.ThrowIfNull(parent);
 
         if (xmlns == null)
         {
@@ -116,7 +116,7 @@ public static class Xml
 
     public static XmppElement Up(this XmppElement child)
     {
-        Throw.IfNull(child);
+        ArgumentNullException.ThrowIfNull(child);
         return child.Parent!;
     }
 

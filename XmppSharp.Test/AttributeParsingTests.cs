@@ -1,4 +1,5 @@
-﻿using XmppSharp.Dom;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using XmppSharp.Dom;
 using XmppSharp.Extensions;
 
 namespace XmppSharp;
@@ -13,7 +14,7 @@ public class AttributeParsingTests
         el.SetAttribute("foo", "bar");
 
         var cond = el.GetAttributeBool("checked");
-        Assert.IsFalse(cond);
+        Assert.IsNull(cond);
     }
 
     [TestMethod]
@@ -22,7 +23,7 @@ public class AttributeParsingTests
         var el = new XmppElement("sample");
         el.SetAttribute("count", 1);
 
-        var item = el.GetAttributeInt32("count");
+        var item = el.GetAttribute<int>("count");
         Assert.AreEqual(1, item);
     }
 
@@ -33,20 +34,21 @@ public class AttributeParsingTests
         el.SetAttribute("my_float", 1.25f);
         el.SetAttribute("my_double", double.Epsilon);
         el.SetAttribute("my_bool_as_int", 1);
-        el.SetAttribute("my_bool_as_string", "false"); ;
+        el.SetAttribute("my_bool_as_string", "false");
+        ;
 
         Console.WriteLine(el.ToString());
 
-        var myFloat = el.GetAttributeFloat("my_float", 0f);
+        var myFloat = el.GetAttribute("my_float", 0f);
         Assert.AreEqual(1.25f, myFloat);
 
-        var myDouble = el.GetAttributeDouble("my_double", 0d);
+        var myDouble = el.GetAttribute("my_double", 0d);
         Assert.AreEqual(double.Epsilon, myDouble);
 
-        var myBool = el.GetAttributeBool("my_bool_as_int", false);
+        var myBool = el.GetAttributeBool("my_bool_as_int");
         Assert.AreEqual(true, myBool);
 
-        myBool = el.GetAttributeBool("my_bool_as_string", true);
+        myBool = el.GetAttributeBool("my_bool_as_string");
         Assert.AreEqual(false, myBool);
     }
 }

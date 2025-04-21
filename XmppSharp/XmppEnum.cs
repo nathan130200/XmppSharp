@@ -44,7 +44,7 @@ public static class XmppEnum
 
     public static T FromXmlOrThrow<T>(string? s) where T : struct, Enum
     {
-        Throw.IfNullOrWhiteSpace(s);
+        ArgumentException.ThrowIfNullOrWhiteSpace(s);
 
         var result = FromXml<T>(s);
 

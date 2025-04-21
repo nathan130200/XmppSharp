@@ -60,7 +60,7 @@ public class StanzaError : XmppElement
 
     public int? Code
     {
-        get => this.GetAttributeInt32("code");
+        get => this.GetAttribute<int>("code");
         set
         {
             if (!value.HasValue)
@@ -72,7 +72,7 @@ public class StanzaError : XmppElement
 
     public int? CustomCode
     {
-        get => this.GetAttributeInt32("custom_code");
+        get => this.GetAttribute<int>("custom_code");
         set
         {
             if (!value.HasValue)

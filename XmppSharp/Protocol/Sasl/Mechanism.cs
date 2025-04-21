@@ -13,7 +13,7 @@ public class Mechanism : XmppElement
 
     public Mechanism(string mechanismName) : this()
     {
-        Throw.IfNullOrWhiteSpace(mechanismName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(mechanismName);
         Value = mechanismName;
     }
 }

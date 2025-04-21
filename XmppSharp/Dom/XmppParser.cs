@@ -15,7 +15,7 @@ public interface IXmppParser : IDisposable
 
 public sealed class XmppParser : IXmppParser
 {
-    readonly object _syncRoot = new();
+    readonly Lock _syncRoot = new();
 
     internal XmppElement? _current;
     internal ExpatParser? _xmlParser;

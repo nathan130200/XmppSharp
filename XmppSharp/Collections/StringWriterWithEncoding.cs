@@ -8,7 +8,7 @@ public sealed class StringWriterWithEncoding : StringWriter
 
     public StringWriterWithEncoding(StringBuilder @out, Encoding encoding) : base(@out)
     {
-        Throw.IfNull(encoding);
+        ArgumentNullException.ThrowIfNull(encoding);
 
         _encoding = encoding;
     }

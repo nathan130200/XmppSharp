@@ -1,4 +1,5 @@
-﻿using XmppSharp.Protocol;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using XmppSharp.Protocol;
 
 namespace XmppSharp;
 

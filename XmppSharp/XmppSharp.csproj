@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<XmppSharpVersion>6.2.1</XmppSharpVersion>
+		<XmppSharpVersion>6.3.0</XmppSharpVersion>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -12,7 +12,7 @@
 		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<Description>Lightweight XMPP library.</Description>
-		<TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+		<TargetFramework>net9.0</TargetFramework>
 
 		<PackageId>XmppSharp</PackageId>
 		<PackageVersion>$(XmppSharpVersion)</PackageVersion>

@@ -1,4 +1,5 @@
-﻿using XmppSharp.Collections;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using XmppSharp.Collections;
 
 namespace XmppSharp;
 

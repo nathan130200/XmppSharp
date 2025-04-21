@@ -14,14 +14,14 @@ public static class XmppElementFactory
     {
         add
         {
-            Throw.IfNull(value);
+            ArgumentNullException.ThrowIfNull(value);
 
             lock (_callbacks)
                 _callbacks.Add(value);
         }
         remove
         {
-            Throw.IfNull(value);
+            ArgumentNullException.ThrowIfNull(value);
 
             lock (_callbacks)
                 _callbacks.Remove(value);
@@ -42,7 +42,7 @@ public static class XmppElementFactory
 
     public static void RegisterType(Type type)
     {
-        Throw.IfNull(type);
+        ArgumentNullException.ThrowIfNull(type);
 
         var tags = type.GetCustomAttributes<XmppTagAttribute>();
 
@@ -57,7 +57,7 @@ public static class XmppElementFactory
 
     public static void RegisterAssembly(Assembly assembly)
     {
-        Throw.IfNull(assembly);
+        ArgumentNullException.ThrowIfNull(assembly);
 
         var elements = from type in assembly.GetTypes()
                        where !type.IsAbstract && type.IsSubclassOf(typeof(XmppElement))
@@ -91,7 +91,7 @@ public static class XmppElementFactory
 
     public static Type? ResolveType(string tagName, string? namespaceURI)
     {
-        Throw.IfNullOrWhiteSpace(tagName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tagName);
 
         foreach (var (type, tags) in s_ElementTypes)
         {
@@ -136,7 +136,7 @@ public static class XmppElementFactory
 
     public static XmppElement Create(string tagName, string? namespaceURI, XmppElement? context = default)
     {
-        Throw.IfNullOrWhiteSpace(tagName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tagName);
 
         var type = ResolveType(tagName, namespaceURI);
 

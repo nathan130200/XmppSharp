@@ -15,7 +15,7 @@ public class History : XmppElement
 
     public int? MaxChars
     {
-        get => this.GetAttributeInt32("maxchars");
+        get => this.GetAttribute<int>("maxchars");
         set
         {
             if (!value.HasValue)
@@ -27,7 +27,7 @@ public class History : XmppElement
 
     public int? MaxStanzas
     {
-        get => this.GetAttributeInt32("maxstanzas");
+        get => this.GetAttribute<int>("maxstanzas");
         set
         {
             if (!value.HasValue)
@@ -39,7 +39,7 @@ public class History : XmppElement
 
     public int? Seconds
     {
-        get => this.GetAttributeInt32("seconds");
+        get => this.GetAttribute<int>("seconds");
         set
         {
             if (!value.HasValue)

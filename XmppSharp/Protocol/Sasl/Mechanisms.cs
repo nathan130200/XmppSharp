@@ -16,7 +16,7 @@ public class Mechanisms : XmppElement
         get => Elements<Mechanism>();
         set
         {
-            Throw.IfNull(value);
+            ArgumentNullException.ThrowIfNull(value);
 
             Elements<Mechanism>()?.Remove();
 

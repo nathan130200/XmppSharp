@@ -19,7 +19,7 @@ public class Status : XmppElement
 
     public int? Code
     {
-        get => this.GetAttributeInt32("code");
+        get => this.GetAttribute<int>("code");
         set
         {
             if (!value.HasValue)
