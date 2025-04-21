@@ -24,10 +24,10 @@ public abstract class XmppConnection : IDisposable
 
     protected internal Stream? _stream;
     protected internal XmppParser? _parser;
-    protected volatile IoState _ioState;
+    protected volatile StreamState _streamState;
 
     [Flags]
-    protected enum IoState
+    protected enum StreamState
     {
         Read = 0b01,
         Write = 0b10,
@@ -116,7 +116,7 @@ public abstract class XmppConnection : IDisposable
             }
         };
 
-        _ioState = IoState.ReadWrite;
+        _streamState = StreamState.ReadWrite;
 
         InitConnection();
 
@@ -168,7 +168,7 @@ public abstract class XmppConnection : IDisposable
             {
                 await Task.Delay(16);
 
-                if (!_ioState.HasFlag(IoState.Read))
+                if (!_streamState.HasFlag(StreamState.Read))
                     continue;
 
                 int len = await _stream!.ReadAsync(buffer, CancellationToken.None);
@@ -199,7 +199,7 @@ public abstract class XmppConnection : IDisposable
             {
                 await Task.Delay(16);
 
-                if (!_ioState.HasFlag(IoState.Write))
+                if (!_streamState.HasFlag(StreamState.Write))
                     continue;
 
                 if (_sendQueue?.TryDequeue(out var entry) == true)
@@ -280,7 +280,7 @@ public abstract class XmppConnection : IDisposable
         Send(xml.Append(Xml.XmppStreamEnd).ToString());
     }
 
-    protected virtual void Cleanup()
+    protected virtual void Disposing()
     {
 
     }
@@ -291,9 +291,9 @@ public abstract class XmppConnection : IDisposable
             return;
 
         _disposed = 1;
-        _ioState &= ~IoState.Read;
+        _streamState &= ~StreamState.Read;
 
-        Cleanup();
+        Disposing();
 
         if (_callbacks != null)
         {
@@ -309,7 +309,7 @@ public abstract class XmppConnection : IDisposable
 
         _ = Task.Run(async () =>
         {
-            if (_ioState.HasFlag(IoState.Write))
+            if (_streamState.HasFlag(StreamState.Write))
             {
                 var tcs = new TaskCompletionSource();
                 _sendQueue.Enqueue(new() { Completion = tcs });
@@ -327,7 +327,7 @@ public abstract class XmppConnection : IDisposable
             }
 
             _disposed = 2;
-            _ioState &= ~IoState.Write;
+            _streamState &= ~StreamState.Write;
 
             try
             {

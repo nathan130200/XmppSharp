@@ -6,7 +6,6 @@ using XmppSharp.Exceptions;
 using XmppSharp.Protocol;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Client;
-using XmppSharp.Protocol.Extensions.XEP0199;
 using XmppSharp.Protocol.Sasl;
 using XmppSharp.Protocol.Tls;
 using XmppSharp.Sasl;
@@ -22,19 +21,22 @@ public sealed class XmppClientConnection : XmppConnection
     public string Server { get; set; }
     public string Resource { get; set; }
     public string Password { get; set; }
-    public bool AutoPing { get; set; } = true;
-    public bool AutoPresence { get; set; } = false;
+    //public bool AutoPing { get; set; } = true;
+    //public bool AutoPresence { get; set; } = false;
     public EndPoint ConnectServer { get; set; }
     public string AuthenticationMechanism { get; set; }
     public SslClientAuthenticationOptions SslOptions { get; set; } = new();
 
-    private SaslHandler _saslHandler;
+    private SaslHandler? _saslHandler;
 
-    protected override void Cleanup()
+    protected override void Disposing()
     {
         _isConnecting = false;
         IsAuthenticated = false;
         IsSessionStarted = false;
+
+        _saslHandler?.Dispose();
+        _saslHandler = null;
     }
 
     volatile bool _isConnecting = false;
@@ -153,7 +155,7 @@ public sealed class XmppClientConnection : XmppConnection
 
             else if (e is Proceed)
             {
-                _ioState &= ~IoState.Read;
+                _streamState &= ~StreamState.Read;
                 _ = InitClientSsl();
                 return;
             }
@@ -163,7 +165,7 @@ public sealed class XmppClientConnection : XmppConnection
                 // auth success == returns true,
                 // continue processing sasl = returns false
 
-                if (_saslHandler.Invoke(el))
+                if (_saslHandler!.Invoke(el))
                 {
                     IsAuthenticated = true;
                     Jid = new(User, Server, default);
@@ -189,30 +191,20 @@ public sealed class XmppClientConnection : XmppConnection
             else
             {
                 if (e is Stanza stz)
-                {
-                    if (stz is Iq iq && iq.Query is Ping && AutoPing)
-                    {
-                        iq.SwitchDirection();
-                        iq.Type = IqType.Result;
-                        Send(iq);
-                        return;
-                    }
-
                     FireOnStanza(stz);
-                }
             }
         }
     }
 
     void ResetParser()
     {
-        _ioState &= ~IoState.Read;
+        _streamState &= ~StreamState.Read;
 
         _ = Task.Run(() =>
         {
             _parser!.Reset();
             SendStreamHeader();
-            _ioState |= IoState.Read;
+            _streamState |= StreamState.Read;
         });
     }
 
@@ -257,16 +249,6 @@ public sealed class XmppClientConnection : XmppConnection
                 await DoSessionStart();
 
             IsSessionStarted = true;
-
-            if (AutoPresence)
-            {
-                Send(new Presence
-                {
-                    Type = PresenceType.Available,
-                    To = Server,
-                    Priority = 1
-                });
-            }
 
             FireOnSessionStarted();
         }
