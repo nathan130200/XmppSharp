@@ -15,7 +15,6 @@ namespace XmppSharp.Net;
 public sealed class XmppClientConnection : XmppConnection
 {
     public bool IsTlsStarted => _stream is SslStream;
-    public bool IsSessionStarted { get; private set; }
 
     public string User { get; set; }
     public string Server { get; set; }

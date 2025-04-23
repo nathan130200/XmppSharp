@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using XmppSharp.Collections;
-using XmppSharp.Dom;
 
 namespace XmppSharp;
 
@@ -11,9 +10,6 @@ public static class XmppSharpHelpers
 
     public static string GetString(this byte[] bytes, Encoding? encoding = default)
         => (encoding ?? Encoding.UTF8).GetString(bytes);
-
-    public static byte[] GetBytes(this XmppNode node)
-        => node.ToString()!.GetBytes();
 
     public static bool IsBareEquals(this Jid? jid, Jid? other)
         => BareJidComparer.Shared.Compare(jid, other) == 0;

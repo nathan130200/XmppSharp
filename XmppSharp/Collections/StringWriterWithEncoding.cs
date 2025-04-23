@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace XmppSharp.Dom;
+namespace XmppSharp.Collections;
 
 public sealed class StringWriterWithEncoding : StringWriter
 {

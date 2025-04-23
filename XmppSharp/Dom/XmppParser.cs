@@ -1,9 +1,8 @@
 ﻿using System.Xml;
 using Expat;
-using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
 
-namespace XmppSharp;
+namespace XmppSharp.Dom;
 
 public interface IXmppParser : IDisposable
 {

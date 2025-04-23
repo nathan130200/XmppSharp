@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Xml;
 using System.Xml.Schema;
+using XmppSharp.Collections;
 
 namespace XmppSharp.Dom;
 

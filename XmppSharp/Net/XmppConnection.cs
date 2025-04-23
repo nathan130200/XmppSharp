@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Text;
 using XmppSharp.Dom;
 using XmppSharp.Exceptions;
+using XmppSharp.Net.Extensions.Abstractions;
 using XmppSharp.Protocol.Base;
 
 namespace XmppSharp.Net;
@@ -25,6 +26,44 @@ public abstract class XmppConnection : IDisposable
     protected internal Stream? _stream;
     protected internal XmppParser? _parser;
     protected volatile StreamState _streamState;
+    private readonly List<BaseExtension> _modules = [];
+
+    public void RegisterExtension(BaseExtension module)
+    {
+        ArgumentNullException.ThrowIfNull(module);
+
+        lock (_modules)
+        {
+            try
+            {
+                if (IsSessionStarted)
+                    module.Setup(this);
+
+                _modules.Add(module);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to initialize module: {module.GetType().FullName}", ex);
+            }
+        }
+    }
+
+    public void UnregisterExtension(BaseExtension module)
+    {
+        ArgumentNullException.ThrowIfNull(module);
+
+        lock (_modules)
+            _modules.Remove(module);
+
+        try
+        {
+            module.Dispose();
+        }
+        catch (Exception ex)
+        {
+            FireOnError(new InvalidOperationException($"Failed to dispose module: {module.GetType().FullName}", ex));
+        }
+    }
 
     [Flags]
     protected enum StreamState
@@ -39,14 +78,50 @@ public abstract class XmppConnection : IDisposable
     public string StreamId { get; protected set; }
     public virtual Jid Jid { get; protected internal set; }
     public bool IsAuthenticated { get; protected internal set; }
-    public bool IsConnected => _disposed == 0;
+    public bool IsSessionStarted { get; protected internal set; }
+    public bool IsConnected { get; private set; }
 
     public event Action OnConnected;
     public event Action OnSessionStarted;
     public event Action OnDisconnected;
 
     protected void FireOnConnected() => OnConnected?.Invoke();
-    protected void FireOnSessionStarted() => OnSessionStarted?.Invoke();
+
+    protected void FireOnSessionStarted()
+    {
+        try
+        {
+            OnSessionStarted?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            FireOnError(ex);
+        }
+
+        lock (_modules)
+        {
+            var exceptions = new List<Exception>();
+
+            foreach (var module in _modules)
+            {
+                if (module.Initialized)
+                    continue;
+
+                try
+                {
+                    module.Setup(this);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
+            }
+
+            if (exceptions.Count > 0)
+                FireOnError(new AggregateException("One or more modules failed to setup.", exceptions));
+        }
+    }
+
     protected void FireOnDisconnected() => OnDisconnected?.Invoke();
 
     public event Action<Exception>? OnError;
@@ -55,6 +130,8 @@ public abstract class XmppConnection : IDisposable
 
     protected void InitParser()
     {
+        IsConnected = true;
+
         _disposed = 0;
 
         _parser = new XmppParser();
@@ -135,7 +212,7 @@ public abstract class XmppConnection : IDisposable
 
     }
 
-    protected void FireOnError(Exception ex) => OnError?.Invoke(ex);
+    protected internal void FireOnError(Exception ex) => OnError?.Invoke(ex);
     protected void FireOnStanza(Stanza stz) => OnStanza?.Invoke(stz);
 
     public async Task<Stanza> RequestStanza(Stanza stz, TimeSpan timeout = default, CancellationToken token = default)
@@ -228,7 +305,7 @@ public abstract class XmppConnection : IDisposable
         }
         finally
         {
-            while (_sendQueue.TryDequeue(out var entry))
+            while (_sendQueue?.TryDequeue(out var entry) == true)
                 entry.Completion?.TrySetCanceled();
 
             Dispose();
@@ -243,7 +320,7 @@ public abstract class XmppConnection : IDisposable
         _sendQueue.Enqueue(entry);
     }
 
-    public void Send(string xml)
+    protected internal void Send(string xml)
     {
         if (_disposed > 1)
             return;
@@ -262,9 +339,28 @@ public abstract class XmppConnection : IDisposable
 
         AddToSendQueue(new()
         {
-            Bytes = element.ToString().GetBytes(),
+            Bytes = element.ToString(false).GetBytes(),
             DebugXml = OnWriteXml != null ? element.ToString(true) : null
         });
+    }
+
+    public async Task SendAsync(XmppElement e)
+    {
+        await Task.Yield();
+
+        if (_disposed > 1)
+            return;
+
+        var tcs = new TaskCompletionSource();
+
+        AddToSendQueue(new()
+        {
+            Bytes = e.ToString(false).GetBytes(),
+            DebugXml = OnWriteXml != null ? e.ToString(true) : null,
+            Completion = tcs
+        });
+
+        await tcs.Task;
     }
 
     public void Disconnect(XmppElement? element = default)
@@ -292,6 +388,29 @@ public abstract class XmppConnection : IDisposable
 
         _disposed = 1;
         _streamState &= ~StreamState.Read;
+        IsConnected = false;
+
+        lock (_modules)
+        {
+            var exceptions = new List<Exception>();
+
+            foreach (var module in _modules)
+            {
+                try
+                {
+                    module.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
+            }
+
+            if (exceptions.Count > 0)
+                FireOnError(new AggregateException("One or more modules failed to dispose.", exceptions));
+
+            _modules.Clear();
+        }
 
         Disposing();
 
@@ -357,5 +476,3 @@ public abstract class XmppConnection : IDisposable
 
     }
 }
-
-#nullable restore
