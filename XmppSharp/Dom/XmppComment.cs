@@ -3,8 +3,8 @@ using System.Xml;
 
 namespace XmppSharp.Dom;
 
-[DebuggerDisplay("Text: {Value,nq}")]
-public class XmppText : XmppNode
+[DebuggerDisplay("Comment: {Value,nq}")]
+public class XmppComment : XmppNode
 {
     public string? Value
     {
@@ -12,22 +12,22 @@ public class XmppText : XmppNode
         set;
     }
 
-    public XmppText()
+    public XmppComment()
     {
 
     }
 
-    public XmppText(string? value)
+    public XmppComment(string? value)
     {
         Value = value;
     }
 
     public override string ToString()
-        => Value ?? string.Empty;
+        => $"<!--{Value}-->";
 
     public override XmppNode Clone()
-        => new XmppText(Value);
+        => new XmppComment(Value);
 
     public override void WriteTo(XmlWriter writer)
-        => writer.WriteString(Value);
+        => writer.WriteComment(Value);
 }

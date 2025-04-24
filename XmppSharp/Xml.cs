@@ -96,7 +96,11 @@ public static class Xml
     }
 
     public static XmppElement Element(string tagName, string? xmlns = default, object? value = default)
-        => new(tagName, xmlns, value);
+    {
+        var result = XmppElementFactory.Create(tagName, xmlns);
+        result.SetValue(value);
+        return result;
+    }
 
     public static XmppElement C(this XmppElement parent, string tagName, string? xmlns = default, object? value = default)
     {

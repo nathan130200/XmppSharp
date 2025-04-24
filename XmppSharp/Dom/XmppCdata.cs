@@ -3,8 +3,10 @@ using System.Xml;
 
 namespace XmppSharp.Dom;
 
-[DebuggerDisplay("Text: {Value,nq}")]
-public class XmppText : XmppNode
+// ---------------------------------------------------- //
+
+[DebuggerDisplay("Cdata: {Value,nq}")]
+public class XmppCdata : XmppNode
 {
     public string? Value
     {
@@ -12,22 +14,22 @@ public class XmppText : XmppNode
         set;
     }
 
-    public XmppText()
+    public XmppCdata()
     {
 
     }
 
-    public XmppText(string? value)
+    public XmppCdata(string? value)
     {
         Value = value;
     }
 
     public override string ToString()
-        => Value ?? string.Empty;
+        => $"<![CDATA[{Value}]]>";
 
     public override XmppNode Clone()
-        => new XmppText(Value);
+        => new XmppCdata(Value);
 
     public override void WriteTo(XmlWriter writer)
-        => writer.WriteString(Value);
+        => writer.WriteCData(Value);
 }

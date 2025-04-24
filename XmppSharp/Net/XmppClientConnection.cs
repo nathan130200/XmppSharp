@@ -20,11 +20,10 @@ public sealed class XmppClientConnection : XmppConnection
     public string Server { get; set; }
     public string Resource { get; set; }
     public string Password { get; set; }
-    //public bool AutoPing { get; set; } = true;
-    //public bool AutoPresence { get; set; } = false;
     public EndPoint ConnectServer { get; set; }
     public string AuthenticationMechanism { get; set; }
-    public SslClientAuthenticationOptions SslOptions { get; set; } = new();
+    public SslClientAuthenticationOptions SslOptions { get; set; }
+    public bool UseDirectTls { get; set; }
 
     private SaslHandler? _saslHandler;
 
@@ -40,6 +39,20 @@ public sealed class XmppClientConnection : XmppConnection
 
     volatile bool _isConnecting = false;
 
+    SslClientAuthenticationOptions GetSslOptions()
+    {
+        var result = SslOptions ??= new();
+
+        result.TargetHost ??= Server;
+
+        result.RemoteCertificateValidationCallback ??= delegate
+        {
+            return true;
+        };
+
+        return result;
+    }
+
     public async Task ConnectAsync()
     {
         if (_isConnecting)
@@ -52,6 +65,14 @@ public sealed class XmppClientConnection : XmppConnection
             var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             await socket.ConnectAsync(ConnectServer);
             _stream = new NetworkStream(socket, true);
+
+            if (UseDirectTls)
+            {
+                var temp = new SslStream(_stream);
+                await temp.AuthenticateAsClientAsync(GetSslOptions());
+                _stream = temp;
+            }
+
             FireOnConnected();
             InitParser();
         }
@@ -87,7 +108,7 @@ public sealed class XmppClientConnection : XmppConnection
         StreamId = e.Id!;
     }
 
-    public Func<IEnumerable<Mechanism>, Mechanism> AuthenticationMechanismSelector { get; set; }
+    public Func<IEnumerable<Mechanism>, Mechanism?> SaslMechanismSelector { get; set; }
 
     protected override void HandleStreamElement(XmppElement e)
     {
@@ -95,7 +116,7 @@ public sealed class XmppClientConnection : XmppConnection
         {
             if (e is StreamFeatures features)
             {
-                if (features.StartTls != null && _stream is not SslStream)
+                if (features.StartTls != null && !IsTlsStarted && !UseDirectTls)
                 {
                     Send(new StartTls());
                     return;
@@ -104,48 +125,21 @@ public sealed class XmppClientConnection : XmppConnection
                 if (features.Mechanisms == null)
                     throw new JabberException("SASL not supported.");
 
-                var mechanismName = !string.IsNullOrWhiteSpace(AuthenticationMechanism)
-                    ? AuthenticationMechanism : "PLAIN";
+                string mechanismName;
 
-                var useSelector = true;
-
-            _validateMechanism:
-
-                if (!features.Mechanisms.IsMechanismSupported(mechanismName!))
+                if (SaslMechanismSelector == null)
+                    mechanismName = !string.IsNullOrWhiteSpace(AuthenticationMechanism)
+                        ? AuthenticationMechanism : "PLAIN";
+                else
                 {
-                    if (useSelector && AuthenticationMechanismSelector != null)
-                    {
-                        var selectedMechanismName = AuthenticationMechanismSelector(features.Mechanisms!.SupportedMechanisms)?.Value;
+                    var targetMechanism = SaslMechanismSelector(features.Mechanisms.SupportedMechanisms)
+                                          ?? throw new JabberException("Mechanism selector didn't found any valid mechanism.");
 
-                        if (!string.IsNullOrWhiteSpace(selectedMechanismName))
-                        {
-                            mechanismName = selectedMechanismName;
-                            goto _initMechanism;
-                        }
-
-                        // attempt to validate mechanism again based on server provided mechanisms.
-                        useSelector = false;
-                        goto _validateMechanism;
-                    }
-                    else if (!useSelector)
-                    {
-                        // server support our mechanism, skip to sasl init.
-                        if (features.Mechanisms.IsMechanismSupported(mechanismName))
-                            goto _initMechanism;
-
-                        // we cannot authenticate
-                        throw new JabberException($"SASL mechanism '{mechanismName}' not supported.");
-                    }
+                    mechanismName = targetMechanism.Value!;
                 }
 
-            _initMechanism:
-
-                // attempt to create sasl handler from mechanism name.
                 if (!SaslFactory.TryCreate(mechanismName, this, out var handler))
-                {
-                    // mechanism not implemented by the client or extending library.
                     throw new JabberException($"Unable to create SASL handler for mechanism '{mechanismName}'");
-                }
 
                 // assign sasl handler and send first auth packet.
                 _saslHandler = handler;
@@ -218,8 +212,7 @@ public sealed class XmppClientConnection : XmppConnection
             try
             {
                 _stream = new SslStream(_stream!);
-                SslOptions.TargetHost ??= Server;
-                await ((SslStream)_stream).AuthenticateAsClientAsync(SslOptions);
+                await ((SslStream)_stream).AuthenticateAsClientAsync(GetSslOptions());
 
                 ResetParser();
             }

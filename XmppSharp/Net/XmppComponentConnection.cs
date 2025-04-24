@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
@@ -11,10 +12,13 @@ public class XmppComponentConnection : XmppConnection
     public string Server { get; set; }
     public string Password { get; set; }
     public EndPoint ConnectServer { get; set; }
+    public SslClientAuthenticationOptions SslOptions { get; set; }
+    public bool UseDirectTls { get; set; }
 
     volatile bool _isConnecting = false;
 
-    public async Task ConnectAsync()
+
+    public virtual async Task ConnectAsync()
     {
         if (_isConnecting)
             return;
@@ -26,6 +30,16 @@ public class XmppComponentConnection : XmppConnection
             var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             await socket.ConnectAsync(ConnectServer);
             _stream = new NetworkStream(socket, true);
+
+            if (UseDirectTls)
+            {
+                var temp = new SslStream(_stream);
+                await temp.AuthenticateAsClientAsync(GetSslOptions());
+                _stream = temp;
+
+                temp = null;
+            }
+
             FireOnConnected();
             InitParser();
         }
@@ -40,6 +54,19 @@ public class XmppComponentConnection : XmppConnection
         }
     }
 
+    SslClientAuthenticationOptions GetSslOptions()
+    {
+        var result = SslOptions ??= new();
+
+        result.TargetHost ??= Server;
+
+        result.RemoteCertificateValidationCallback ??= delegate
+        {
+            return true;
+        };
+
+        return result;
+    }
 
     protected override void InitConnection()
     {

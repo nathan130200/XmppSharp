@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Xml;
 
 namespace XmppSharp.Dom;
 
@@ -25,4 +26,6 @@ public abstract class XmppNode : ICloneable
         => _parent?.RemoveChild(this);
 
     public static string operator +(XmppNode left, object right) => string.Concat(left, right);
+
+    public abstract void WriteTo(XmlWriter writer);
 }

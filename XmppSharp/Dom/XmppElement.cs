@@ -44,7 +44,7 @@ public class XmppElement : XmppNode
     }
 
     public XmppElement? this[string tagName] => Element(tagName);
-    public XmppElement? this[string tagName, string? xmlns] => Element(tagName, xmlns);
+    public XmppElement? this[string tagName, string? namespaceUri] => Element(tagName, namespaceUri);
 
     public string TagName
     {
@@ -60,10 +60,7 @@ public class XmppElement : XmppNode
             ArgumentException.ThrowIfNullOrWhiteSpace(value);
 
             var hasPrefix = Xml.ExtractQualifiedName(value, out var prefix, out var localName);
-
-            if (hasPrefix)
-                Prefix = prefix;
-
+            Prefix = !hasPrefix ? null : prefix;
             LocalName = localName;
         }
     }
@@ -124,10 +121,8 @@ public class XmppElement : XmppNode
 
     public void SetValue(object? content, IFormatProvider? format = default)
     {
-        format ??= CultureInfo.InvariantCulture;
-
         if (content != null)
-            Value = Convert.ToString(content, format);
+            Value = Convert.ToString(content, format ?? CultureInfo.InvariantCulture);
     }
 
     public void AddChild(XmppNode? node)
@@ -329,14 +324,44 @@ public class XmppElement : XmppNode
             return _children.ToArray();
     }
 
-    public void WriteTo(TextWriter textWriter, XmppFormatting formatting = XmppFormatting.Default)
+    public string InnerXml
     {
-        using var writer = Xml.CreateWriter(textWriter, formatting);
-        Xml.WriteTree(this, writer);
+        get
+        {
+            var sb = new StringBuilder();
+
+            foreach (var node in Nodes())
+            {
+                using (var sw = new StringWriter(sb))
+                using (var xw = Xml.CreateWriter(sw, XmppFormatting.Default, Encoding.UTF8))
+                    node.WriteTo(xw);
+            }
+
+            return sb.ToString();
+        }
+        set
+        {
+            RemoveNodes();
+
+            if (!string.IsNullOrEmpty(value))
+            {
+                var doc = new XmppDocument();
+                doc.Parse(value);
+                AddChild(doc.RootElement);
+            }
+        }
     }
 
-    public void WriteTo(XmlWriter writer)
-        => Xml.WriteTree(this, writer);
+    public void WriteTo(TextWriter textWriter, XmppFormatting formatting = XmppFormatting.Default)
+    {
+        using (var writer = Xml.CreateWriter(textWriter, formatting))
+            WriteTo(writer);
+    }
+
+    public override void WriteTo(XmlWriter writer)
+    {
+        Xml.WriteTree(this, writer);
+    }
 
     public void Save(Stream stream, XmppFormatting formatting = XmppFormatting.Default)
     {
@@ -424,14 +449,8 @@ public class XmppElement : XmppNode
     public void RemoveTag(string tagName, string? namespaceURI = default)
         => Element(tagName, namespaceURI)?.Remove();
 
-    public void RemoveTags(string tagName, string? namespaceURI = default)
-        => Elements(tagName, namespaceURI).Remove();
-
     public string? GetTag(string tagName, string? namespaceURI = default)
         => Element(tagName, namespaceURI)?.Value;
-
-    public IEnumerable<string> GetTags(string tagName, string? namespaceURI = default)
-        => Elements(tagName, namespaceURI).Select(x => x.Value!);
 
     public T? Element<T>() where T : XmppElement
         => Elements().OfType<T>().FirstOrDefault();
