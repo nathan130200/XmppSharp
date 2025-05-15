@@ -1,8 +1,7 @@
-﻿using System.Net;
+using System.Net;
 using XmppSharp.Net;
-using XmppSharp.Net.Extensions;
 
-using var connection = new XmppComponentConnection
+using var connection = new XmppOutboundComponentConnection
 {
     Server = "xmppsharp",
     ConnectServer = new DnsEndPoint("localhost", 5275),

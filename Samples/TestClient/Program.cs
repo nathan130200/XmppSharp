@@ -1,21 +1,15 @@
-﻿using System.Net;
+using System.Net;
 using XmppSharp.Net;
-using XmppSharp.Net.Extensions;
 
-using var client = new XmppClientConnection
+using var client = new XmppOutboundClientConnection
 {
-    Server = "localhost",
-    ConnectServer = new DnsEndPoint("localhost", 5222),
     User = "xmppsharp",
+    Server = "localhost",
+    Resource = Environment.MachineName,
+    EndPoint = new DnsEndPoint("localhost", 5222),
     Password = "youshallnotpass",
-    AuthenticationMechanism = "PLAIN",
-    SslOptions = new()
-    {
-        RemoteCertificateValidationCallback = delegate
-        {
-            return true;
-        }
-    }
+    SaslMechanismSelector = m
+        => m.FirstOrDefault(x => x.MechanismName == "PLAIN")
 };
 
 client.OnError += ex =>
@@ -23,19 +17,9 @@ client.OnError += ex =>
     Console.WriteLine(ex);
 };
 
-client.OnConnected += () =>
+client.OnStateChanged += (e) =>
 {
-    Console.WriteLine("connected");
-};
-
-client.OnDisconnected += () =>
-{
-    Console.WriteLine("disconnected");
-};
-
-client.OnSessionStarted += () =>
-{
-    Console.WriteLine("session started");
+    Console.WriteLine("state changed: {0} -> {1}", e.OldState, e.NewState);
 };
 
 client.OnReadXml += xml =>
@@ -47,20 +31,6 @@ client.OnWriteXml += xml =>
 {
     Console.WriteLine("send >>\n{0}\n", xml);
 };
-
-var ext = new PingExtension(new()
-{
-    UseClientPingRequests = true,
-    Interval = TimeSpan.FromSeconds(5),
-    Timeout = TimeSpan.FromSeconds(10)
-});
-
-ext.OnElapsed += time =>
-{
-    Console.WriteLine("Ping between client and server: {0}ms", time);
-};
-
-client.RegisterExtension(ext);
 
 try
 {

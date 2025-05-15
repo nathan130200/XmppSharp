@@ -1,12 +1,12 @@
-﻿using System.Xml;
+using System.Xml;
 using Expat;
-using XmppSharp.Protocol.Base;
+using Stream = XmppSharp.Protocol.Base.Stream;
 
 namespace XmppSharp.Dom;
 
 public interface IXmppParser : IDisposable
 {
-    event Action<StreamStream>? OnStreamStart;
+    event Action<Stream>? OnStreamStart;
     event Action<XmppElement>? OnStreamElement;
     event Action? OnStreamEnd;
     void Reset();
@@ -17,14 +17,12 @@ public sealed class XmppParser : IXmppParser
     readonly Lock _syncRoot = new();
 
     internal XmppElement? _current;
-    internal ExpatParser? _xmlParser;
+    internal ExpatParser? _parser;
     internal XmlNamespaceManager? _namespaces;
     internal volatile bool _disposed;
     internal volatile bool _started;
 
-    public ExpatParser? XmlParser => _xmlParser;
-
-    public event Action<StreamStream>? OnStreamStart;
+    public event Action<Stream>? OnStreamStart;
     public event Action<XmppElement>? OnStreamElement;
     public event Action? OnStreamEnd;
 
@@ -32,12 +30,11 @@ public sealed class XmppParser : IXmppParser
     {
         _namespaces = new(new NameTable());
 
-        _xmlParser = new ExpatParser(encoding, strict);
-        _xmlParser.OnStartElement += HandleStartElement;
-        _xmlParser.OnEndElement += HandleEndElement;
-        _xmlParser.OnText += HandleText;
-        _xmlParser.OnComment += HandleComment;
-        _xmlParser.OnCdata += HandleCdata;
+        _parser = new ExpatParser(encoding, strict);
+        _parser.OnStartElement += HandleStartElement;
+        _parser.OnEndElement += HandleEndElement;
+        _parser.OnText += HandleText;
+        _parser.OnCdata += HandleCdata;
     }
 
     void HandleStartElement(string tagName, IReadOnlyDictionary<string, string> attrs)
@@ -57,13 +54,20 @@ public sealed class XmppParser : IXmppParser
 
         {
             var hasPrefix = Xml.ExtractQualifiedName(tagName, out var prefix, out _);
-
             var element = XmppElementFactory.Create(tagName, _namespaces.LookupNamespace(hasPrefix ? prefix! : string.Empty), _current);
+
+            foreach (var (nsPrefix, value) in _namespaces.GetNamespacesInScope(XmlNamespaceScope.Local))
+            {
+                if (string.IsNullOrWhiteSpace(nsPrefix))
+                    element.SetNamespace(value);
+                else
+                    element.SetNamespace(nsPrefix, value);
+            }
 
             foreach (var (key, value) in attrs)
                 element.SetAttribute(key, value);
 
-            if (element is StreamStream start)
+            if (element is Protocol.Base.Stream start)
             {
                 if (!_started)
                 {
@@ -107,11 +111,6 @@ public sealed class XmppParser : IXmppParser
         _current?.AddChild(new XmppText(value));
     }
 
-    void HandleComment(string value)
-    {
-        _current?.AddChild(new XmppComment(value));
-    }
-
     void HandleCdata(string value)
     {
         _current?.AddChild(new XmppCdata(value));
@@ -139,8 +138,8 @@ public sealed class XmppParser : IXmppParser
 
             _namespaces = null;
 
-            _xmlParser?.Dispose();
-            _xmlParser = null;
+            _parser?.Dispose();
+            _parser = null;
         }
     }
 
@@ -156,7 +155,7 @@ public sealed class XmppParser : IXmppParser
             while (_namespaces?.PopScope() == true)
                 ;
 
-            _xmlParser!.Reset();
+            _parser!.Reset();
         }
     }
 
@@ -166,7 +165,7 @@ public sealed class XmppParser : IXmppParser
 
         lock (_syncRoot)
         {
-            return _xmlParser!.TryParse(buffer, length, out error, isFinalBlock);
+            return _parser!.TryParse(buffer, length, out error, isFinalBlock);
         }
     }
 
@@ -176,7 +175,23 @@ public sealed class XmppParser : IXmppParser
 
         lock (_syncRoot)
         {
-            _xmlParser!.Parse(buffer, length, isFinalBlock);
+            _parser!.Parse(buffer, length, isFinalBlock);
         }
+    }
+
+    public void Suspend(bool resumable)
+    {
+        ThrowIfDisposed();
+
+        lock (_syncRoot)
+            _parser!.Suspend(resumable);
+    }
+
+    public void Resume()
+    {
+        ThrowIfDisposed();
+
+        lock (_syncRoot)
+            _parser!.Resume();
     }
 }

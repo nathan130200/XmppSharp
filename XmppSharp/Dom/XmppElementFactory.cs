@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Reflection;
 using XmppSharp.Attributes;
 using XmppSharp.Protocol;
@@ -81,7 +81,7 @@ public static class XmppElementFactory
 
     static readonly Dictionary<string, Type> s_TagNameToType = new()
     {
-        [("stream:stream")] = typeof(StreamStream),
+        [("stream:stream")] = typeof(Protocol.Base.Stream),
         [("stream:error")] = typeof(StreamError),
         [("stream:features")] = typeof(StreamFeatures),
         [("iq")] = typeof(Iq),

@@ -1,8 +1,8 @@
-﻿namespace XmppSharp.Protocol.Base;
+namespace XmppSharp.Protocol.Base;
 
-public class StreamStream : DirectionalElement
+public class Stream : DirectionalElement
 {
-    public StreamStream() : base("stream:stream", Namespaces.Stream)
+    public Stream() : base("stream:stream", Namespaces.Stream)
     {
 
     }

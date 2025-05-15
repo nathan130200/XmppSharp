@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using XmppSharp.Collections;
@@ -6,10 +6,15 @@ using XmppSharp.Collections;
 namespace XmppSharp;
 
 /// <summary>
-/// Represents the jabber identifier. <c>local@domain/resource</c>
+/// Represents an jabber identifier.
+/// <list type="bullet">
+/// <item><c>local@domain</c></item>
+/// <item><c>local@domain/resource</c></item>
+/// <item><c>domain/resource</c></item>
+/// </list>
 /// </summary>
 [DebuggerDisplay("{ToString(),nq}")]
-public sealed record Jid : IEquatable<Jid>
+public sealed class Jid : IEquatable<Jid>
 {
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private string? _local, _domain, _resource;
@@ -46,7 +51,7 @@ public sealed record Jid : IEquatable<Jid>
     }
 
     /// <summary>
-    /// Local part
+    /// Local part.
     /// </summary>
     public string? Local
     {
@@ -55,7 +60,7 @@ public sealed record Jid : IEquatable<Jid>
     }
 
     /// <summary>
-    /// Domain part
+    /// Domain part.
     /// </summary>
     public string? Domain
     {
@@ -73,7 +78,7 @@ public sealed record Jid : IEquatable<Jid>
     }
 
     /// <summary>
-    /// Resource part
+    /// Resource part.
     /// </summary>
     public string? Resource
     {
@@ -103,7 +108,7 @@ public sealed record Jid : IEquatable<Jid>
     [return: NotNullIfNotNull(nameof(jid))]
     public static implicit operator Jid?(string? jid)
     {
-        if (jid == null)
+        if (jid is null)
             return null;
 
         return new(jid);
@@ -116,23 +121,43 @@ public sealed record Jid : IEquatable<Jid>
     public bool IsServer
         => string.IsNullOrWhiteSpace(_local) && string.IsNullOrWhiteSpace(_resource);
 
-    public Jid Bare => this with { Resource = null };
+    public string Bare
+    {
+        get
+        {
+            var sb = new StringBuilder();
+
+            if (_local != null)
+                sb.Append(_local).Append('@');
+
+            return sb.Append(_domain).ToString();
+        }
+    }
+
+    public override bool Equals(object? obj)
+        => obj is Jid other && Equals(other);
 
     public bool Equals(Jid? other)
     {
         if (other is null)
             return false;
 
-        if (ReferenceEquals(other, this))
-            return true;
-
         return FullJidComparer.AreEquals(this, other);
     }
 
-    public override int GetHashCode() => HashCode.Combine
-    (
-        Local?.GetHashCode() ?? 0,
-        Domain?.GetHashCode() ?? 0,
-        Resource?.GetHashCode() ?? 0
-    );
+    public override int GetHashCode()
+        => HashCode.Combine(_local, _domain, _resource);
+
+    public static bool operator !=(Jid? lhs, Jid? rhs) => !(lhs == rhs);
+
+    public static bool operator ==(Jid? lhs, Jid? rhs)
+    {
+        if (lhs is null && rhs is null)
+            return true;
+
+        if (lhs is null || rhs is null)
+            return false;
+
+        return lhs.Equals(rhs);
+    }
 }
