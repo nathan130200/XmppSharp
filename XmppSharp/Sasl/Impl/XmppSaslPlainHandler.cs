@@ -1,14 +1,13 @@
-﻿using System.Text;
+using System.Text;
 using XmppSharp.Dom;
-using XmppSharp.Exceptions;
 using XmppSharp.Net;
 using XmppSharp.Protocol.Sasl;
 
-namespace XmppSharp.Sasl;
+namespace XmppSharp.Sasl.Impl;
 
-public class SaslPlainHandler : SaslHandler
+public class XmppSaslPlainHandler : XmppSaslHandler
 {
-    public SaslPlainHandler(XmppClientConnection connection) : base(connection)
+    public XmppSaslPlainHandler(XmppOutboundClientConnection connection) : base(connection)
     {
     }
 
@@ -31,14 +30,14 @@ public class SaslPlainHandler : SaslHandler
         Connection.Send(el);
     }
 
-    protected internal override bool Invoke(XmppElement e)
+    protected internal override SaslHandlerResult Invoke(XmppElement e)
     {
         if (e is Success)
-            return true;
+            return SaslHandlerResult.Success;
 
         if (e is Failure failure)
-            throw new JabberSaslException(failure.Condition, failure.Text);
+            return SaslHandlerResult.Failure(failure.Condition, failure.Text);
 
-        return false;
+        return SaslHandlerResult.Continue;
     }
 }

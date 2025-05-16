@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Security;
 using System.Text;
 using System.Web;
@@ -9,7 +9,7 @@ namespace XmppSharp;
 
 public static class Xml
 {
-    public const string XmppStreamEnd = "</stream:stream>";
+    public const string XmppEndTag = "</stream:stream>";
     public const string XmppTimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffK";
     public const string XmppTimestampFormatTemplate = $"{{0:{XmppTimestampFormat}}}";
 
@@ -183,8 +183,8 @@ public static class Xml
                 WriteTree(child, xw);
             else if (node is XmppText text)
                 xw.WriteValue(text.Value);
-            else if (node is XmppComment comment)
-                xw.WriteComment(comment.Value);
+            //else if (node is XmppComment comment)
+            //    xw.WriteComment(comment.Value);
             else if (node is XmppCdata cdata)
                 xw.WriteCData(cdata.Value);
         }

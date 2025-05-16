@@ -1,4 +1,4 @@
-﻿using XmppSharp.Dom;
+using XmppSharp.Dom;
 using XmppSharp.Exceptions;
 using XmppSharp.Net;
 using XmppSharp.Protocol.Sasl;
@@ -8,19 +8,19 @@ namespace XmppSharp.Sasl;
 /// <summary>
 /// Base class for processing SASL authentication.
 /// </summary>
-public abstract class SaslHandler : IDisposable
+public abstract class XmppSaslHandler : IDisposable
 {
-    internal XmppClientConnection _connection;
+    internal XmppOutboundClientConnection _connection;
     volatile bool _disposed;
 
     /// <summary>
     /// Underlying connection.
     /// </summary>
-    protected XmppClientConnection Connection => _connection;
+    protected XmppOutboundClientConnection Connection => _connection;
 
-    protected bool IsDisposed => _disposed;
+    protected bool Disposed => _disposed;
 
-    public SaslHandler(XmppClientConnection connection)
+    public XmppSaslHandler(XmppOutboundClientConnection connection)
     {
         _connection = connection;
     }
@@ -47,7 +47,7 @@ public abstract class SaslHandler : IDisposable
     }
 
     /// <summary>
-    /// Initial step of the SASL handler. It should send a <see cref="Auth" /> element to the remote server with the requested mechanism.
+    /// Initial step of the SASL handler. It usually should send a <see cref="Auth" /> element to the remote server with the requested mechanism.
     /// <para>
     /// During this step you can also allocate memory, use external APIs or native libraries.
     /// </para>
@@ -61,10 +61,16 @@ public abstract class SaslHandler : IDisposable
     /// Invokes the SASL handler to process the element.
     /// </summary>
     /// <param name="e">Element that will be processed by the handler.</param>
-    /// <returns><see langword="true"/> if the SASL handler has finished and authentication was successful; otherwise the handler will continue processing the next elements (in the case of authentication mechanisms that have more than one auth step).</returns>
-    /// <exception cref="JabberSaslException">If authentication fails.</exception>
+    /// <returns>
+    /// <list type="bullet">
+    /// <item><see langword="true"/> if the SASL handler has finished and authentication was successful (received <see cref="Success"/> from server)</item>
+    /// <item><see langword="false"/> if the SASL handler does not handle current element.</item>
+    /// <item>throws <see cref="JabberSaslException"/> if authentication fails. its only way also to </item>
+    /// </list>
+    /// </returns>
+    /// <exception cref="JabberSaslException"/> If authentication fails.
     /// <remarks>
     /// <para>Once the SASL Handler is declared as authenticated the connection will proceed normally.</para>
     /// </remarks>
-    protected internal abstract bool Invoke(XmppElement e);
+    protected internal abstract SaslHandlerResult Invoke(XmppElement e);
 }

@@ -1,5 +1,9 @@
 using System.Net;
+using XmppSharp.Abstractions;
 using XmppSharp.Net;
+using XmppSharp.Net.Abstractions;
+using XmppSharp.Protocol;
+using XmppSharp.Protocol.Extensions.XEP0199;
 
 using var client = new XmppOutboundClientConnection
 {
@@ -8,37 +12,107 @@ using var client = new XmppOutboundClientConnection
     Resource = Environment.MachineName,
     EndPoint = new DnsEndPoint("localhost", 5222),
     Password = "youshallnotpass",
-    SaslMechanismSelector = m
-        => m.FirstOrDefault(x => x.MechanismName == "PLAIN")
+    LogLevel = XmppLogLevel.Verbose
 };
 
-client.OnError += ex =>
+client.OnLog += (e) =>
 {
-    Console.WriteLine(ex);
+    lock (client)
+    {
+        var self = (e.Sender as XmppOutboundClientConnection)!;
+        Console.WriteLine($"[{e.Timestamp:HH:Mm:ss}] [{e.Level}] <{self.Jid}> {e.Message}");
+
+        if (e.Exception != null)
+            Console.WriteLine(e.Exception);
+    }
 };
 
-client.OnStateChanged += (e) =>
+_ = new PingManager(client)
 {
-    Console.WriteLine("state changed: {0} -> {1}", e.OldState, e.NewState);
+    Heartbeated = (success, time) =>
+    {
+        if (!success)
+            Console.WriteLine("Connection is idle");
+        else
+            Console.WriteLine("Server ping: {0}ms", time);
+    }
 };
 
-client.OnReadXml += xml =>
+while (true)
 {
-    Console.WriteLine("recv <<\n{0}\n", xml);
-};
+    while (!client.IsConnected)
+    {
+        await Task.Delay(3000);
 
-client.OnWriteXml += xml =>
-{
-    Console.WriteLine("send >>\n{0}\n", xml);
-};
+        if (client.State == XmppConnectionState.Connecting)
+            continue;
 
-try
-{
-    await client.ConnectAsync();
+        if (client.State == XmppConnectionState.Disconnected)
+        {
+            try
+            {
+                await client.ConnectAsync();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine("Connection failed: " + ex.Message);
+            }
+        }
+    }
 }
-catch (Exception ex)
-{
-    Console.WriteLine(ex);
-}
 
-await Task.Delay(-1);
+// ----------------------------------------------------------------
+
+class PingManager
+{
+    private XmppOutboundClientConnection _connection;
+    private DateTimeOffset _lastPingTime = DateTimeOffset.Now;
+    private Timer _timer;
+
+    public Action<bool, long> Heartbeated { get; init; }
+
+    public PingManager(XmppOutboundClientConnection c)
+    {
+        _connection = c;
+        _connection.OnStateChanged += OnStateChanged;
+    }
+
+    void OnTick(object _)
+    {
+        Console.WriteLine("\tPing timer tick");
+        Heartbeated(false, 0);
+        _connection.Disconnect();
+    }
+
+    void OnStateChanged(ConnectionStateChangedEventArgs e)
+    {
+        if (e.NewState == XmppConnectionState.SessionStarted)
+        {
+            _timer = new(OnTick, null, -1, 60_000);
+            e.Connection.OnElement += OnElement;
+            Console.WriteLine("\tPing timer started");
+        }
+        else if (e.NewState == XmppConnectionState.Disconnecting)
+        {
+            _timer?.Change(-1, -1);
+            _timer?.Dispose();
+            e.Connection.OnElement -= OnElement;
+            Console.WriteLine("\tPing timer stopped");
+        }
+    }
+
+    void OnElement(ConnectionElementEventArgs e)
+    {
+        var con = e.Connection;
+
+        if (e.Element is Iq iq && iq.Query is Ping)
+        {
+            iq.Type = IqType.Result;
+            iq.SwitchDirection();
+            var elapsed = _lastPingTime - DateTimeOffset.Now;
+            _lastPingTime = DateTimeOffset.Now;
+            Heartbeated?.Invoke(true, (long)elapsed.TotalMilliseconds);
+            con.Send(iq);
+        }
+    }
+}

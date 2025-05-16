@@ -1,11 +1,11 @@
-﻿namespace XmppSharp.Protocol.Tls;
+namespace XmppSharp.Protocol.Tls;
 
 public enum TlsPolicy
 {
     /// <summary>
     /// Unknown TLS policy.
     /// </summary>
-    Unknown,
+    None,
 
     /// <summary>
     /// Informs that encryption is recommended, but not mandatory.

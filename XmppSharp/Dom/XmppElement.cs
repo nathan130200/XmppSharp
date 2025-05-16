@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+using System.Collections;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Xml;
@@ -22,7 +23,7 @@ internal class XmppElementDebuggerProxy
 }
 
 [DebuggerTypeProxy(typeof(XmppElementDebuggerProxy))]
-public class XmppElement : XmppNode
+public class XmppElement : XmppNode, IEnumerable<XmppNode>
 {
     private string _localName;
     private string? _prefix;
@@ -479,5 +480,17 @@ public class XmppElement : XmppNode
 
             _children.Clear();
         }
+    }
+
+    IEnumerator<XmppNode> IEnumerable<XmppNode>.GetEnumerator()
+    {
+        foreach (var node in Nodes())
+            yield return node;
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        foreach (var node in Nodes())
+            yield return node;
     }
 }

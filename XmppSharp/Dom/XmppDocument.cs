@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Xml;
 using System.Xml.Schema;
 using XmppSharp.Collections;
@@ -129,10 +129,6 @@ public class XmppDocument
 
                         case XmlNodeType.Whitespace:
                         case XmlNodeType.ProcessingInstruction:
-                            break;
-
-                        case XmlNodeType.Comment:
-                            current?.AddChild(new XmppComment(reader.Value));
                             break;
 
                         case XmlNodeType.CDATA:

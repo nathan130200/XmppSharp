@@ -1,4 +1,4 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Tls;
@@ -25,7 +25,7 @@ public class StartTls : XmppElement
             else if (HasTag("optional", Namespaces.Tls))
                 return TlsPolicy.Optional;
             else
-                return TlsPolicy.Unknown;
+                return TlsPolicy.None;
         }
         set
         {

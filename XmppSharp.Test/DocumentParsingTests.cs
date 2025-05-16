@@ -86,21 +86,21 @@ public class DocumentParsingTests
         Assert.AreEqual("2", sub.GetAttribute("count"));
     }
 
-    [TestMethod]
-    public void ParseComment()
-    {
-        var xml = "<foo><!--this is a comment--></foo>";
-        var doc = new XmppDocument().Parse(xml);
+    //[TestMethod]
+    //public void ParseComment()
+    //{
+    //    var xml = "<foo><!--this is a comment--></foo>";
+    //    var doc = new XmppDocument().Parse(xml);
 
-        var el = doc.RootElement;
-        Assert.IsNotNull(el);
+    //    var el = doc.RootElement;
+    //    Assert.IsNotNull(el);
 
-        Assert.AreEqual("foo", el.TagName);
+    //    Assert.AreEqual("foo", el.TagName);
 
-        var child = el.FirstNode;
-        Assert.IsInstanceOfType<XmppComment>(child);
-        Assert.AreEqual("this is a comment", ((XmppComment)child).Value);
-    }
+    //    var child = el.FirstNode;
+    //    Assert.IsInstanceOfType<XmppComment>(child);
+    //    Assert.AreEqual("this is a comment", ((XmppComment)child).Value);
+    //}
 
     [TestMethod]
     public void ParseCdata()
