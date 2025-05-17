@@ -16,8 +16,7 @@ namespace XmppSharp.Net;
 /// Represents an outbound XMPP client-to-server (C2S) connection.
 /// </summary>
 /// <remarks>This class provides functionality for establishing and managing an outbound XMPP connection,
-/// including authentication, encryption, and session initialization. It supports SASL authentication mechanisms and TLS
-/// encryption policies.
+/// including authentication, encryption, and session initialization.
 /// </remarks>
 public class XmppOutboundClientConnection : XmppOutboundConnection
 {

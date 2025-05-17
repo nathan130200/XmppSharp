@@ -1,64 +1,46 @@
 using System.Net;
+using XmppSharp.Abstractions;
 using XmppSharp.Net;
 
-using var connection = new XmppOutboundComponentConnection
+using var client = new XmppOutboundComponentConnection
 {
-    Server = "xmppsharp",
-    ConnectServer = new DnsEndPoint("localhost", 5275),
+    Server = "xmppsharp.localhost",
+    EndPoint = new DnsEndPoint("localhost", 5222),
     Password = "youshallnotpass",
+    LogLevel = XmppLogLevel.Verbose
 };
 
-connection.OnError += ex =>
+client.OnLog += (e) =>
 {
-    Console.WriteLine(ex);
+    lock (client)
+    {
+        var self = (e.Sender as XmppOutboundClientConnection)!;
+        Console.WriteLine($"[{e.Timestamp:HH:Mm:ss}] [{e.Level}] <{self.Jid}> {e.Message}");
+
+        if (e.Exception != null)
+            Console.WriteLine(e.Exception);
+    }
 };
 
-connection.OnConnected += () =>
+while (true)
 {
-    Console.WriteLine("connected");
-};
+    while (!client.IsConnected)
+    {
+        await Task.Delay(3000);
 
-connection.OnDisconnected += () =>
-{
-    Console.WriteLine("disconnected");
-};
+        if (client.State == XmppConnectionState.Connecting)
+            continue;
 
-connection.OnSessionStarted += () =>
-{
-    Console.WriteLine("session started");
-};
-
-connection.OnReadXml += xml =>
-{
-    Console.WriteLine("recv <<\n{0}\n", xml);
-};
-
-connection.OnWriteXml += xml =>
-{
-    Console.WriteLine("send >>\n{0}\n", xml);
-};
-
-var ext = new PingExtension(new()
-{
-    UseClientPingRequests = true,
-    Interval = TimeSpan.FromSeconds(5),
-    Timeout = TimeSpan.FromSeconds(10)
-});
-
-ext.OnElapsed += time =>
-{
-    Console.WriteLine("Ping between component and server: {0}ms", time);
-};
-
-connection.RegisterExtension(ext);
-
-try
-{
-    await connection.ConnectAsync();
+        if (client.State == XmppConnectionState.Disconnected)
+        {
+            try
+            {
+                await client.ConnectAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Connection failed: " + ex.Message);
+            }
+        }
+    }
 }
-catch (Exception ex)
-{
-    Console.WriteLine(ex);
-}
-
-await Task.Delay(-1);
