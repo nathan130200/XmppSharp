@@ -70,7 +70,7 @@ public class XmppOutboundClientConnection : XmppOutboundConnection
 
     private XmppSaslHandler? _saslHandler;
 
-    protected override void SendStreamHeader()
+    protected override void InitConnection()
     {
         Send(new Protocol.Base.Stream
         {
@@ -89,7 +89,7 @@ public class XmppOutboundClientConnection : XmppOutboundConnection
         {
             _parser!.Reset();
             _access |= FileAccess.Read;
-            SendStreamHeader();
+            InitConnection();
         });
     }
 

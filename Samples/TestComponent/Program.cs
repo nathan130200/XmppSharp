@@ -1,11 +1,12 @@
 using System.Net;
 using XmppSharp.Abstractions;
 using XmppSharp.Net;
+using XmppSharp.Net.Abstractions;
 
 using var client = new XmppOutboundComponentConnection
 {
-    Server = "xmppsharp.localhost",
-    EndPoint = new DnsEndPoint("localhost", 5222),
+    Server = "xmppsharp",
+    EndPoint = new DnsEndPoint("localhost", 5275),
     Password = "youshallnotpass",
     LogLevel = XmppLogLevel.Verbose
 };
@@ -14,7 +15,7 @@ client.OnLog += (e) =>
 {
     lock (client)
     {
-        var self = (e.Sender as XmppOutboundClientConnection)!;
+        var self = (e.Sender as XmppOutboundConnection)!;
         Console.WriteLine($"[{e.Timestamp:HH:Mm:ss}] [{e.Level}] <{self.Jid}> {e.Message}");
 
         if (e.Exception != null)
@@ -39,7 +40,7 @@ while (true)
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Connection failed: " + ex.Message);
+                Console.WriteLine(ex);
             }
         }
     }

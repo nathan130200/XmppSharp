@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
@@ -63,13 +64,20 @@ public abstract class XmppConnection : IDisposable
         if (LogLevel < level)
             return;
 
-        OnLog?.Invoke(new()
+        try
         {
-            Sender = this,
-            Timestamp = DateTime.Now,
-            Level = level,
-            Message = message
-        });
+            OnLog?.Invoke(new()
+            {
+                Sender = this,
+                Timestamp = DateTime.Now,
+                Level = level,
+                Message = message
+            });
+        }
+        catch(Exception ex)
+        {
+            Trace.TraceError(ex.ToString());
+        }
     }
 
     /// <summary>

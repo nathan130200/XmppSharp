@@ -14,6 +14,17 @@ namespace XmppSharp.Net;
 /// </remarks>
 public class XmppOutboundComponentConnection : XmppOutboundConnection
 {
+    protected override void InitConnection()
+    {
+        Send(new Protocol.Base.Stream
+        {
+            To = Server,
+            DefaultNamespace = Namespaces.Accept,
+            Version = "1.0",
+            Language = "en"
+        });
+    }
+
     protected override void OnStreamStart(Protocol.Base.Stream e)
     {
         base.OnStreamStart(e);

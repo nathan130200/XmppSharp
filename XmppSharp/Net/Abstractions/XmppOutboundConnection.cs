@@ -133,7 +133,7 @@ public abstract class XmppOutboundConnection : XmppConnection
         }
     }
 
-    protected virtual void Setup(CancellationToken token)
+    protected void Setup(CancellationToken token)
     {
         _disposed = 0;
         _access = FileAccess.ReadWrite;
@@ -144,7 +144,7 @@ public abstract class XmppOutboundConnection : XmppConnection
             try
             {
                 FireOnLog(XmppLogLevel.Verbose, "Begin I/O tasks.");
-                SendStreamHeader();
+                InitConnection();
                 await Task.WhenAll(ReadLoop(token), WriteLoop(token));
             }
             catch (Exception ex)
@@ -164,14 +164,10 @@ public abstract class XmppOutboundConnection : XmppConnection
     /// <summary>
     /// Sends the initial element to the server to initiate an XML stream.
     /// </summary>
-    protected virtual void SendStreamHeader()
-    {
-
-    }
+    protected abstract void InitConnection();
 
     protected override void OnStreamStart(Stream e)
     {
-        if (string.IsNullOrWhiteSpace(e.Id))
-            throw new JabberException("The stream header 'id' attribute is missing.");
+        
     }
 }
