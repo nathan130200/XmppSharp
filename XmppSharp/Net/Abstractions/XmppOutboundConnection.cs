@@ -159,11 +159,12 @@ public abstract class XmppOutboundConnection : XmppConnection
         }, CancellationToken.None);
     }
 
-    //send <stream:stream: element to server
-
     /// <summary>
-    /// Sends the initial element to the server to initiate an XML stream.
+    /// Initializes the connection to the server.
     /// </summary>
+    /// <remarks>This method is responsible for starting the connection process after a successful connection 
+    /// has been established. It must be implemented by derived classes to define the specific  initialization logic
+    /// required for the connection.</remarks>
     protected abstract void InitConnection();
 
     protected override void OnStreamStart(Stream e)
