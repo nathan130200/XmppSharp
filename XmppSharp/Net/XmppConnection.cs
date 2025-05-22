@@ -1,31 +1,20 @@
+using Expat;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Text;
-using Expat;
 using XmppSharp.Abstractions;
 using XmppSharp.Dom;
 using XmppSharp.Exceptions;
+using XmppSharp.Net.EventArgs;
 using XmppSharp.Protocol.Base;
 
-namespace XmppSharp.Net.Abstractions;
+namespace XmppSharp.Net;
 
 /// <summary>
 /// Represents the base class for XMPP connections.
 /// </summary>
-/// <remarks>This class provides the foundational functionality for managing XMPP connections, including state
-/// management, event handling, and communication. Derived classes should implement specific connection behaviors, such
-/// as authentication, session management, and protocol-specific features.
-/// <para>
-/// The class supports asynchronous operations for sending and receiving XMPP elements, as well as managing connection state transitions.
-/// It also provides mechanisms for logging, handling callbacks, and managing connection resources.
-/// </para>
-/// <para> The connection state is managed through the <see cref="State"/> property, and events such as <see
-/// cref="OnStateChanged"/> and <see cref="OnElement"/> allow subscribers to react to state changes and incoming XMPP
-/// elements, respectively.</para>
-/// </remarks>
-public abstract class XmppConnection : IDisposable
+public abstract class XmppConnection : IXmppConnection, IDisposable
 {
     public Jid Jid { get; protected set; }
 
@@ -49,9 +38,9 @@ public abstract class XmppConnection : IDisposable
     public int DisconnectWaitTimeMs { get; set; } = 3000;
     public XmppLogLevel LogLevel { get; set; } = XmppLogLevel.Information;
 
-    public event Action<ConnectionStateChangedEventArgs> OnStateChanged;
-    public event Action<ConnectionElementEventArgs>? OnElement;
-    public event XmppLoggingDelegate OnLog;
+    public event Action<StateChangedEventArgs>? OnStateChanged;
+    public event Action<XmppElementEventArgs>? OnElement;
+    public event XmppLoggingDelegate? OnLog;
 
     private volatile XmppConnectionState _state;
     private readonly List<XmppCallbackInfo> _callbacks = [];
@@ -74,7 +63,7 @@ public abstract class XmppConnection : IDisposable
                 Message = message
             });
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Trace.TraceError(ex.ToString());
         }
@@ -107,17 +96,7 @@ public abstract class XmppConnection : IDisposable
         public XmppCallbackPriority Priority { get; init; }
     }
 
-    /// <summary>
-    /// Waits asynchronously for an XMPP element that matches the specified condition.
-    /// </summary>
-    /// <param name="match">A function that defines the condition to match the desired <see cref="XmppElement"/>.  The function should
-    /// return <see langword="true"/> for the element that satisfies the condition.</param>
-    /// <param name="name">An optional name for the callback. If not provided, a unique identifier will be generated.</param>
-    /// <param name="priority">The priority of the callback, which determines the order in which callbacks are processed.  The default is <see
-    /// cref="XmppCallbackPriority.Normal"/>.</param>
-    /// <param name="token">A <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result is the <see cref="XmppElement"/>  that
-    /// matches the specified condition.</returns>
+
     public async Task<XmppElement> WaitForElement(Func<XmppElement, bool> match,
         string? name = default,
         XmppCallbackPriority priority = XmppCallbackPriority.Normal,
@@ -164,17 +143,6 @@ public abstract class XmppConnection : IDisposable
         }
     }
 
-    /// <summary>
-    /// Sends a stanza of the specified type and waits asynchronously for a response.
-    /// </summary>
-    /// <remarks>
-    /// To avoid deadlocks or callbacks that wait infinitely, always consider using a timeout cancellation token, as when the token expires it will cancel and remove the callback.
-    /// </remarks>
-    /// <typeparam name="TStanza">The type of the stanza to send and wait for. Must derive from <see cref="Stanza"/>.</typeparam>
-    /// <param name="stz">The stanza to send. If the <see cref="Stanza.Id"/> property is null or whitespace, a new ID will be generated.</param>
-    /// <param name="priority">The priority of the callback used to process the response. The default is <see cref="XmppCallbackPriority.Normal"/>.</param>
-    /// <param name="token">A <see cref="CancellationToken"/> that can be used to cancel the operation. The default is <see cref="CancellationToken.None"/>.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result is the received stanza of type <typeparamref name="TStanza"/>.</returns>
     public async Task<TStanza> RequestStanzaAsync<TStanza>(TStanza stz,
         XmppCallbackPriority priority = XmppCallbackPriority.Normal,
         CancellationToken token = default)
@@ -195,9 +163,6 @@ public abstract class XmppConnection : IDisposable
         return (TStanza)await task;
     }
 
-    /// <summary>
-    /// Gets the current state of the XMPP connection.
-    /// </summary>
     public XmppConnectionState State => _state;
 
     protected void FireOnError(Exception ex, string? message = default)
@@ -344,7 +309,7 @@ public abstract class XmppConnection : IDisposable
     /// <summary>
     /// Called when a XMPP stream is received.
     /// </summary>
-    /// <param name="e">The <see cref="Protocol.Base.Stream"/> instance representing the stream that has started.</param>
+    /// <param name="e">The <see cref="Stream"/> instance representing the stream that has started.</param>
     protected virtual void OnStreamStart(Protocol.Base.Stream e)
     {
 
@@ -405,7 +370,7 @@ public abstract class XmppConnection : IDisposable
     {
 
     }
-    
+
     /// <summary>
     /// Releases all resources used by the current instance of the class.
     /// </summary>
@@ -514,7 +479,7 @@ public abstract class XmppConnection : IDisposable
 
                 if (IsVerbose)
                 {
-                    float ratio = (len / (float)buf.Length) * 100f;
+                    float ratio = len / (float)buf.Length * 100f;
                     FireOnLog(XmppLogLevel.Verbose, $"Read loop step. Read {len} bytes. (buffer usage: {ratio:F1}%)");
                 }
 
@@ -642,13 +607,6 @@ public abstract class XmppConnection : IDisposable
         FireOnLog(XmppLogLevel.Debug, $"recv <<\n{xml}\n");
     }
 
-
-    /// <summary>
-    /// Sends the specified XMPP element.
-    /// </summary>
-    /// <remarks>The method enqueues the serialized XML representation of the provided XMPP element for
-    /// transmission. If the instance has been disposed or is not connected, the method will return without performing any action.</remarks>
-    /// <param name="element">The XMPP element to send. Cannot be <see langword="null"/>.</param>
     public void Send(XmppElement element)
     {
         if (State < XmppConnectionState.Connected)
@@ -669,14 +627,6 @@ public abstract class XmppConnection : IDisposable
         OnWriteXml(xml);
     }
 
-    /// <summary>
-    /// Sends the specified XMPP element asynchronously.
-    /// </summary>
-    /// <remarks>This method enqueues the serialized XMPP element for transmission and triggers the write
-    /// operation. If the instance has been disposed, the method returns a completed task without performing any
-    /// action.</remarks>
-    /// <param name="element">The XMPP element to send. Cannot be <see langword="null"/>.</param>
-    /// <returns>A task that represents the asynchronous operation. The task completes when the element has been successfully written.</returns>
     public Task SendAsync(XmppElement element)
     {
         if (_disposed > 1)
@@ -698,11 +648,6 @@ public abstract class XmppConnection : IDisposable
         return tcs.Task;
     }
 
-    /// <summary>
-    /// Disconnects the current XMPP connection, optionally sending a final XMPP element before closing.
-    /// </summary>
-    /// <param name="element">An optional <see cref="XmppElement"/> to send as the final XML before disconnecting. 
-    /// If <see langword="null"/>, no additional message is sent.</param>
     public void Disconnect(XmppElement? element = null)
     {
         if (_disposed > 0)
@@ -734,11 +679,6 @@ public abstract class XmppConnection : IDisposable
         Dispose();
     }
 
-    /// <summary>
-    /// Disconnects the current stream with the specified error condition and optional descriptive text.
-    /// </summary>
-    /// <param name="condition">The error condition that describes the reason for the disconnection.</param>
-    /// <param name="text">An optional descriptive text providing additional context for the disconnection. Can be <see langword="null"/>.</param>
     public void Disconnect(StreamErrorCondition condition, string? text = default)
         => Disconnect(new StreamError(condition, text));
 }

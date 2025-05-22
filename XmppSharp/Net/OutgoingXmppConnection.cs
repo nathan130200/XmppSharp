@@ -2,23 +2,22 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using XmppSharp.Abstractions;
-using XmppSharp.Exceptions;
 using Stream = XmppSharp.Protocol.Base.Stream;
 
-namespace XmppSharp.Net.Abstractions;
+namespace XmppSharp.Net;
 
-public abstract class XmppOutboundConnection : XmppConnection
+public abstract class OutgoingXmppConnection : XmppConnection
 {
     /// <summary>
     /// Gets or sets a value indicating whether a direct TLS connection should be used.
     /// </summary>
     public bool UseDirectTLS { get; set; }
-    
+
     /// <summary>
     /// Gets or sets the XMPP server domain name.
     /// </summary>
     public string Server { get; set; } = Environment.MachineName;
-    
+
     /// <summary>
     /// Gets or sets the XMPP password used for authentication.
     /// </summary>
@@ -169,6 +168,6 @@ public abstract class XmppOutboundConnection : XmppConnection
 
     protected override void OnStreamStart(Stream e)
     {
-        
+
     }
 }

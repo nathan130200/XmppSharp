@@ -1,5 +1,5 @@
-using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Text;
 using XmppSharp.Dom;
 using XmppSharp.Protocol;
 

@@ -10,7 +10,7 @@ namespace XmppSharp.Sasl;
 /// </summary>
 public static class XmppSaslHandlerFactory
 {
-    static readonly ConcurrentDictionary<string, Func<XmppOutboundClientConnection, XmppSaslHandler>> s_Mechanisms = new(StringComparer.OrdinalIgnoreCase);
+    static readonly ConcurrentDictionary<string, Func<OutgoingXmppClientConnection, XmppSaslHandler>> s_Mechanisms = new(StringComparer.OrdinalIgnoreCase);
 
     static XmppSaslHandlerFactory()
     {
@@ -22,7 +22,7 @@ public static class XmppSaslHandlerFactory
     /// </summary>
     /// <param name="mechanismName">Mechanism name.</param>
     /// <param name="factory">Factory function to build the SASL handler.</param>
-    public static void RegisterMechanism(string mechanismName, Func<XmppOutboundClientConnection, XmppSaslHandler> factory)
+    public static void RegisterMechanism(string mechanismName, Func<OutgoingXmppClientConnection, XmppSaslHandler> factory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(mechanismName);
         ArgumentNullException.ThrowIfNull(factory);
@@ -36,7 +36,7 @@ public static class XmppSaslHandlerFactory
     /// <param name="connection">Connection that will authenticate.</param>
     /// <param name="handler">Result of SASL handler instance or <see langword="null" /> if the mechanism was not registered.</param>
     /// <returns><see langword="true" /> if the mechanism was registered and the handler was instantiated; otherwise <see langword="false" />.</returns>
-    public static bool TryCreate(string mechanismName, XmppOutboundClientConnection connection, [NotNullWhen(true)] out XmppSaslHandler? handler)
+    public static bool TryCreate(string mechanismName, OutgoingXmppClientConnection connection, [NotNullWhen(true)] out XmppSaslHandler? handler)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(mechanismName);
         ArgumentNullException.ThrowIfNull(connection);

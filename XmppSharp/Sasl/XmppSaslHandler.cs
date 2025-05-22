@@ -10,17 +10,17 @@ namespace XmppSharp.Sasl;
 /// </summary>
 public abstract class XmppSaslHandler : IDisposable
 {
-    internal XmppOutboundClientConnection _connection;
+    internal OutgoingXmppClientConnection _connection;
     volatile bool _disposed;
 
     /// <summary>
     /// Underlying connection.
     /// </summary>
-    protected XmppOutboundClientConnection Connection => _connection;
+    protected OutgoingXmppClientConnection Connection => _connection;
 
     protected bool Disposed => _disposed;
 
-    public XmppSaslHandler(XmppOutboundClientConnection connection)
+    public XmppSaslHandler(OutgoingXmppClientConnection connection)
     {
         _connection = connection;
     }

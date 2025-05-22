@@ -1,5 +1,4 @@
 using XmppSharp.Dom;
-using XmppSharp.Net.Abstractions;
 using XmppSharp.Protocol.Component;
 
 namespace XmppSharp.Net;
@@ -10,9 +9,9 @@ namespace XmppSharp.Net;
 /// Represents an outbound XMPP component connection that implements the XEP-0114 protocol.
 /// </summary>
 /// <remarks>
-/// This class extends <see cref="XmppOutboundConnection"/> to provide functionality specific to XMPP component connections.
+/// This class extends <see cref="OutgoingXmppConnection"/> to provide functionality specific to XMPP component connections.
 /// </remarks>
-public class XmppOutboundComponentConnection : XmppOutboundConnection
+public sealed class OutgoingXmppComponentConnection : OutgoingXmppConnection
 {
     protected override void InitConnection()
     {

@@ -1,11 +1,10 @@
 using System.Net;
 using XmppSharp.Abstractions;
 using XmppSharp.Net;
-using XmppSharp.Net.Abstractions;
 using XmppSharp.Protocol;
 using XmppSharp.Protocol.Extensions.XEP0199;
 
-using var client = new XmppOutboundClientConnection
+using var client = new OutgoingXmppClientConnection
 {
     User = "xmppsharp",
     Server = "localhost",
@@ -19,7 +18,7 @@ client.OnLog += (e) =>
 {
     lock (client)
     {
-        var self = (e.Sender as XmppOutboundClientConnection)!;
+        var self = (e.Sender as OutgoingXmppClientConnection)!;
         Console.WriteLine($"[{e.Timestamp:HH:Mm:ss}] [{e.Level}] <{self.Jid}> {e.Message}");
 
         if (e.Exception != null)
@@ -53,7 +52,7 @@ while (true)
             {
                 await client.ConnectAsync();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine("Connection failed: " + ex.Message);
             }
@@ -65,13 +64,13 @@ while (true)
 
 class PingManager
 {
-    private XmppOutboundClientConnection _connection;
+    private OutgoingXmppClientConnection _connection;
     private DateTimeOffset _lastPingTime = DateTimeOffset.Now;
     private Timer _timer;
 
     public Action<bool, long> Heartbeated { get; init; }
 
-    public PingManager(XmppOutboundClientConnection c)
+    public PingManager(OutgoingXmppClientConnection c)
     {
         _connection = c;
         _connection.OnStateChanged += OnStateChanged;

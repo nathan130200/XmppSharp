@@ -7,7 +7,7 @@ namespace XmppSharp.Sasl.Impl;
 
 public class XmppSaslPlainHandler : XmppSaslHandler
 {
-    public XmppSaslPlainHandler(XmppOutboundClientConnection connection) : base(connection)
+    public XmppSaslPlainHandler(OutgoingXmppClientConnection connection) : base(connection)
     {
     }
 

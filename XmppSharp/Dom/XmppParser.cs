@@ -1,5 +1,5 @@
-using System.Xml;
 using Expat;
+using System.Xml;
 using Stream = XmppSharp.Protocol.Base.Stream;
 
 namespace XmppSharp.Dom;

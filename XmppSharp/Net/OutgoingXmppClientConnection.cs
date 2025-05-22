@@ -2,7 +2,6 @@ using System.Net.Security;
 using XmppSharp.Abstractions;
 using XmppSharp.Dom;
 using XmppSharp.Exceptions;
-using XmppSharp.Net.Abstractions;
 using XmppSharp.Protocol;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Client;
@@ -18,7 +17,7 @@ namespace XmppSharp.Net;
 /// <remarks>This class provides functionality for establishing and managing an outbound XMPP connection,
 /// including authentication, encryption, and session initialization.
 /// </remarks>
-public class XmppOutboundClientConnection : XmppOutboundConnection
+public class OutgoingXmppClientConnection : OutgoingXmppConnection
 {
     /// <summary>
     /// Gets or sets the client username used in SASL authentication.

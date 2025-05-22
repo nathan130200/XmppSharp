@@ -1,9 +1,8 @@
 using System.Net;
 using XmppSharp.Abstractions;
 using XmppSharp.Net;
-using XmppSharp.Net.Abstractions;
 
-using var client = new XmppOutboundComponentConnection
+using var client = new OutgoingXmppComponentConnection
 {
     Server = "xmppsharp",
     EndPoint = new DnsEndPoint("localhost", 5275),
@@ -15,7 +14,7 @@ client.OnLog += (e) =>
 {
     lock (client)
     {
-        var self = (e.Sender as XmppOutboundConnection)!;
+        var self = (e.Sender as OutgoingXmppConnection)!;
         Console.WriteLine($"[{e.Timestamp:HH:Mm:ss}] [{e.Level}] <{self.Jid}> {e.Message}");
 
         if (e.Exception != null)

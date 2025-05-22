@@ -1,4 +1,4 @@
-namespace XmppSharp.Net.Abstractions;
+namespace XmppSharp.Net;
 
 /// <summary>
 /// Specifies the priority levels for XMPP callback execution.
