@@ -13,21 +13,6 @@ public static class Xml
     public const string XmppTimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffK";
     public const string XmppTimestampFormatTemplate = $"{{0:{XmppTimestampFormat}}}";
 
-#if NET6_0
-
-    public static XmlResolver ThrowingResolver { get; } = new ThrowingXmlResolverImpl();
-
-    class ThrowingXmlResolverImpl : XmlResolver
-    {
-        public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
-            => throw new NotSupportedException();
-
-        public override Task<object> GetEntityAsync(Uri absoluteUri, string? role, Type? ofObjectToReturn)
-            => throw new NotSupportedException();
-    }
-
-#endif
-
 #pragma warning disable
 
     [ThreadStatic]
