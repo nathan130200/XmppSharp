@@ -1,0 +1,9 @@
+<Project>
+	<PropertyGroup>
+		<XmppSharpVersion>6.4.0</XmppSharpVersion>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<XmppSharpExcludeNet>true</XmppSharpExcludeNet>
+	</PropertyGroup>
+</Project>

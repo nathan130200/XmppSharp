@@ -1,8 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-	<PropertyGroup>
-		<XmppSharpVersion>6.4.0</XmppSharpVersion>
-	</PropertyGroup>
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -29,6 +25,12 @@
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	</PropertyGroup>
+
+	<ItemGroup Condition="$(XmppSharpExcludeNet) == true">
+		<Compile Remove="Logging\**\*" />
+		<Compile Remove="Net\**\*" />
+		<Compile Remove="Sasl\**\*" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<None Include="..\LICENSE">
