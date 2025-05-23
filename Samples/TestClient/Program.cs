@@ -1,7 +1,6 @@
 using System.Net;
 using XmppSharp.Logging;
 using XmppSharp.Net;
-using XmppSharp.Net.EventArgs;
 using XmppSharp.Protocol;
 using XmppSharp.Protocol.Extensions.XEP0199;
 
@@ -24,14 +23,16 @@ client.OnLog += static (sender, e) =>
         Console.WriteLine(e.Exception);
 };
 
-_ = new PingManager(client)
+client.OnElement += e =>
 {
-    Heartbeated = (success, time) =>
+    var con = e.Connection;
+
+    if (e.Element is Iq iq && iq.Query is Ping)
     {
-        if (!success)
-            Console.WriteLine("Connection is idle");
-        else
-            Console.WriteLine("Server ping: {0}ms", time);
+        iq.SwitchDirection();
+        iq.Type = IqType.Result;
+        iq.Query = null;
+        con.Send(iq);
     }
 };
 
@@ -52,66 +53,8 @@ while (true)
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Connection failed: " + ex.Message);
+                Console.WriteLine(ex + "\n\n");
             }
-        }
-    }
-}
-
-// ----------------------------------------------------------------
-
-class PingManager
-{
-    private readonly OutgoingXmppClientConnection _connection;
-    private DateTimeOffset _lastPingTime = DateTimeOffset.Now;
-    private Timer _timer;
-
-    public Action<bool, long> Heartbeated { get; init; }
-
-    public PingManager(OutgoingXmppClientConnection c)
-    {
-        _connection = c;
-        _connection.OnStateChanged += OnStateChanged;
-    }
-
-    void OnTick(object _)
-    {
-        Console.WriteLine("\tPing timer tick");
-        Heartbeated(false, 0);
-        _connection.Disconnect();
-    }
-
-    void OnStateChanged(StateChangedEventArgs e)
-    {
-        if (e.NewState == XmppConnectionState.SessionStarted)
-        {
-            _timer = new(OnTick, null, -1, 5000);
-            e.Connection.OnElement += OnElement;
-            Console.WriteLine("\tPing timer started");
-        }
-        else if (e.NewState == XmppConnectionState.Disconnecting)
-        {
-            _timer?.Change(-1, -1);
-            _timer?.Dispose();
-            e.Connection.OnElement -= OnElement;
-            Console.WriteLine("\tPing timer stopped");
-        }
-    }
-
-    void OnElement(XmppElementEventArgs e)
-    {
-        var con = e.Connection;
-
-        if (e.Element is Iq iq && iq.Query is Ping)
-        {
-            iq.Type = IqType.Result;
-            iq.SwitchDirection();
-            con.SendAsync(iq).ContinueWith(_ =>
-            {
-                var elapsed = DateTimeOffset.Now - _lastPingTime;
-                Heartbeated?.Invoke(true, (long)elapsed.TotalMilliseconds);
-                _lastPingTime = DateTimeOffset.Now;
-            });
         }
     }
 }

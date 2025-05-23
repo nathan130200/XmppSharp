@@ -1,8 +1,8 @@
 using Expat;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
 using XmppSharp.Dom;
@@ -94,7 +94,6 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
         public XmppCallbackPriority Priority { get; init; }
     }
 
-
     public async Task<XmppElement> WaitForElement(Func<XmppElement, bool> match,
         string? name = default,
         XmppCallbackPriority priority = XmppCallbackPriority.Normal,
@@ -115,13 +114,13 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
         {
             cb = new XmppCallbackInfo
             {
-                Name = string.IsNullOrWhiteSpace(name) ? Guid.NewGuid().ToString("d") : name,
+                Name = name ?? RandomNumberGenerator.GetHexString(32, true),
                 Function = match,
                 Completion = tcs,
                 Priority = priority,
             };
 
-            FireOnLog(XmppLogScope.Connection, $"WaitForElement(): Register callback ({cb.Name}): {expression}");
+            FireOnLog(XmppLogScope.Connection, $"WaitForElement(): Register callback '{cb.Name}' (expr='{expression}')");
 
             _callbacks.Add(cb);
         }
@@ -135,7 +134,7 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
             lock (_callbacks)
             {
                 if (_callbacks.Remove(cb))
-                    FireOnLog(XmppLogScope.Connection, $"WaitForElement(): Removed dead callback: {cb.Name}");
+                    FireOnLog(XmppLogScope.Connection, $"Remove expired callback: '{cb.Name}'");
 
                 tcs.TrySetCanceled();
             }
@@ -148,7 +147,7 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
         where TStanza : Stanza
     {
         if (string.IsNullOrWhiteSpace(stz.Id))
-            stz.GenerateId();
+            stz.Id = RandomNumberGenerator.GetHexString(32, true);
 
         var stanzaId = stz.Id;
 
@@ -208,22 +207,14 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
                 }
 
                 _state = newValue;
-
                 FireOnLog(XmppLogScope.State, $"Connection state changed: {oldValue} -> {newValue}");
 
-                try
+                OnStateChanged?.Invoke(new()
                 {
-                    OnStateChanged?.Invoke(new()
-                    {
-                        Connection = this,
-                        OldState = oldValue,
-                        NewState = newValue
-                    });
-                }
-                catch (Exception ex)
-                {
-                    FireOnLog(XmppLogScope.State, exception: ex);
-                }
+                    Connection = this,
+                    OldState = oldValue,
+                    NewState = newValue
+                });
             }
         }
     }
@@ -324,15 +315,19 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
     {
         lock (_callbacks)
         {
-            var entries = from o in _callbacks.Select((item, index) => (index, item))
+            var entries = from o in _callbacks.Select((item, index) => (item, index))
                           orderby o.item.Priority descending
                           select o;
 
-            foreach (var (index, cb) in entries)
+            foreach (var (cb, index) in entries)
             {
                 if (cb.Function(e))
                 {
+#if DEBUG
                     FireOnLog(XmppLogScope.Connection, $"{nameof(ProcessCallbacks)}(): Callback[{index}] '{cb.Name}' triggered");
+#else
+                    FireOnLog(XmppLogScope.Connection, $"Dispatch xmpp callback '{cb.Name}' (idx: {index})");
+#endif
                     _callbacks.RemoveAt(index);
                     cb.Completion.TrySetResult(e);
                     break;
@@ -449,9 +444,11 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
         // expat needs at least 1024 bytes of data.
 
         var buf = new byte[Math.Max(1024, RecvBufferSize)];
-        var isVerbosity = VerbosityLevel.HasFlag(XmppLogScope.Socket);
 
+#if DEBUG
+        var isVerbosity = VerbosityLevel.HasFlag(XmppLogScope.Socket);
         FireOnLog(XmppLogScope.Connection, $"Begin read loop task. Buffer size is {buf.Length} bytes.");
+#endif
 
         try
         {
@@ -461,30 +458,38 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
 
                 if (!_access.HasFlag(FileAccess.Read))
                 {
+#if DEBUG
                     if (isVerbosity)
                         FireOnLog(XmppLogScope.Socket, "Read loop paused.");
+#endif
 
                     continue;
                 }
 
+#if DEBUG
                 if (isVerbosity)
                     FireOnLog(XmppLogScope.Socket, "=> Begin read loop step");
+#endif
 
                 var len = await _stream!.ReadAsync(buf, token);
 
+#if DEBUG
                 if (isVerbosity)
                 {
                     float ratio = len / (float)buf.Length * 100f;
                     FireOnLog(XmppLogScope.Socket, $"Read loop step. Read {len} bytes. (buffer usage: {ratio:F1}%)");
                 }
+#endif
 
                 if (len <= 0)
                     break;
 
                 _parser!.Parse(buf, len, len == 0);
 
+#if DEBUG
                 if (isVerbosity)
                     FireOnLog(XmppLogScope.Socket, "<= End read loop step");
+#endif
             }
 
             FireOnLog(XmppLogScope.Connection, "Read loop gracefully completed.");
@@ -496,7 +501,7 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
             if (ex is XmlException or ExpatException)
                 scope = XmppLogScope.Parser;
 
-            FireOnLog(scope, "Read loop errored.", ex);
+            FireOnLog(scope, "Read loop error.", ex);
         }
         finally
         {
@@ -515,8 +520,10 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
     /// <returns></returns>
     protected async Task WriteLoop(CancellationToken token)
     {
+#if DEBUG
         var isVerbosity = VerbosityLevel.HasFlag(XmppLogScope.Socket);
         FireOnLog(XmppLogScope.Connection, "Begin write loop task.");
+#endif
 
         try
         {
@@ -526,16 +533,20 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
 
                 if (!_access.HasFlag(FileAccess.Write))
                 {
+#if DEBUG
                     if (isVerbosity)
                         FireOnLog(XmppLogScope.Socket, "Write loop paused.");
+#endif
 
                     continue;
                 }
 
                 if (!_writeQueue.IsEmpty)
                 {
+#if DEBUG
                     if (isVerbosity)
                         FireOnLog(XmppLogScope.Socket, "=> Begin write loop step");
+#endif
 
                     while (_writeQueue.TryDequeue(out var entry))
                     {
@@ -549,8 +560,10 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
                             {
                                 await _stream!.WriteAsync(entry.Bytes!, token);
 
+#if DEBUG
                                 if (isVerbosity)
                                     FireOnLog(XmppLogScope.Socket, $"Write loop step: Wrote {entry.Bytes!.Length} bytes.");
+#endif
                             }
                         }
                         finally
@@ -559,8 +572,10 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
                         }
                     }
 
+#if DEBUG
                     if (isVerbosity)
                         FireOnLog(XmppLogScope.Socket, $"<= End write loop step.");
+#endif
                 }
             }
 
@@ -578,7 +593,7 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
             if (ex is XmlException or ExpatException)
                 scope = XmppLogScope.Parser;
 
-            FireOnLog(scope, "Write loop errored.", ex);
+            FireOnLog(scope, "Write loop error.", ex);
         }
         finally
         {
