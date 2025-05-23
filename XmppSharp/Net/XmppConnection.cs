@@ -2,10 +2,12 @@ using Expat;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
-using XmppSharp.Abstractions;
+using System.Xml;
 using XmppSharp.Dom;
 using XmppSharp.Exceptions;
+using XmppSharp.Logging;
 using XmppSharp.Net.EventArgs;
 using XmppSharp.Protocol.Base;
 
@@ -36,11 +38,14 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
     public int ReadIdleWaitTimeMs { get; set; } = 160;
     public int WriteIdleWaitTimeMs { get; set; } = 160;
     public int DisconnectWaitTimeMs { get; set; } = 3000;
-    public XmppLogLevel LogLevel { get; set; } = XmppLogLevel.Information;
+
+    public XmppLogScope VerbosityLevel { get; set; } = XmppLogScope.Socket
+        | XmppLogScope.Connection
+        | XmppLogScope.Parser;
 
     public event Action<StateChangedEventArgs>? OnStateChanged;
     public event Action<XmppElementEventArgs>? OnElement;
-    public event XmppLoggingDelegate? OnLog;
+    public event LogEventHandler? OnLog;
 
     private volatile XmppConnectionState _state;
     private readonly List<XmppCallbackInfo> _callbacks = [];
@@ -48,25 +53,18 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
     protected void FireOnElement(XmppElement e)
         => OnElement?.Invoke(new() { Connection = this, Element = e });
 
-    protected void FireOnLog(XmppLogLevel level, string message)
+    protected void FireOnLog(XmppLogScope area, string? message = default, Exception? exception = default)
     {
-        if (LogLevel < level)
+        if (!VerbosityLevel.HasFlag(area))
             return;
 
-        try
+        OnLog?.Invoke(this, new()
         {
-            OnLog?.Invoke(new()
-            {
-                Sender = this,
-                Timestamp = DateTime.Now,
-                Level = level,
-                Message = message
-            });
-        }
-        catch (Exception ex)
-        {
-            Trace.TraceError(ex.ToString());
-        }
+            Scope = area,
+            Message = message,
+            Exception = exception,
+            Timestamp = DateTimeOffset.Now
+        });
     }
 
     /// <summary>
@@ -100,7 +98,8 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
     public async Task<XmppElement> WaitForElement(Func<XmppElement, bool> match,
         string? name = default,
         XmppCallbackPriority priority = XmppCallbackPriority.Normal,
-        CancellationToken token = default)
+        CancellationToken token = default,
+        [CallerArgumentExpression(nameof(match))] string? expression = default)
     {
         ArgumentNullException.ThrowIfNull(match);
 
@@ -122,7 +121,7 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
                 Priority = priority,
             };
 
-            FireOnLog(XmppLogLevel.Verbose, $"WaitForElement(): Register callback ({cb.Name}): {match}");
+            FireOnLog(XmppLogScope.Connection, $"WaitForElement(): Register callback ({cb.Name}): {expression}");
 
             _callbacks.Add(cb);
         }
@@ -136,7 +135,7 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
             lock (_callbacks)
             {
                 if (_callbacks.Remove(cb))
-                    FireOnLog(XmppLogLevel.Verbose, $"WaitForElement(): Removed dead callback: {cb.Name}");
+                    FireOnLog(XmppLogScope.Connection, $"WaitForElement(): Removed dead callback: {cb.Name}");
 
                 tcs.TrySetCanceled();
             }
@@ -164,18 +163,6 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
     }
 
     public XmppConnectionState State => _state;
-
-    protected void FireOnError(Exception ex, string? message = default)
-    {
-        OnLog?.Invoke(new()
-        {
-            Sender = this,
-            Timestamp = DateTime.Now,
-            Level = XmppLogLevel.Error,
-            Message = message ?? ex.Message,
-            Exception = ex
-        });
-    }
 
     /// <summary>
     /// Transitions the connection to a new state, ensuring state progression rules are followed.
@@ -216,13 +203,13 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
 
                 if (newValue != 0 && newValue < oldValue)
                 {
-                    FireOnLog(XmppLogLevel.Error, $"Rejected an attempt to rollback connection state ({oldValue} -> {newValue})");
+                    FireOnLog(XmppLogScope.State, $"Rejected an attempt to rollback connection state ({oldValue} -> {newValue})");
                     throw new InvalidOperationException("The connection state cannot be rolled back.");
                 }
 
                 _state = newValue;
 
-                FireOnLog(XmppLogLevel.Verbose, $"Connection state changed: {oldValue} -> {newValue}");
+                FireOnLog(XmppLogScope.State, $"Connection state changed: {oldValue} -> {newValue}");
 
                 try
                 {
@@ -235,7 +222,7 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
                 }
                 catch (Exception ex)
                 {
-                    FireOnError(ex);
+                    FireOnLog(XmppLogScope.State, exception: ex);
                 }
             }
         }
@@ -251,14 +238,17 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
     /// <exception cref="JabberStreamException"></exception>
     protected void InitParser()
     {
-        FireOnLog(XmppLogLevel.Verbose, "Init parser");
+        FireOnLog(XmppLogScope.Parser, "Init parser");
 
         _parser?.Dispose();
         _parser = new XmppParser(ExpatEncoding.UTF8, true);
 
+        var isVerbosity = VerbosityLevel.HasFlag(XmppLogScope.Xmpp);
+
         _parser.OnStreamStart += e =>
         {
-            OnReadXml(e.ToString());
+            if (isVerbosity)
+                OnReadXml(e.ToString());
 
             try
             {
@@ -266,14 +256,15 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
             }
             catch (Exception ex)
             {
-                FireOnError(ex);
+                FireOnLog(XmppLogScope.Parser, exception: ex);
                 Disconnect();
             }
         };
 
         _parser.OnStreamElement += e =>
         {
-            OnReadXml(e.ToString(false));
+            if (isVerbosity)
+                OnReadXml(e.ToString(false));
 
             try
             {
@@ -284,14 +275,15 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
             }
             catch (Exception ex)
             {
-                FireOnError(ex);
+                FireOnLog(XmppLogScope.Parser, exception: ex);
                 Disconnect();
             }
         };
 
         _parser.OnStreamEnd += () =>
         {
-            OnReadXml(Xml.XmppEndTag);
+            if (isVerbosity)
+                OnReadXml(Xml.XmppEndTag);
 
             try
             {
@@ -299,7 +291,7 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
             }
             catch (Exception ex)
             {
-                FireOnError(ex);
+                FireOnLog(XmppLogScope.Parser, exception: ex);
                 Disconnect();
             }
         };
@@ -340,7 +332,7 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
             {
                 if (cb.Function(e))
                 {
-                    FireOnLog(XmppLogLevel.Verbose, $"{nameof(ProcessCallbacks)}(): Callback[{index}] '{cb.Name}' triggered");
+                    FireOnLog(XmppLogScope.Connection, $"{nameof(ProcessCallbacks)}(): Callback[{index}] '{cb.Name}' triggered");
                     _callbacks.RemoveAt(index);
                     cb.Completion.TrySetResult(e);
                     break;
@@ -388,7 +380,7 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
         _access &= ~FileAccess.Read;
         GotoState(XmppConnectionState.Disconnecting);
         _parser?.Suspend(false);
-        FireOnLog(XmppLogLevel.Verbose, "Dispose called. Begin release connection.");
+        FireOnLog(XmppLogScope.Connection, "Dispose called. Begin release connection.");
 
         DisposeImpl(false);
 
@@ -428,7 +420,12 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
             }
             catch (Exception ex)
             {
-                FireOnError(ex);
+                var scope = XmppLogScope.Connection;
+
+                if (ex is XmlException or ExpatException)
+                    scope = XmppLogScope.Parser;
+
+                FireOnLog(scope, exception: ex);
             }
             finally
             {
@@ -436,16 +433,11 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
                 DisposeImpl(true);
             }
 
-            FireOnLog(XmppLogLevel.Verbose, "Dispose task completed.");
+            FireOnLog(XmppLogScope.Connection, "Dispose task completed.");
         });
 
         GC.SuppressFinalize(this);
     }
-
-    /// <summary>
-    /// Gets a value indicating whether verbose logging is enabled.
-    /// </summary>
-    protected bool IsVerbose => LogLevel >= XmppLogLevel.Verbose;
 
     /// <summary>
     /// Continuously reads data from the underlying stream and processes it using the XML parser.
@@ -457,9 +449,9 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
         // expat needs at least 1024 bytes of data.
 
         var buf = new byte[Math.Max(1024, RecvBufferSize)];
+        var isVerbosity = VerbosityLevel.HasFlag(XmppLogScope.Socket);
 
-        if (IsVerbose)
-            FireOnLog(XmppLogLevel.Verbose, $"Begin read loop task. Buffer size is {buf.Length} bytes.");
+        FireOnLog(XmppLogScope.Connection, $"Begin read loop task. Buffer size is {buf.Length} bytes.");
 
         try
         {
@@ -469,38 +461,47 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
 
                 if (!_access.HasFlag(FileAccess.Read))
                 {
-                    if (IsVerbose)
-                        FireOnLog(XmppLogLevel.Verbose, "Read loop paused.");
+                    if (isVerbosity)
+                        FireOnLog(XmppLogScope.Socket, "Read loop paused.");
 
                     continue;
                 }
 
+                if (isVerbosity)
+                    FireOnLog(XmppLogScope.Socket, "=> Begin read loop step");
+
                 var len = await _stream!.ReadAsync(buf, token);
 
-                if (IsVerbose)
+                if (isVerbosity)
                 {
                     float ratio = len / (float)buf.Length * 100f;
-                    FireOnLog(XmppLogLevel.Verbose, $"Read loop step. Read {len} bytes. (buffer usage: {ratio:F1}%)");
+                    FireOnLog(XmppLogScope.Socket, $"Read loop step. Read {len} bytes. (buffer usage: {ratio:F1}%)");
                 }
 
                 if (len <= 0)
                     break;
 
                 _parser!.Parse(buf, len, len == 0);
+
+                if (isVerbosity)
+                    FireOnLog(XmppLogScope.Socket, "<= End read loop step");
             }
 
-            FireOnLog(XmppLogLevel.Verbose, "Read loop gracefully completed.");
+            FireOnLog(XmppLogScope.Connection, "Read loop gracefully completed.");
         }
         catch (Exception ex)
         {
-            FireOnLog(XmppLogLevel.Verbose, "Read loop errored.");
-            FireOnError(ex);
+            var scope = XmppLogScope.Connection;
+
+            if (ex is XmlException or ExpatException)
+                scope = XmppLogScope.Parser;
+
+            FireOnLog(scope, "Read loop errored.", ex);
         }
         finally
         {
             Disconnect();
-            FireOnLog(XmppLogLevel.Verbose, "End read loop task.");
-            buf = null;
+            FireOnLog(XmppLogScope.Connection, "End read loop task.");
         }
     }
 
@@ -514,9 +515,8 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
     /// <returns></returns>
     protected async Task WriteLoop(CancellationToken token)
     {
-        FireOnLog(XmppLogLevel.Verbose, "Begin write loop task.");
-
-        DateTime dt = default;
+        var isVerbosity = VerbosityLevel.HasFlag(XmppLogScope.Socket);
+        FireOnLog(XmppLogScope.Connection, "Begin write loop task.");
 
         try
         {
@@ -526,19 +526,16 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
 
                 if (!_access.HasFlag(FileAccess.Write))
                 {
-                    if (IsVerbose)
-                        FireOnLog(XmppLogLevel.Verbose, "Write loop paused.");
+                    if (isVerbosity)
+                        FireOnLog(XmppLogScope.Socket, "Write loop paused.");
 
                     continue;
                 }
 
                 if (!_writeQueue.IsEmpty)
                 {
-                    if (IsVerbose)
-                    {
-                        dt = DateTime.Now;
-                        FireOnLog(XmppLogLevel.Verbose, "Begin write loop step");
-                    }
+                    if (isVerbosity)
+                        FireOnLog(XmppLogScope.Socket, "=> Begin write loop step");
 
                     while (_writeQueue.TryDequeue(out var entry))
                     {
@@ -552,8 +549,8 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
                             {
                                 await _stream!.WriteAsync(entry.Bytes!, token);
 
-                                if (IsVerbose)
-                                    FireOnLog(XmppLogLevel.Verbose, $"Write loop step: Wrote {entry.Bytes!.Length} bytes.");
+                                if (isVerbosity)
+                                    FireOnLog(XmppLogScope.Socket, $"Write loop step: Wrote {entry.Bytes!.Length} bytes.");
                             }
                         }
                         finally
@@ -562,15 +559,12 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
                         }
                     }
 
-                    if (IsVerbose)
-                    {
-                        var elapsedTime = (DateTime.Now - dt).TotalSeconds;
-                        FireOnLog(XmppLogLevel.Verbose, $"End write loop step. (took: {elapsedTime:0.00} sec.)");
-                    }
+                    if (isVerbosity)
+                        FireOnLog(XmppLogScope.Socket, $"<= End write loop step.");
                 }
             }
 
-            FireOnLog(XmppLogLevel.Verbose, "Write loop gracefully completed.");
+            FireOnLog(XmppLogScope.Connection, "Write loop gracefully completed.");
         }
         catch (Exception ex)
         {
@@ -579,33 +573,26 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
             while (_writeQueue.TryDequeue(out var entry))
                 entry.Completion?.TrySetException(ex);
 
-            FireOnError(ex);
+            var scope = XmppLogScope.Connection;
 
-            FireOnLog(XmppLogLevel.Verbose, "Write loop errored.");
+            if (ex is XmlException or ExpatException)
+                scope = XmppLogScope.Parser;
+
+            FireOnLog(scope, "Write loop errored.", ex);
         }
         finally
         {
             Dispose();
 
-            FireOnLog(XmppLogLevel.Verbose, "End write loop task.");
+            FireOnLog(XmppLogScope.Connection, "End write loop task.");
         }
     }
 
     void OnWriteXml(string xml)
-    {
-        if (LogLevel < XmppLogLevel.Debug)
-            return;
-
-        FireOnLog(XmppLogLevel.Debug, $"send >>\n{xml}\n");
-    }
+        => FireOnLog(XmppLogScope.Xmpp, $"send >>\n{xml}\n");
 
     void OnReadXml(string xml)
-    {
-        if (LogLevel < XmppLogLevel.Debug)
-            return;
-
-        FireOnLog(XmppLogLevel.Debug, $"recv <<\n{xml}\n");
-    }
+        => FireOnLog(XmppLogScope.Xmpp, $"recv <<\n{xml}\n");
 
     public void Send(XmppElement element)
     {
@@ -624,7 +611,8 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
             Bytes = xml.GetBytes()
         });
 
-        OnWriteXml(xml);
+        if (VerbosityLevel.HasFlag(XmppLogScope.Xmpp))
+            OnWriteXml(xml);
     }
 
     public Task SendAsync(XmppElement element)
@@ -643,7 +631,8 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
             Completion = tcs
         });
 
-        OnWriteXml(xml);
+        if (VerbosityLevel.HasFlag(XmppLogScope.Xmpp))
+            OnWriteXml(xml);
 
         return tcs.Task;
     }
@@ -669,11 +658,11 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
 
             OnWriteXml(xml);
 
-            FireOnLog(XmppLogLevel.Verbose, "Queued disconnect packet.");
+            FireOnLog(XmppLogScope.Connection, "Queued disconnect packet.");
         }
         else
         {
-            FireOnLog(XmppLogLevel.Verbose, "Unable to send disconnect packet due to write loop error.");
+            FireOnLog(XmppLogScope.Connection, "Unable to send disconnect packet due to write loop error.");
         }
 
         Dispose();

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
-using XmppSharp.Abstractions;
+using XmppSharp.Logging;
 using Stream = XmppSharp.Protocol.Base.Stream;
 
 namespace XmppSharp.Net;
@@ -51,13 +51,13 @@ public abstract class OutgoingXmppConnection : XmppConnection
     {
         var result = SslOptions ?? new();
 
-        FireOnLog(XmppLogLevel.Verbose, "Init SSL options.");
+        FireOnLog(XmppLogScope.Encryption, "Init SSL options.");
 
         if (result.RemoteCertificateValidationCallback != null)
-            FireOnLog(XmppLogLevel.Verbose, "Using provided SSL certificate validator.");
+            FireOnLog(XmppLogScope.Encryption, "Using provided SSL certificate validator.");
         else
         {
-            FireOnLog(XmppLogLevel.Verbose, "Using default SSL certificate validator.");
+            FireOnLog(XmppLogScope.Encryption, "Using default SSL certificate validator.");
 
             result.RemoteCertificateValidationCallback = static delegate
             {
@@ -90,16 +90,16 @@ public abstract class OutgoingXmppConnection : XmppConnection
         {
             if (SocketFactory != null)
             {
-                FireOnLog(XmppLogLevel.Verbose, "Using custom TCP socket factory.");
+                FireOnLog(XmppLogScope.Socket, "Using custom TCP socket factory.");
                 socket = SocketFactory();
             }
             else
             {
-                FireOnLog(XmppLogLevel.Verbose, "Using default TCP socket factory.");
+                FireOnLog(XmppLogScope.Socket, "Using default TCP socket factory.");
                 socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             }
 
-            FireOnLog(XmppLogLevel.Verbose, $"Connecting to {EndPoint}...");
+            FireOnLog(XmppLogScope.Connection, $"Connecting to {EndPoint}...");
             await socket.ConnectAsync(EndPoint);
 
             GotoState(XmppConnectionState.Connected);
@@ -110,7 +110,7 @@ public abstract class OutgoingXmppConnection : XmppConnection
             if (UseDirectTLS)
             {
 
-                FireOnLog(XmppLogLevel.Verbose, "Using DirectTLS, upgrading to SSL socket now.");
+                FireOnLog(XmppLogScope.Encryption, "Using DirectTLS, upgrading to SSL socket now.");
 
                 var temp = new SslStream(_stream);
                 await temp.AuthenticateAsClientAsync(GetSslOptions(), token);
@@ -120,13 +120,13 @@ public abstract class OutgoingXmppConnection : XmppConnection
                 GotoState(XmppConnectionState.Encrypted);
             }
 
-            FireOnLog(XmppLogLevel.Verbose, "Connected successfully, setting up connection...");
+            FireOnLog(XmppLogScope.Connection, "Connected successfully, setting up connection...");
             Setup(token);
         }
         catch
         {
             GotoState(XmppConnectionState.Disconnected);
-            FireOnLog(XmppLogLevel.Verbose, $"Connection to server {EndPoint} failed.");
+            FireOnLog(XmppLogScope.Connection, $"Connection to server {EndPoint} failed.");
             socket?.Dispose();
             throw;
         }
@@ -142,17 +142,17 @@ public abstract class OutgoingXmppConnection : XmppConnection
         {
             try
             {
-                FireOnLog(XmppLogLevel.Verbose, "Begin I/O tasks.");
+                FireOnLog(XmppLogScope.Connection, "Begin I/O tasks.");
                 InitConnection();
                 await Task.WhenAll(ReadLoop(token), WriteLoop(token));
             }
             catch (Exception ex)
             {
-                FireOnError(ex);
+                FireOnLog(XmppLogScope.Connection, exception: ex);
             }
             finally
             {
-                FireOnLog(XmppLogLevel.Verbose, "End I/O tasks.");
+                FireOnLog(XmppLogScope.Connection, "End I/O tasks.");
                 Disconnect();
             }
         }, CancellationToken.None);

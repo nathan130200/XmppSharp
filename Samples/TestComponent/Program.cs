@@ -1,5 +1,5 @@
 using System.Net;
-using XmppSharp.Abstractions;
+using XmppSharp.Logging;
 using XmppSharp.Net;
 
 using var client = new OutgoingXmppComponentConnection
@@ -7,19 +7,16 @@ using var client = new OutgoingXmppComponentConnection
     Server = "xmppsharp",
     EndPoint = new DnsEndPoint("localhost", 5275),
     Password = "youshallnotpass",
-    LogLevel = XmppLogLevel.Verbose
+    VerbosityLevel = XmppLogScope.Full
 };
 
-client.OnLog += (e) =>
+client.OnLog += (sender, e) =>
 {
-    lock (client)
-    {
-        var self = (e.Sender as OutgoingXmppConnection)!;
-        Console.WriteLine($"[{e.Timestamp:HH:Mm:ss}] [{e.Level}] <{self.Jid}> {e.Message}");
+    var self = (OutgoingXmppConnection)sender;
+    Console.WriteLine($"[{e.Timestamp:HH:Mm:ss}] [{e.Scope}] <{self.Jid}> {e.Message}");
 
-        if (e.Exception != null)
-            Console.WriteLine(e.Exception);
-    }
+    if (e.Exception != null)
+        Console.WriteLine(e.Exception);
 };
 
 while (true)

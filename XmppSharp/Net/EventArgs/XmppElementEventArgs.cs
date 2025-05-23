@@ -12,7 +12,7 @@ public class XmppElementEventArgs : XmppConnectionEventArgs
     public XmppElement Element { get; init; }
 }
 
-public sealed class StateChangedEventArgs : XmppConnectionEventArgs
+public class StateChangedEventArgs : XmppConnectionEventArgs
 {
     public XmppConnectionState OldState { get; init; }
     public XmppConnectionState NewState { get; init; }

@@ -1,7 +1,7 @@
 using System.Net.Security;
-using XmppSharp.Abstractions;
 using XmppSharp.Dom;
 using XmppSharp.Exceptions;
+using XmppSharp.Logging;
 using XmppSharp.Protocol;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Client;
@@ -100,6 +100,8 @@ public class OutgoingXmppClientConnection : OutgoingXmppConnection
         {
             try
             {
+                FireOnLog(XmppLogScope.Encryption, "Starting TLS handshake...");
+
                 using var cts = new CancellationTokenSource(TlsHandshakeTimeoutMs);
                 var temp = new SslStream(_stream!);
                 await temp.AuthenticateAsClientAsync(GetSslOptions(), cts.Token);
@@ -111,12 +113,12 @@ public class OutgoingXmppClientConnection : OutgoingXmppConnection
             }
             catch (OperationCanceledException ex)
             {
-                FireOnError(ex, "TLS handshake timeout.");
+                FireOnLog(XmppLogScope.Encryption, "TLS handshake timeout.", ex);
                 Dispose();
             }
             catch (Exception ex)
             {
-                FireOnError(ex, "TLS handshake failed.");
+                FireOnLog(XmppLogScope.Encryption, "TLS handshake failed.", ex);
                 Dispose();
             }
         });
@@ -181,7 +183,7 @@ public class OutgoingXmppClientConnection : OutgoingXmppConnection
 
             _init_sasl:
                 {
-                    FireOnLog(XmppLogLevel.Verbose, $"Using SASL mechanism implementation '{_saslHandler.GetType().FullName}'.");
+                    FireOnLog(XmppLogScope.Connection, $"Using SASL mechanism implementation '{_saslHandler.GetType().FullName}'.");
                     _saslHandler.Init();
                     return;
                 }
@@ -204,7 +206,7 @@ public class OutgoingXmppClientConnection : OutgoingXmppConnection
                 }
                 else if (result.Type == XmppSaslHandlerResultType.Error)
                 {
-                    FireOnError(result.Exception, "Authentication failed.");
+                    FireOnLog(XmppLogScope.Connection, "Authentication failed.", result.Exception);
                     Disconnect();
                 }
 
@@ -246,7 +248,7 @@ public class OutgoingXmppClientConnection : OutgoingXmppConnection
         }
         catch (Exception ex)
         {
-            FireOnError(ex);
+            FireOnLog(XmppLogScope.Connection, exception: ex);
             Disconnect();
         }
     }
@@ -276,7 +278,7 @@ public class OutgoingXmppClientConnection : OutgoingXmppConnection
             Resource = resource
         };
 
-        FireOnLog(XmppLogLevel.Verbose, $"Using client JID {Jid} as current.");
+        FireOnLog(XmppLogScope.Connection, $"Using client JID {Jid} as current.");
     }
 
     async Task DoSessionStart()
@@ -297,6 +299,6 @@ public class OutgoingXmppClientConnection : OutgoingXmppConnection
             throw new JabberException($"Session start failed.{msg}");
         }
 
-        FireOnLog(XmppLogLevel.Verbose, "Client session started.");
+        FireOnLog(XmppLogScope.Connection, "Client session started.");
     }
 }

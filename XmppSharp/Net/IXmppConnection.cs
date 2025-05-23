@@ -1,5 +1,6 @@
-using XmppSharp.Abstractions;
+using System.Runtime.CompilerServices;
 using XmppSharp.Dom;
+using XmppSharp.Logging;
 using XmppSharp.Net.EventArgs;
 using XmppSharp.Protocol.Base;
 
@@ -57,7 +58,7 @@ public interface IXmppConnection
     /// <summary>
     /// Gets or sets the logging level for logging messages.
     /// </summary>
-    XmppLogLevel LogLevel { get; set; }
+    XmppLogScope VerbosityLevel { get; set; }
 
     /// <summary>
     /// Occurs when the connection state changes.
@@ -70,9 +71,9 @@ public interface IXmppConnection
     event Action<XmppElementEventArgs>? OnElement;
 
     /// <summary>
-    /// Occurs when an log entry is generated. The <see cref="LogLevel"/> property manage the verbosity level.
+    /// Occurs when an log entry is generated. The <see cref="VerbosityLevel"/> property manage the verbosity level.
     /// </summary>
-    event XmppLoggingDelegate? OnLog;
+    event LogEventHandler? OnLog;
 
     /// <summary>
     /// Waits asynchronously for an XMPP element that matches the specified condition.
@@ -88,7 +89,8 @@ public interface IXmppConnection
     Task<XmppElement> WaitForElement(Func<XmppElement, bool> match,
         string? name = default,
         XmppCallbackPriority priority = XmppCallbackPriority.Normal,
-        CancellationToken token = default);
+        CancellationToken token = default,
+        [CallerArgumentExpression(nameof(match))] string? expression = default);
 
     /// <summary>
     /// Sends a stanza of the specified type and waits asynchronously for a response.

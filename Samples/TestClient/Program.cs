@@ -1,6 +1,7 @@
 using System.Net;
-using XmppSharp.Abstractions;
+using XmppSharp.Logging;
 using XmppSharp.Net;
+using XmppSharp.Net.EventArgs;
 using XmppSharp.Protocol;
 using XmppSharp.Protocol.Extensions.XEP0199;
 
@@ -11,19 +12,16 @@ using var client = new OutgoingXmppClientConnection
     Resource = Environment.MachineName,
     EndPoint = new DnsEndPoint("localhost", 5222),
     Password = "youshallnotpass",
-    LogLevel = XmppLogLevel.Verbose
+    VerbosityLevel = XmppLogScope.Full
 };
 
-client.OnLog += (e) =>
+client.OnLog += static (sender, e) =>
 {
-    lock (client)
-    {
-        var self = (e.Sender as OutgoingXmppClientConnection)!;
-        Console.WriteLine($"[{e.Timestamp:HH:Mm:ss}] [{e.Level}] <{self.Jid}> {e.Message}");
+    var self = (OutgoingXmppClientConnection)sender;
+    Console.WriteLine($"[{e.Timestamp:HH:Mm:ss}] <{self.Jid}> {e.Message}");
 
-        if (e.Exception != null)
-            Console.WriteLine(e.Exception);
-    }
+    if (e.Exception != null)
+        Console.WriteLine(e.Exception);
 };
 
 _ = new PingManager(client)
@@ -64,7 +62,7 @@ while (true)
 
 class PingManager
 {
-    private OutgoingXmppClientConnection _connection;
+    private readonly OutgoingXmppClientConnection _connection;
     private DateTimeOffset _lastPingTime = DateTimeOffset.Now;
     private Timer _timer;
 
@@ -83,11 +81,11 @@ class PingManager
         _connection.Disconnect();
     }
 
-    void OnStateChanged(ConnectionStateChangedEventArgs e)
+    void OnStateChanged(StateChangedEventArgs e)
     {
         if (e.NewState == XmppConnectionState.SessionStarted)
         {
-            _timer = new(OnTick, null, -1, 60_000);
+            _timer = new(OnTick, null, -1, 5000);
             e.Connection.OnElement += OnElement;
             Console.WriteLine("\tPing timer started");
         }
@@ -100,7 +98,7 @@ class PingManager
         }
     }
 
-    void OnElement(ConnectionElementEventArgs e)
+    void OnElement(XmppElementEventArgs e)
     {
         var con = e.Connection;
 
@@ -108,10 +106,12 @@ class PingManager
         {
             iq.Type = IqType.Result;
             iq.SwitchDirection();
-            var elapsed = _lastPingTime - DateTimeOffset.Now;
-            _lastPingTime = DateTimeOffset.Now;
-            Heartbeated?.Invoke(true, (long)elapsed.TotalMilliseconds);
-            con.Send(iq);
+            con.SendAsync(iq).ContinueWith(_ =>
+            {
+                var elapsed = DateTimeOffset.Now - _lastPingTime;
+                Heartbeated?.Invoke(true, (long)elapsed.TotalMilliseconds);
+                _lastPingTime = DateTimeOffset.Now;
+            });
         }
     }
 }
