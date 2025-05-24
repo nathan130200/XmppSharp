@@ -1,6 +1,6 @@
 <Project>
 	<PropertyGroup>
 		<XmppSharpVersion>6.4.1</XmppSharpVersion>
-		<XmppSharpNetVersion>1.0.0</XmppSharpNetVersion>
+		<XmppSharpNetVersion>1.0.1</XmppSharpNetVersion>
 	</PropertyGroup>
 </Project>
