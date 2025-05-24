@@ -38,6 +38,7 @@ public sealed class OutgoingXmppComponentConnection : OutgoingXmppConnection
         {
             if (e is Handshake)
             {
+                Jid = Server;
                 GotoState(XmppConnectionState.Authenticated);
                 return;
             }

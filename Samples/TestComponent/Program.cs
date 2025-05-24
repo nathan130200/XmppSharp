@@ -1,5 +1,6 @@
 using System.Net;
 using XmppSharp.Logging;
+using XmppSharp;
 using XmppSharp.Net;
 
 using var client = new OutgoingXmppComponentConnection

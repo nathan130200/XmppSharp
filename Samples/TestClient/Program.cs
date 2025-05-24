@@ -1,4 +1,5 @@
 using System.Net;
+using XmppSharp;
 using XmppSharp.Logging;
 using XmppSharp.Net;
 using XmppSharp.Protocol;
