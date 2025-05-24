@@ -1,9 +1,9 @@
-﻿using System.Text;
+using System.Text;
 using XmppSharp.Collections;
 
 namespace XmppSharp;
 
-public static class XmppSharpHelpers
+public static class XmppSharpUtilities
 {
     public static byte[] GetBytes(this string str, Encoding? encoding = default)
         => (encoding ?? Encoding.UTF8).GetBytes(str);

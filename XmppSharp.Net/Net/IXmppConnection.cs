@@ -115,7 +115,7 @@ public interface IXmppConnection
 
     /// <summary>
     /// Sends the specified XMPP element asynchronously.
-    /// </summary
+    /// </summary>
     Task SendAsync(XmppElement e);
 
     /// <summary>

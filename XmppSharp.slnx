@@ -1,0 +1,9 @@
+<Solution>
+	<Project Path="XmppSharp/XmppSharp.csproj" />
+	<Folder Name="/Samples/">
+		<Project Path="Samples/TestClient/TestClient.csproj" />
+		<Project Path="Samples/TestComponent/TestComponent.csproj" />
+	</Folder>
+	<Project Path="XmppSharp.Net/XmppSharp.Net.csproj" />
+	<Project Path="XmppSharp.Test/XmppSharp.Test.csproj" />
+</Solution>

@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<RootNamespace>XmppSharp</RootNamespace>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<NoWarn>CS1591;CS1573</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\XmppSharp\XmppSharp.csproj" />
+	</ItemGroup>
+
+	<PropertyGroup>
+		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<Description>Client &amp; component implementations using XMPP#</Description>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<PackageId>XmppSharp.Net</PackageId>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageTags>xmpp, jabber, xml, xmpp client, xmpp component, xmpp server</PackageTags>
+		<PackageVersion>$(XmppSharpNetVersion)</PackageVersion>
+		<PackageOutputPath>$(SolutionDir)\Packages\$(PackageId)</PackageOutputPath>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Update="README.md">
+			<Pack>true</Pack>
+			<PackagePath>/</PackagePath>
+		</None>
+		
+		<None Include="..\LICENSE">
+			<Pack>true</Pack>
+			<PackagePath>/</PackagePath>
+		</None>
+	</ItemGroup>
+
+</Project>

@@ -292,7 +292,7 @@ public abstract class XmppConnection : IXmppConnection, IDisposable
     /// <summary>
     /// Called when a XMPP stream is received.
     /// </summary>
-    /// <param name="e">The <see cref="Stream"/> instance representing the stream that has started.</param>
+    /// <param name="e">The <see cref="Protocol.Base.Stream"/> instance representing the stream that has started.</param>
     protected virtual void OnStreamStart(Protocol.Base.Stream e)
     {
 

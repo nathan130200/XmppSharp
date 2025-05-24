@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -12,9 +12,9 @@
 
 		<PackageId>XmppSharp</PackageId>
 		<PackageVersion>$(XmppSharpVersion)</PackageVersion>
-		<PackageTags>xmpp, xmpp client, xmpp component, xmpp server, jabber, xml</PackageTags>
+		<PackageTags>xmpp, jabber, xml, xmpp client, xmpp component, xmpp server</PackageTags>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
-		<PackageOutputPath>$(SolutionDir)Packages</PackageOutputPath>
+		<PackageOutputPath>$(SolutionDir)\Packages\$(PackageId)</PackageOutputPath>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<Authors>nathan130200</Authors>
@@ -25,13 +25,7 @@
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	</PropertyGroup>
-
-	<ItemGroup Condition="$(XmppSharpExcludeNet) == true">
-		<Compile Remove="Logging\**\*" />
-		<Compile Remove="Net\**\*" />
-		<Compile Remove="Sasl\**\*" />
-	</ItemGroup>
-
+	
 	<ItemGroup>
 		<None Include="..\LICENSE">
 			<Pack>True</Pack>

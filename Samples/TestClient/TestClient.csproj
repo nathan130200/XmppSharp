@@ -7,7 +7,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\XmppSharp\XmppSharp.csproj" />
+	  <ProjectReference Include="..\..\XmppSharp.Net\XmppSharp.Net.csproj" />
 	</ItemGroup>
 
 </Project>

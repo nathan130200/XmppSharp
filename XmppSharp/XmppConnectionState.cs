@@ -1,4 +1,4 @@
-namespace XmppSharp.Net;
+namespace XmppSharp;
 
 /// <summary>
 /// Represents the various states of an XMPP connection during its lifecycle.
