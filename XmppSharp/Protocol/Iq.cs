@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using XmppSharp.Attributes;
 using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
@@ -36,20 +36,27 @@ public class Iq : Stanza
         RegisterQuery("bind", Namespaces.Bind);
         RegisterQuery("session", Namespaces.Session);
         RegisterQuery("ping", Namespaces.Ping);
-        RegisterQuery("query", Namespaces.DiscoInfo);
-        RegisterQuery("query", Namespaces.DiscoItems);
-        RegisterQuery("query", Namespaces.CryOnline);
-        RegisterQuery("query", Namespaces.IqAuth);
-        RegisterQuery("query", Namespaces.IqGateway);
-        RegisterQuery("query", Namespaces.IqLast);
-        RegisterQuery("query", Namespaces.IqOob);
-        RegisterQuery("query", Namespaces.IqPrivacy);
-        RegisterQuery("query", Namespaces.IqPrivate);
-        RegisterQuery("query", Namespaces.IqRegister);
-        RegisterQuery("query", Namespaces.IqRoster);
-        RegisterQuery("query", Namespaces.IqRpc);
-        RegisterQuery("query", Namespaces.IqSearch);
-        RegisterQuery("query", Namespaces.IqVersion);
+
+        string[] namespaces = [
+            Namespaces.DiscoInfo,
+            Namespaces.DiscoItems,
+            Namespaces.CryOnline,
+            Namespaces.IqAuth,
+            Namespaces.IqGateway,
+            Namespaces.IqLast,
+            Namespaces.IqOob,
+            Namespaces.IqPrivacy,
+            Namespaces.IqPrivate,
+            Namespaces.IqRegister,
+            Namespaces.IqRoster,
+            Namespaces.IqRpc,
+            Namespaces.IqSearch,
+            Namespaces.IqVersion,
+        ];
+
+        foreach (var ns in namespaces)
+            RegisterQuery("query", ns);
+
         RegisterQuery("vCard", Namespaces.vCard);
     }
 

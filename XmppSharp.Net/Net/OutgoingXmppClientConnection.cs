@@ -50,7 +50,7 @@ public class OutgoingXmppClientConnection : OutgoingXmppConnection
     /// authentication mechanisms, and the connection will be closed. If this property is not explicitly set,
     /// the first available mechanism from the server's list will be used by default.
     /// </remarks>
-    public Func<IEnumerable<ISaslMechanismEntry>, ISaslMechanismEntry?>? MechanismSelector { get; init; }
+    public Func<IEnumerable<ISaslMechanism>, ISaslMechanism?>? MechanismSelector { get; init; }
 
     /// <summary>
     /// Gets or sets the encryption policy for TLS connections.
@@ -154,7 +154,8 @@ public class OutgoingXmppClientConnection : OutgoingXmppConnection
                 if (features.Mechanisms == null)
                     throw new JabberStreamException(StreamErrorCondition.UnsupportedFeature, "The remote server does not support SASL authentication.");
 
-                var mechanisms = features.Mechanisms.OfType<ISaslMechanismEntry>();
+                var mechanisms = features.Mechanisms.Nodes()
+                    .OfType<ISaslMechanism>();
 
                 if (MechanismSelector != null)
                 {

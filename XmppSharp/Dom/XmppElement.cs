@@ -23,7 +23,7 @@ internal class XmppElementDebuggerProxy
 }
 
 [DebuggerTypeProxy(typeof(XmppElementDebuggerProxy))]
-public class XmppElement : XmppNode, IEnumerable<XmppNode>
+public class XmppElement : XmppNode
 {
     private string _localName;
     private string? _prefix;
@@ -115,8 +115,11 @@ public class XmppElement : XmppNode, IEnumerable<XmppNode>
         }
         set
         {
-            RemoveNodes();
-            AddChild(new XmppText(value));
+            foreach (var node in Nodes().OfType<XmppText>())
+                RemoveChild(node);
+
+            if (value != null)
+                AddChild(new XmppText(value));
         }
     }
 
@@ -235,7 +238,8 @@ public class XmppElement : XmppNode, IEnumerable<XmppNode>
         foreach (var node in Nodes())
             result.AddChild(node.Clone());
 
-        result.Value = Value;
+        if (Value != null)
+            result.Value = Value;
 
         return result;
     }
@@ -480,17 +484,5 @@ public class XmppElement : XmppNode, IEnumerable<XmppNode>
 
             _children.Clear();
         }
-    }
-
-    IEnumerator<XmppNode> IEnumerable<XmppNode>.GetEnumerator()
-    {
-        foreach (var node in Nodes())
-            yield return node;
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        foreach (var node in Nodes())
-            yield return node;
     }
 }

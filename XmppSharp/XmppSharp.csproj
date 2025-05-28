@@ -9,6 +9,7 @@
 		<RepositoryType>git</RepositoryType>
 		<Description>Lightweight XMPP library.</Description>
 		<TargetFramework>net9.0</TargetFramework>
+		<NoWarn>CS1591</NoWarn>
 
 		<PackageId>XmppSharp</PackageId>
 		<PackageVersion>$(XmppSharpVersion)</PackageVersion>
@@ -24,8 +25,9 @@
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
-	
+
 	<ItemGroup>
 		<None Include="..\LICENSE">
 			<Pack>True</Pack>

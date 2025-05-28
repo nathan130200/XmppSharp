@@ -4,7 +4,7 @@ using XmppSharp.Dom;
 namespace XmppSharp.Protocol.Sasl;
 
 [XmppTag("mechanism", Namespaces.Sasl)]
-public class Mechanism : XmppElement, ISaslMechanismEntry
+public class Mechanism : XmppElement, ISaslMechanism
 {
     public Mechanism() : base("mechanism", Namespaces.Sasl)
     {
@@ -17,10 +17,10 @@ public class Mechanism : XmppElement, ISaslMechanismEntry
         Value = mechanismName;
     }
 
-    string? ISaslMechanismEntry.MechanismName => Value;
+    string? ISaslMechanism.MechanismName => Value;
 }
 
-public interface ISaslMechanismEntry
+public interface ISaslMechanism
 {
     string? MechanismName { get; }
 }
