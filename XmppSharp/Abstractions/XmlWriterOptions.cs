@@ -14,7 +14,7 @@ public static class XmlWriterOptions
 	static readonly ThreadLocal<bool> s_CheckCharacters = new(() => true);
 	static readonly ThreadLocal<bool> s_OmitXmlDeclaration = new(() => true);
 	static readonly ThreadLocal<string> s_IndentChars = new();
-	static readonly AsyncLocal<Encoding> s_OutputEncoding = new();
+	static readonly ThreadLocal<Encoding> s_OutputEncoding = new();
 	static readonly ThreadLocal<string> s_NewLineChars = new();
 	static readonly ThreadLocal<bool> s_NewLineOnAttributes = new(() => false);
 
