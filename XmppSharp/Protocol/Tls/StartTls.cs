@@ -11,31 +11,34 @@ public class StartTls : XmppElement
 
 	}
 
-	public StartTls(TlsPolicy policy) : this()
+	public StartTls(bool? required) : this()
 	{
-		Policy = policy;
+		Required = required;
 	}
 
-	public TlsPolicy Policy
+	public bool? Required
 	{
 		get
 		{
+			if (HasTag("optional", Namespaces.Tls))
+				return false;
+
 			if (HasTag("required", Namespaces.Tls))
-				return TlsPolicy.Required;
-			else if (HasTag("optional", Namespaces.Tls))
-				return TlsPolicy.Optional;
-			else
-				return TlsPolicy.None;
+				return true;
+
+			return null;
 		}
 		set
 		{
-			RemoveTag("optional");
-			RemoveTag("required");
-
-			if (value == TlsPolicy.Optional)
-				SetTag("optional", Namespaces.Tls);
-			else if (value == TlsPolicy.Required)
-				SetTag("required", Namespaces.Tls);
+			if (value is not bool state)
+			{
+				RemoveTag("optional", Namespaces.Tls);
+				RemoveTag("required", Namespaces.Tls);
+			}
+			else
+			{
+				SetTag(state ? "required" : "optional", Namespaces.Tls);
+			}
 		}
 	}
 }
