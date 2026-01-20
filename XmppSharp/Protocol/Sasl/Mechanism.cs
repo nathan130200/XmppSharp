@@ -3,24 +3,19 @@ using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Sasl;
 
-[XmppTag("mechanism", Namespaces.Sasl)]
-public class Mechanism : XmppElement, ISaslMechanism
+[Tag("mechanism", Namespaces.Sasl)]
+public class Mechanism : XmppElement, ISaslMechanismInfo
 {
-    public Mechanism() : base("mechanism", Namespaces.Sasl)
-    {
+	public Mechanism() : base("mechanism", Namespaces.Sasl)
+	{
 
-    }
+	}
 
-    public Mechanism(string mechanismName) : this()
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(mechanismName);
-        Value = mechanismName;
-    }
+	public Mechanism(string mechanismName) : this()
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace(mechanismName);
+		InnerText = mechanismName;
+	}
 
-    string? ISaslMechanism.MechanismName => Value;
-}
-
-public interface ISaslMechanism
-{
-    string? MechanismName { get; }
+	string? ISaslMechanismInfo.MechanismName => InnerText;
 }

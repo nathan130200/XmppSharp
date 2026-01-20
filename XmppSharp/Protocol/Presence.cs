@@ -1,110 +1,105 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 using XmppSharp.Protocol.Base;
 using XmppSharp.Protocol.Extensions.XEP0045;
 using XmppSharp.Protocol.Extensions.XEP0172;
 
 namespace XmppSharp.Protocol;
 
-[XmppTag("precense", Namespaces.Client)]
-[XmppTag("precense", Namespaces.Server)]
-[XmppTag("precense", Namespaces.Connect)]
-[XmppTag("precense", Namespaces.Accept)]
+[Tag("precense", Namespaces.Client)]
+[Tag("precense", Namespaces.Server)]
+[Tag("precense", Namespaces.Component)]
 public class Presence : Stanza
 {
-    public Presence() : base("presence", Namespaces.Client)
-    {
+	public Presence() : base("presence", Namespaces.Client)
+	{
 
-    }
+	}
 
-    public Presence(PresenceType type, PresenceShow? show = default, sbyte? priority = default) : this()
-    {
-        Type = type;
-        Show = show;
-        Priority = priority;
-    }
+	public Presence(PresenceType type, PresenceShow show = default, sbyte? priority = default) : this()
+	{
+		Type = type;
+		Show = show;
+		Priority = priority;
+	}
 
-    public new PresenceType Type
-    {
-        get => XmppEnum.FromXmlOrDefault(base.Type, PresenceType.Available);
-        set
-        {
-            if (value == PresenceType.Available)
-                base.Type = null;
-            else
-            {
-                if (!Enum.IsDefined(value))
-                    throw new ArgumentException(default, nameof(Type));
+	public new PresenceType Type
+	{
+		get => XmppEnum.ParseOrDefault(base.Type, PresenceType.Available);
+		set
+		{
+			if (value == PresenceType.Available)
+				base.Type = null;
+			else
+			{
+				if (!Enum.IsDefined(value))
+					throw new ArgumentException(default, nameof(Type));
 
-                base.Type = XmppEnum.ToXml(value);
-            }
-        }
-    }
+				base.Type = XmppEnum.ToXml(value);
+			}
+		}
+	}
 
-    public PresenceShow? Show
-    {
-        get
-        {
-            if (!HasTag("show"))
-                return null;
+	public PresenceShow Show
+	{
+		get => XmppEnum.ParseOrDefault<PresenceShow>(GetTag("show"));
+		set
+		{
+			if (Enum.IsDefined(value))
+				SetTag("show", value: value.ToXml());
+			else
+				RemoveTag("show");
+		}
+	}
 
-            return XmppEnum.FromXml<PresenceShow>(GetTag("show"));
-        }
-        set
-        {
-            RemoveTag("show");
+	public sbyte? Priority
+	{
+		get
+		{
+			if (sbyte.TryParse(GetTag("priority"), out var result))
+				return result;
 
-            if (value.HasValue)
-                SetTag("show", value: XmppEnum.ToXml(value));
-        }
-    }
+			return default;
+		}
+		set
+		{
+			if (!value.HasValue)
+				RemoveTag("priority");
+			else
+				SetTag("priority", value: (sbyte)value);
+		}
+	}
 
-    public sbyte? Priority
-    {
-        get
-        {
-            if (sbyte.TryParse(GetTag("priority"), out var result))
-                return result;
+	public string? Status
+	{
+		get => GetTag("status");
+		set
+		{
+			if (value != null)
+				SetTag("status", value: value);
+			else
+				RemoveTag("status");
+		}
+	}
 
-            return default;
-        }
-        set
-        {
-            RemoveTag("priority");
+	public MucUser? User
+	{
+		get => Element<MucUser>();
+		set
+		{
+			Element<MucUser>()?.Remove();
 
-            if (value.HasValue)
-                SetTag("priority", value: (sbyte)value);
-        }
-    }
+			AddChild(value);
+		}
+	}
 
-    public string? Status
-    {
-        get => GetTag("status");
-        set
-        {
-            RemoveTag("status");
+	public Nickname? Nickname
+	{
+		get => Element<Nickname>();
+		set
+		{
+			Element<Nickname>()?.Remove();
 
-            if (value != null)
-                SetTag("status", value: value);
-        }
-    }
-
-    public MucUser? User
-    {
-        get => Element<MucUser>();
-        set
-        {
-            Element<MucUser>()?.Remove();
-            AddChild(value);
-        }
-    }
-
-    public Nickname? Nickname
-    {
-        get => Element<Nickname>();
-        set
-        {
-            Element<Nickname>()?.Remove();
-            AddChild(value);
-        }
-    }
+			AddChild(value);
+		}
+	}
 }

@@ -1,25 +1,25 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 
-[XmppTag("actor", Namespaces.MucUser)]
-[XmppTag("actor", Namespaces.MucAdmin)]
+[Tag("actor", Namespaces.MucUser)]
+[Tag("actor", Namespaces.MucAdmin)]
 public class Actor : XmppElement
 {
-    public Actor() : base("actor")
-    {
+	public Actor() : base("actor")
+	{
 
-    }
+	}
 
-    public Actor(Jid? jid) : this()
-    {
-        Jid = jid;
-    }
+	public Actor(Jid? jid) : this()
+	{
+		Jid = jid;
+	}
 
-    public Jid? Jid
-    {
-        get => GetAttribute("jid");
-        set => SetAttribute("jid", value);
-    }
+	public Jid? Jid
+	{
+		get => GetAttribute("jid");
+		set => SetAttribute("jid", value);
+	}
 }

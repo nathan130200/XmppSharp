@@ -1,96 +1,94 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 using XmppSharp.Dom;
-using XmppSharp.Extensions;
 
 namespace XmppSharp.Protocol.Base;
 
-[XmppTag("error", Namespaces.Client)]
-[XmppTag("error", Namespaces.Server)]
-[XmppTag("error", Namespaces.Accept)]
-[XmppTag("error", Namespaces.Connect)]
+[Tag("error", Namespaces.Client)]
+[Tag("error", Namespaces.Server)]
+[Tag("error", Namespaces.Component)]
 public class StanzaError : XmppElement
 {
-    public StanzaError() : base("error")
-    {
+	public StanzaError() : base("error")
+	{
 
-    }
+	}
 
-    public StanzaErrorType? Type
-    {
-        get => XmppEnum.FromXml<StanzaErrorType>(GetAttribute("type"));
-        set
-        {
-            if (!value.HasValue)
-                RemoveAttribute("type");
-            else
-                SetAttribute("type", XmppEnum.ToXml(value));
-        }
-    }
+	public StanzaErrorType Type
+	{
+		get => XmppEnum.ParseOrDefault<StanzaErrorType>(GetAttribute("type"));
+		set
+		{
+			if (!Enum.IsDefined(value))
+				RemoveAttribute("type");
+			else
+				SetAttribute("type", value.ToXml());
+		}
+	}
 
-    public string? By
-    {
-        get => GetAttribute("by");
-        set => SetAttribute("by", value);
-    }
+	public string? By
+	{
+		get => GetAttribute("by");
+		set => SetAttribute("by", value);
+	}
 
-    public StanzaErrorCondition Condition
-    {
-        get
-        {
-            foreach (var (name, value) in XmppEnum.XmlMapping<StanzaErrorCondition>())
-            {
-                if (HasTag(name, Namespaces.Stanzas))
-                    return value;
-            }
+	public StanzaErrorCondition Condition
+	{
+		get
+		{
+			foreach (var (name, value) in XmppEnum.GetMembers<StanzaErrorCondition>())
+			{
+				if (HasTag(name, Namespaces.Stanzas))
+					return value;
+			}
 
-            return StanzaErrorCondition.UndefinedCondition;
-        }
-        set
-        {
-            XmppEnum.GetNames<StanzaErrorCondition>()
-                .ForEach(x => Element(x, Namespaces.Stanzas)?.Remove());
+			return default;
+		}
+		set
+		{
+			foreach (var name in XmppEnum.GetNames<StanzaErrorCondition>())
+				Element(name, Namespaces.Stanzas)?.Remove();
 
-            if (Enum.IsDefined(value) && value != StanzaErrorCondition.Unspecified)
-            {
-                var name = XmppEnum.ToXml(value)!;
-                SetTag(name, xmlns: Namespaces.Stanzas);
-            }
-        }
-    }
+			if (Enum.IsDefined(value))
+			{
+				var name = XmppEnum.ToXml(value)!;
+				SetTag(name, xmlns: Namespaces.Stanzas);
+			}
+		}
+	}
 
-    public int? Code
-    {
-        get => this.GetAttribute<int>("code");
-        set
-        {
-            if (!value.HasValue)
-                RemoveAttribute("code");
-            else
-                SetAttribute("code", (int)value);
-        }
-    }
+	public int? Code
+	{
+		get => GetAttribute<int>("code");
+		set
+		{
+			if (!value.HasValue)
+				RemoveAttribute("code");
+			else
+				SetAttribute("code", (int)value);
+		}
+	}
 
-    public int? CustomCode
-    {
-        get => this.GetAttribute<int>("custom_code");
-        set
-        {
-            if (!value.HasValue)
-                RemoveAttribute("custom_code");
-            else
-                SetAttribute("custom_code", (int)value);
-        }
-    }
+	public int? CustomCode
+	{
+		get => GetAttribute<int>("custom_code");
+		set
+		{
+			if (!value.HasValue)
+				RemoveAttribute("custom_code");
+			else
+				SetAttribute("custom_code", (int)value);
+		}
+	}
 
-    public string? Text
-    {
-        get => GetTag("text", Namespaces.Stanzas);
-        set
-        {
-            RemoveTag("text", Namespaces.Stanzas);
+	public string? Text
+	{
+		get => GetTag("text", Namespaces.Stanzas);
+		set
+		{
+			RemoveTag("text", Namespaces.Stanzas);
 
-            if (value != null)
-                SetTag("text", Namespaces.Stanzas, value);
-        }
-    }
+			if (value != null)
+				SetTag("text", Namespaces.Stanzas, value);
+		}
+	}
 }

@@ -1,13 +1,13 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Sasl;
 
-[XmppTag("success", Namespaces.Sasl)]
+[Tag("success", Namespaces.Sasl)]
 public class Success : XmppElement
 {
-    public Success() : base("success", Namespaces.Sasl)
-    {
+	public Success() : base("success", Namespaces.Sasl)
+	{
 
-    }
+	}
 }

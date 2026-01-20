@@ -1,19 +1,19 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Extensions.XEP0004;
 
-[XmppEnum]
+
 public enum FormType
 {
-    [XmppMember("cancel")]
-    Cancel,
+	[XmppEnumMember("cancel")]
+	Cancel = 1,
 
-    [XmppMember("form")]
-    Prompt,
+	[XmppEnumMember("form")]
+	Prompt,
 
-    [XmppMember("result")]
-    Result,
+	[XmppEnumMember("result")]
+	Result,
 
-    [XmppMember("submit")]
-    Submit,
+	[XmppEnumMember("submit")]
+	Submit,
 }

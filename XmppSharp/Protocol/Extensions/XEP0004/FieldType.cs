@@ -1,37 +1,36 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Extensions.XEP0004;
 
-[XmppEnum]
 public enum FieldType
 {
-    [XmppMember("boolean")]
-    Boolean,
+	[XmppEnumMember("boolean")]
+	Boolean = 1,
 
-    [XmppMember("fixed")]
-    Fixed,
+	[XmppEnumMember("fixed")]
+	Fixed,
 
-    [XmppMember("hidden")]
-    Hidden,
+	[XmppEnumMember("hidden")]
+	Hidden,
 
-    [XmppMember("jid-multi")]
-    JidMulti,
+	[XmppEnumMember("jid-multi")]
+	JidMulti,
 
-    [XmppMember("jid-single")]
-    JidSingle,
+	[XmppEnumMember("jid-single")]
+	JidSingle,
 
-    [XmppMember("list-multi")]
-    ListMulti,
+	[XmppEnumMember("list-multi")]
+	ListMulti,
 
-    [XmppMember("list-single")]
-    ListSingle,
+	[XmppEnumMember("list-single")]
+	ListSingle,
 
-    [XmppMember("text-multi")]
-    TextMulti,
+	[XmppEnumMember("text-multi")]
+	TextMulti,
 
-    [XmppMember("text-private")]
-    TextPrivate,
+	[XmppEnumMember("text-private")]
+	TextPrivate,
 
-    [XmppMember("text-single")]
-    TextSingle,
+	[XmppEnumMember("text-single")]
+	TextSingle,
 }

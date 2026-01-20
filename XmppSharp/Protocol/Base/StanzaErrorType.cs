@@ -1,22 +1,22 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Base;
 
-[XmppEnum]
+
 public enum StanzaErrorType
 {
-    [XmppMember("auth")]
-    Auth,
+	[XmppEnumMember("auth")]
+	Auth = 1,
 
-    [XmppMember("cancel")]
-    Cancel,
+	[XmppEnumMember("cancel")]
+	Cancel,
 
-    [XmppMember("continue")]
-    Continue,
+	[XmppEnumMember("continue")]
+	Continue,
 
-    [XmppMember("modify")]
-    Modify,
+	[XmppEnumMember("modify")]
+	Modify,
 
-    [XmppMember("wait")]
-    Wait
+	[XmppEnumMember("wait")]
+	Wait
 }

@@ -1,22 +1,22 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol;
 
-[XmppEnum]
+
 public enum RosterSubscriptionType
 {
-    [XmppMember("none")]
-    None,
+	[XmppEnumMember("none")]
+	None = 1,
 
-    [XmppMember("remove")]
-    Remove,
+	[XmppEnumMember("remove")]
+	Remove,
 
-    [XmppMember("from")]
-    From,
+	[XmppEnumMember("from")]
+	From,
 
-    [XmppMember("to")]
-    To,
+	[XmppEnumMember("to")]
+	To,
 
-    [XmppMember("both")]
-    Both,
+	[XmppEnumMember("both")]
+	Both,
 }

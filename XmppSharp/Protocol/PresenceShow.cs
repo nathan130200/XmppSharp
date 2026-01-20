@@ -1,19 +1,18 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol;
 
-[XmppEnum]
 public enum PresenceShow
 {
-    [XmppMember("away")]
-    Away,
+	[XmppEnumMember("away")]
+	Away = 1,
 
-    [XmppMember("chat")]
-    Chat,
+	[XmppEnumMember("chat")]
+	Chat,
 
-    [XmppMember("dnd")]
-    DoNotDisturb,
+	[XmppEnumMember("dnd")]
+	DoNotDisturb,
 
-    [XmppMember("xa")]
-    ExtendedAway
+	[XmppEnumMember("xa")]
+	ExtendedAway
 }

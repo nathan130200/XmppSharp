@@ -1,84 +1,82 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Base;
 
-[XmppEnum]
+
 public enum StreamErrorCondition
 {
-    Unspecified = -1,
+	[XmppEnumMember("bad-format")]
+	BadFormat = 1,
 
-    [XmppMember("bad-format")]
-    BadFormat,
+	[XmppEnumMember("bad-namespace-prefix")]
+	BadNamespacePrefix,
 
-    [XmppMember("bad-namespace-prefix")]
-    BadNamespacePrefix,
+	[XmppEnumMember("conflict")]
+	Conflict,
 
-    [XmppMember("conflict")]
-    Conflict,
+	[XmppEnumMember("connection-timeout")]
+	ConnectionTimeout,
 
-    [XmppMember("connection-timeout")]
-    ConnectionTimeout,
+	[XmppEnumMember("host-gone")]
+	HostGone,
 
-    [XmppMember("host-gone")]
-    HostGone,
+	[XmppEnumMember("host-unknown")]
+	HostUnknown,
 
-    [XmppMember("host-unknown")]
-    HostUnknown,
+	[XmppEnumMember("improper-addressing")]
+	ImproperAddressing,
 
-    [XmppMember("improper-addressing")]
-    ImproperAddressing,
+	[XmppEnumMember("internal-server-error")]
+	InternalServerError,
 
-    [XmppMember("internal-server-error")]
-    InternalServerError,
+	[XmppEnumMember("invalid-from")]
+	InvalidFrom,
 
-    [XmppMember("invalid-from")]
-    InvalidFrom,
+	[XmppEnumMember("invalid-namespace")]
+	InvalidNamespace,
 
-    [XmppMember("invalid-namespace")]
-    InvalidNamespace,
+	[XmppEnumMember("invalid-xml")]
+	InvalidXml,
 
-    [XmppMember("invalid-xml")]
-    InvalidXml,
+	[XmppEnumMember("not-authorized")]
+	NotAuthorized,
 
-    [XmppMember("not-authorized")]
-    NotAuthorized,
+	[XmppEnumMember("not-well-formed")]
+	NotWellFormed,
 
-    [XmppMember("not-well-formed")]
-    NotWellFormed,
+	[XmppEnumMember("policy-violation")]
+	PolicyViolation,
 
-    [XmppMember("policy-violation")]
-    PolicyViolation,
+	[XmppEnumMember("remote-connection-failed")]
+	RemoteConnectionFailed,
 
-    [XmppMember("remote-connection-failed")]
-    RemoteConnectionFailed,
+	[XmppEnumMember("reset")]
+	Reset,
 
-    [XmppMember("reset")]
-    Reset,
+	[XmppEnumMember("resource-constraint")]
+	ResourceConstraint,
 
-    [XmppMember("resource-constraint")]
-    ResourceConstraint,
+	[XmppEnumMember("restricted-xml")]
+	RestrictedXml,
 
-    [XmppMember("restricted-xml")]
-    RestrictedXml,
+	[XmppEnumMember("see-other-host")]
+	SeeOtherHost,
 
-    [XmppMember("see-other-host")]
-    SeeOtherHost,
+	[XmppEnumMember("system-shutdown")]
+	SystemShutdown,
 
-    [XmppMember("system-shutdown")]
-    SystemShutdown,
+	[XmppEnumMember("undefined-condition")]
+	UndefinedCondition,
 
-    [XmppMember("undefined-condition")]
-    UndefinedCondition,
+	[XmppEnumMember("unsupported-encoding")]
+	UnsupportedEncoding,
 
-    [XmppMember("unsupported-encoding")]
-    UnsupportedEncoding,
+	[XmppEnumMember("unsupported-feature")]
+	UnsupportedFeature,
 
-    [XmppMember("unsupported-feature")]
-    UnsupportedFeature,
+	[XmppEnumMember("unsupported-stanza-type")]
+	UnsupportedStanzaType,
 
-    [XmppMember("unsupported-stanza-type")]
-    UnsupportedStanzaType,
-
-    [XmppMember("unsupported-version")]
-    UnsupportedVersion
+	[XmppEnumMember("unsupported-version")]
+	UnsupportedVersion
 }

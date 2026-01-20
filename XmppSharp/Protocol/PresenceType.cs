@@ -1,30 +1,29 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol;
 
-[XmppEnum]
 public enum PresenceType
 {
-    Available,
+	Available,
 
-    [XmppMember("error")]
-    Error,
+	[XmppEnumMember("error")]
+	Error,
 
-    [XmppMember("probe")]
-    Probe,
+	[XmppEnumMember("probe")]
+	Probe,
 
-    [XmppMember("subscribe")]
-    Subscribe,
+	[XmppEnumMember("subscribe")]
+	Subscribe,
 
-    [XmppMember("subscribed")]
-    Subscribed,
+	[XmppEnumMember("subscribed")]
+	Subscribed,
 
-    [XmppMember("unavailable")]
-    Unavailable,
+	[XmppEnumMember("unavailable")]
+	Unavailable,
 
-    [XmppMember("unsubscribe")]
-    Unsubscribe,
+	[XmppEnumMember("unsubscribe")]
+	Unsubscribe,
 
-    [XmppMember("unsubscribed")]
-    Unsubscribed,
+	[XmppEnumMember("unsubscribed")]
+	Unsubscribed,
 }

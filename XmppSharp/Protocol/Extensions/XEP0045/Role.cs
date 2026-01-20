@@ -1,19 +1,19 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 
-[XmppEnum]
+
 public enum Role
 {
-    [XmppMember("none")]
-    None,
+	[XmppEnumMember("none")]
+	None = 1,
 
-    [XmppMember("moderator")]
-    Moderator,
+	[XmppEnumMember("moderator")]
+	Moderator,
 
-    [XmppMember("participant")]
-    Participant,
+	[XmppEnumMember("participant")]
+	Participant,
 
-    [XmppMember("visitor")]
-    Visitor,
+	[XmppEnumMember("visitor")]
+	Visitor,
 }

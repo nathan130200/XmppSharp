@@ -1,22 +1,21 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol;
 
-[XmppEnum]
 public enum MessageType
 {
-    [XmppMember("normal")]
-    Normal,
+	[XmppEnumMember("normal")]
+	Normal,
 
-    [XmppMember("chat")]
-    Chat,
+	[XmppEnumMember("chat")]
+	Chat,
 
-    [XmppMember("error")]
-    Error,
+	[XmppEnumMember("error")]
+	Error,
 
-    [XmppMember("groupchat")]
-    GroupChat,
+	[XmppEnumMember("groupchat")]
+	GroupChat,
 
-    [XmppMember("headline")]
-    Headline
+	[XmppEnumMember("headline")]
+	Headline
 }

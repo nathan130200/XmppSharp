@@ -1,25 +1,25 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 
-[XmppTag("x", Namespaces.Muc)]
+[Tag("x", Namespaces.Muc)]
 public class Muc : XmppElement
 {
-    public Muc() : base("x", Namespaces.Muc)
-    {
+	public Muc() : base("x", Namespaces.Muc)
+	{
 
-    }
+	}
 
-    public string? Password
-    {
-        get => GetTag("password");
-        set
-        {
-            RemoveTag("password");
+	public string? Password
+	{
+		get => GetTag("password");
+		set
+		{
+			RemoveTag("password");
 
-            if (value != null)
-                SetTag("password", value: value);
-        }
-    }
+			if (value != null)
+				SetTag("password", value: value);
+		}
+	}
 }

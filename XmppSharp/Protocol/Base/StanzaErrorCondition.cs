@@ -1,78 +1,75 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Base;
 
-[XmppEnum]
 public enum StanzaErrorCondition
 {
-    Unspecified = -1,
+	[XmppEnumMember("bad-request")]
+	BadRequest = 1,
 
-    [XmppMember("bad-request")]
-    BadRequest,
+	[XmppEnumMember("conflict")]
+	Conflict,
 
-    [XmppMember("conflict")]
-    Conflict,
+	[XmppEnumMember("feature-not-implemented")]
+	FeatureNotImplemented,
 
-    [XmppMember("feature-not-implemented")]
-    FeatureNotImplemented,
+	[XmppEnumMember("forbidden")]
+	Forbidden,
 
-    [XmppMember("forbidden")]
-    Forbidden,
+	[XmppEnumMember("gone")]
+	Gone,
 
-    [XmppMember("gone")]
-    Gone,
+	[XmppEnumMember("internal-server-error")]
+	InternalServerError,
 
-    [XmppMember("internal-server-error")]
-    InternalServerError,
+	[XmppEnumMember("item-not-found")]
+	ItemNotFound,
 
-    [XmppMember("item-not-found")]
-    ItemNotFound,
+	[XmppEnumMember("jid-malformed")]
+	JidMalformed,
 
-    [XmppMember("jid-malformed")]
-    JidMalformed,
+	[XmppEnumMember("not-acceptable")]
+	NotAcceptable,
 
-    [XmppMember("not-acceptable")]
-    NotAcceptable,
+	[XmppEnumMember("not-allowed")]
+	NotAllowed,
 
-    [XmppMember("not-allowed")]
-    NotAllowed,
+	[XmppEnumMember("not-authorized")]
+	NotAuthorized,
 
-    [XmppMember("not-authorized")]
-    NotAuthorized,
+	[XmppEnumMember("payment-required")]
+	PaymentRequired,
 
-    [XmppMember("payment-required")]
-    PaymentRequired,
+	[XmppEnumMember("policy-violation")]
+	PolicyViolation,
 
-    [XmppMember("policy-violation")]
-    PolicyViolation,
+	[XmppEnumMember("recipient-unavailable")]
+	RecipientUnavailable,
 
-    [XmppMember("recipient-unavailable")]
-    RecipientUnavailable,
+	[XmppEnumMember("redirect")]
+	Redirect,
 
-    [XmppMember("redirect")]
-    Redirect,
+	[XmppEnumMember("registration-required")]
+	RegistrationRequired,
 
-    [XmppMember("registration-required")]
-    RegistrationRequired,
+	[XmppEnumMember("remote-server-not-found")]
+	RemoteServerNotFound,
 
-    [XmppMember("remote-server-not-found")]
-    RemoteServerNotFound,
+	[XmppEnumMember("remote-server-timeout")]
+	RemoteServerTimeout,
 
-    [XmppMember("remote-server-timeout")]
-    RemoteServerTimeout,
+	[XmppEnumMember("resource-constraint")]
+	ResourceConstraint,
 
-    [XmppMember("resource-constraint")]
-    ResourceConstraint,
+	[XmppEnumMember("service-unavailable")]
+	ServiceUnavailable,
 
-    [XmppMember("service-unavailable")]
-    ServiceUnavailable,
+	[XmppEnumMember("subscription-required")]
+	SubscriptionRequired,
 
-    [XmppMember("subscription-required")]
-    SubscriptionRequired,
+	[XmppEnumMember("undefined-condition")]
+	UndefinedCondition,
 
-    [XmppMember("undefined-condition")]
-    UndefinedCondition,
-
-    [XmppMember("unexpected-request")]
-    UnexpectedRequest
+	[XmppEnumMember("unexpected-request")]
+	UnexpectedRequest
 }

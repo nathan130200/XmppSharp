@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using XmppSharp.Collections;
 
 namespace XmppSharp;
 
@@ -16,148 +15,141 @@ namespace XmppSharp;
 [DebuggerDisplay("{ToString(),nq}")]
 public sealed class Jid : IEquatable<Jid>
 {
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private string? _local, _domain, _resource;
+	readonly Lazy<string?>? _toStringLazy;
 
-    public Jid(Jid other)
-    {
-        _local = other._local;
-        _domain = other._domain;
-        _resource = other._resource;
-    }
+	public static readonly Jid Empty = new();
 
-    public Jid(string? local = default, string? domain = default, string? resource = default)
-    {
-        Local = local;
-        Domain = domain;
-        Resource = resource;
-    }
+	Jid()
+	{
 
-    public Jid(string jid)
-    {
-        var at = jid.IndexOf('@');
-        var slash = jid.IndexOf('/');
+	}
 
-        if (at > 0)
-            _local = jid[0..at];
+	public Jid(Jid other)
+	{
+		_toStringLazy = new(BuildCache, true);
 
-        if (slash == -1)
-            _domain = jid[(at + 1)..];
-        else
-        {
-            _domain = jid[(at + 1)..slash];
-            _resource = jid[(slash + 1)..];
-        }
-    }
+		Local = other.Local;
+		Domain = other.Domain;
+		Resource = other.Resource;
+	}
 
-    /// <summary>
-    /// Local part.
-    /// </summary>
-    public string? Local
-    {
-        get => _local;
-        init => _local = value;
-    }
+	public Jid(string? local = default, string? domain = default, string? resource = default)
+	{
+		_toStringLazy = new(BuildCache, true);
 
-    /// <summary>
-    /// Domain part.
-    /// </summary>
-    public string? Domain
-    {
-        get => _domain;
-        init
-        {
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                if (Uri.CheckHostName(value) == UriHostNameType.Unknown)
-                    throw new InvalidOperationException("Invalid XMPP domain.");
-            }
+		Local = local;
+		Domain = domain;
+		Resource = resource;
+	}
 
-            _domain = value;
-        }
-    }
+	public Jid(string jid)
+	{
+		_toStringLazy = new(BuildCache, true);
 
-    /// <summary>
-    /// Resource part.
-    /// </summary>
-    public string? Resource
-    {
-        get => _resource;
-        init => _resource = value;
-    }
+		var at = jid.IndexOf('@');
+		var slash = jid.IndexOf('/');
 
-    public override string ToString()
-    {
-        var sb = new StringBuilder();
+		if (at > 0)
+			Local = jid[0..at];
 
-        if (_local != null)
-            sb.Append(_local).Append('@');
+		if (slash == -1)
+			Domain = jid[(at + 1)..];
+		else
+		{
+			Domain = jid[(at + 1)..slash];
+			Resource = jid[(slash + 1)..];
+		}
+	}
 
-        if (_domain != null)
-            sb.Append(_domain);
+	public string? Local { get; init; }
 
-        if (_resource != null)
-            sb.Append('/').Append(_resource);
+	public string? Domain
+	{
+		get => field;
+		init
+		{
+			if (!string.IsNullOrWhiteSpace(value) && Uri.CheckHostName(value) == UriHostNameType.Unknown)
+				throw new ArgumentException(null, nameof(Domain));
 
-        return sb.ToString();
-    }
+			field = value;
+		}
+	}
 
-    [return: NotNullIfNotNull(nameof(jid))]
-    public static implicit operator string?(Jid? jid) => jid?.ToString();
+	public string? Resource { get; init; }
 
-    [return: NotNullIfNotNull(nameof(jid))]
-    public static implicit operator Jid?(string? jid)
-    {
-        if (jid is null)
-            return null;
+	string? BuildCache()
+	{
+		if (Local == null && Domain == null && Resource == null)
+			return null;
 
-        return new(jid);
-    }
+		var sb = new StringBuilder();
+
+		if (Local != null)
+			sb.Append(Local).Append('@');
+
+		sb.Append(Domain);
+
+		if (Resource != null)
+			sb.Append('/').Append(Resource);
+
+		return sb.ToString();
+	}
+
+	[return: MaybeNull]
+	public override string ToString() => _toStringLazy?.Value;
+
+	[return: NotNullIfNotNull(nameof(jid))]
+	public static implicit operator string?(Jid? jid) => jid?.ToString();
+
+	[return: NotNullIfNotNull(nameof(jid))]
+	public static implicit operator Jid?(string? jid)
+	{
+		if (jid is null)
+			return null;
+
+		return new(jid);
+	}
 
 
-    public bool IsBare
-        => string.IsNullOrWhiteSpace(_resource);
+	public bool IsBare
+		=> string.IsNullOrWhiteSpace(Resource);
 
-    public bool IsServer
-        => string.IsNullOrWhiteSpace(_local) && string.IsNullOrWhiteSpace(_resource);
+	public bool IsServer
+		=> string.IsNullOrWhiteSpace(Local) && string.IsNullOrWhiteSpace(Resource);
 
-    public string Bare
-    {
-        get
-        {
-            var sb = new StringBuilder();
+	public Jid Bare => new(Local, Domain);
 
-            if (_local != null)
-                sb.Append(_local).Append('@');
+	public override bool Equals(object? obj)
+		=> obj is Jid other && Equals(other);
 
-            return sb.Append(_domain).ToString();
-        }
-    }
+	public bool Equals(Jid? other)
+	{
+		if (other is null) return false;
 
-    public override bool Equals(object? obj)
-        => obj is Jid other && Equals(other);
+		if (ReferenceEquals(this, other)) return true;
 
-    public bool Equals(Jid? other)
-    {
-        if (other is null)
-            return false;
+		return string.Equals(Local, other.Local, StringComparison.OrdinalIgnoreCase)
+			&& string.Equals(Domain, other.Domain, StringComparison.OrdinalIgnoreCase)
+			&& string.Equals(Resource, other.Resource, StringComparison.Ordinal);
+	}
 
-        return FullJidComparer.AreEquals(this, other);
-    }
+	public override int GetHashCode()
+	{
+		var hash = new HashCode();
+		hash.Add(Local, StringComparer.OrdinalIgnoreCase);
+		hash.Add(Domain, StringComparer.OrdinalIgnoreCase);
+		hash.Add(Resource, StringComparer.Ordinal);
+		return hash.ToHashCode();
+	}
 
-    public override int GetHashCode()
-        => HashCode.Combine(_local, _domain, _resource);
+	public static bool operator !=(Jid? x, Jid? y) => !(x == y);
 
-    public static bool operator !=(Jid? lhs, Jid? rhs) => !(lhs == rhs);
+	public static bool operator ==(Jid? x, Jid? y)
+	{
+		if (x is null && y is null) return true;
 
-    public static bool operator ==(Jid? lhs, Jid? rhs)
-    {
-        if (lhs is null && rhs is null)
-            return true;
+		if (x is null || y is null) return false;
 
-        if (lhs is null || rhs is null)
-            return false;
-
-        return lhs.Equals(rhs);
-    }
+		return x.Equals(y);
+	}
 }

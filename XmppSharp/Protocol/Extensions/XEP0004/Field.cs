@@ -1,121 +1,156 @@
-﻿using System.Globalization;
+using System.Globalization;
 using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Extensions.XEP0004;
 
-[XmppTag("field", Namespaces.DataForms)]
+[Tag("field", Namespaces.DataForms)]
 public class Field : XmppElement
 {
-    public Field() : base("field", Namespaces.DataForms)
-    {
+	public Field() : base("field", Namespaces.DataForms)
+	{
 
-    }
+	}
 
-    public Field(FieldType type, string? label = default, string? @var = default, string? desc = default) : this()
-    {
-        Type = type;
-        Label = label;
-        Var = @var;
-        Description = desc;
-    }
+	public Field(FieldType type, string? name = default, string? label = default, string? desc = default) : this()
+	{
+		Type = type;
+		Label = label;
+		Name = name;
+		Description = desc;
+	}
 
-    public FieldType? Type
-    {
-        get
-        {
-            if (!HasAttribute("type"))
-                return null;
+	public FieldType Type
+	{
+		get => XmppEnum.ParseOrDefault(GetAttribute("type"), FieldType.TextSingle);
+		set => SetAttribute("type", value.ToXmlOrDefault(FieldType.TextSingle));
+	}
 
-            return XmppEnum.FromXmlOrDefault(GetAttribute("type"), FieldType.TextSingle);
-        }
-        set
-        {
-            var type = value.GetValueOrDefault(FieldType.TextSingle);
+	public string? Name
+	{
+		get => GetAttribute("var");
+		set => SetAttribute("var", value);
+	}
 
-            if (!Enum.IsDefined(type))
-                type = FieldType.TextSingle;
+	public string? Label
+	{
+		get => GetAttribute("label");
+		set => SetAttribute("label", value);
+	}
 
-            SetAttribute("type", XmppEnum.ToXml(type));
-        }
-    }
+	public string? Description
+	{
+		get => GetTag("desc");
+		set
+		{
+			RemoveTag("desc");
 
-    public string? Label
-    {
-        get => GetAttribute("label");
-        set => SetAttribute("label", value);
-    }
+			if (value != null)
+				SetTag("desc", value: value);
+		}
+	}
 
-    public string? Var
-    {
-        get => GetAttribute("var");
-        set => SetAttribute("var", value);
-    }
+	public bool Required
+	{
+		get => HasTag("required");
+		set
+		{
+			if (!value)
+				RemoveTag("required");
+			else
+				SetTag("required");
+		}
+	}
 
-    public string? Description
-    {
-        get => GetTag("desc");
-        set
-        {
-            RemoveTag("desc");
+	/// <summary>
+	/// Defines the default value for the field (according to the form-processing entity) in a data form.
+	/// </summary>
+	public string? Value
+	{
+		get => GetTag("value");
+		set
+		{
+			if (value is null)
+				RemoveTag("value");
+			else
+				SetTag("value", value: value);
+		}
+	}
 
-            if (value != null)
-                SetTag("desc", value: value);
-        }
-    }
+	/// <summary>
+	/// Defines if this field <see cref="Type"/> may contain more than one <![CDATA[<value/>]]> element.
+	/// </summary>
+	public bool IsMultiValueSupported
+		=> Type is FieldType.ListMulti or FieldType.JidMulti or FieldType.TextMulti or FieldType.Hidden;
 
-    public bool Required
-    {
-        get => HasTag("required");
-        set
-        {
-            if (!value)
-                RemoveTag("required");
-            else
-                SetTag("required");
-        }
-    }
+	public IEnumerable<string?> Values
+	{
+		get
+		{
+			if (!IsMultiValueSupported)
+				throw new InvalidOperationException("Field does not support multiple values.");
 
-    public IEnumerable<string?> Values
-    {
-        get => Elements("value").Select(x => x.Value);
-        set
-        {
-            Elements("value")?.Remove();
+			return Elements("value").Select(x => x.InnerText!);
+		}
+		set
+		{
+			Elements("value")?.Remove();
 
-            if (value?.Any() == true)
-            {
-                foreach (var item in value)
-                    SetTag("value", Namespaces.DataForms, item);
-            }
-        }
-    }
+			if (!IsMultiValueSupported)
+				throw new InvalidOperationException("Field does not support multiple values.");
 
-    public IEnumerable<Option> Options
-    {
-        get => Elements<Option>();
-        set
-        {
-            Elements<Option>().Remove();
+			if (value != null)
+			{
+				foreach (var item in value)
+					SetTag("value", Namespaces.DataForms, item);
+			}
+		}
+	}
 
-            if (value?.Any() == true)
-            {
-                foreach (var item in value)
-                    AddChild(item);
-            }
-        }
-    }
+	public IEnumerable<Option> Options
+	{
+		get => Elements<Option>();
+		set
+		{
+			Elements<Option>().Remove();
 
-    public void AddValue(object value, IFormatProvider? ifp = default)
-    {
-        ArgumentNullException.ThrowIfNull(value);
+			if (value?.Any() == true)
+			{
+				foreach (var item in value)
+					AddChild(item);
+			}
+		}
+	}
 
-        AddChild(new XmppElement("value", Namespaces.DataForms)
-        {
-            Value = Convert.ToString(value, ifp ?? CultureInfo.InvariantCulture)
-        });
-    }
+	public Field AddValue(object? value)
+	{
+		ArgumentNullException.ThrowIfNull(value);
 
-    public void AddOption(Option option)
-        => AddChild(option);
+		if (!IsMultiValueSupported)
+		{
+			SetTag("value", Namespaces.DataForms, value);
+			return this;
+		}
+
+		AddChild(new XmppElement("value", Namespaces.DataForms)
+		{
+			InnerText = Convert.ToString(value, CultureInfo.InvariantCulture)!
+		});
+
+		return this;
+	}
+
+	public Field AddOption(Option option)
+	{
+		AddChild(option);
+		return this;
+	}
+
+	public Field AddOption(Action<Option> builder)
+	{
+		var option = new Option();
+		builder(option);
+		AddChild(option);
+		return this;
+	}
 }

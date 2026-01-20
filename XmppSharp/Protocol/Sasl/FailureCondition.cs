@@ -1,40 +1,40 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Sasl;
 
-[XmppEnum]
+
 public enum FailureCondition
 {
-    [XmppMember("aborted")]
-    Aborted,
+	[XmppEnumMember("aborted")]
+	Aborted = 1,
 
-    [XmppMember("account-disabled")]
-    AccountDisabled,
+	[XmppEnumMember("account-disabled")]
+	AccountDisabled,
 
-    [XmppMember("credentials-expired")]
-    CredentialsExpired,
+	[XmppEnumMember("credentials-expired")]
+	CredentialsExpired,
 
-    [XmppMember("encryption-required")]
-    EncryptionRequired,
+	[XmppEnumMember("encryption-required")]
+	EncryptionRequired,
 
-    [XmppMember("incorrect-encoding")]
-    IncorrectEncoding,
+	[XmppEnumMember("incorrect-encoding")]
+	IncorrectEncoding,
 
-    [XmppMember("invalid-authzid")]
-    InvalidAuthzid,
+	[XmppEnumMember("invalid-authzid")]
+	InvalidAuthzid,
 
-    [XmppMember("invalid-mechanism")]
-    InvalidMechanism,
+	[XmppEnumMember("invalid-mechanism")]
+	InvalidMechanism,
 
-    [XmppMember("malformed-request")]
-    MalformedRequest,
+	[XmppEnumMember("malformed-request")]
+	MalformedRequest,
 
-    [XmppMember("mechanism-too-weak")]
-    MechanismTooWeak,
+	[XmppEnumMember("mechanism-too-weak")]
+	MechanismTooWeak,
 
-    [XmppMember("not-authorized")]
-    NotAuthorized,
+	[XmppEnumMember("not-authorized")]
+	NotAuthorized,
 
-    [XmppMember("temporary-auth-failure")]
-    TemporaryAuthFailure
+	[XmppEnumMember("temporary-auth-failure")]
+	TemporaryAuthFailure
 }

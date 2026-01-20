@@ -1,43 +1,43 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 
-[XmppTag("destroy", Namespaces.MucOwner)]
+[Tag("destroy", Namespaces.MucOwner)]
 public class Destroy : XmppElement
 {
-    public Destroy() : base("destroy", Namespaces.MucOwner)
-    {
+	public Destroy() : base("destroy", Namespaces.MucOwner)
+	{
 
-    }
+	}
 
-    public Jid? Jid
-    {
-        get => GetAttribute("jid");
-        set => SetAttribute("jid", value);
-    }
+	public Jid? Jid
+	{
+		get => GetAttribute("jid");
+		set => SetAttribute("jid", value);
+	}
 
-    public string? Password
-    {
-        get => GetTag("password");
-        set
-        {
-            RemoveTag("password");
+	public string? Password
+	{
+		get => GetTag("password");
+		set
+		{
+			RemoveTag("password");
 
-            if (value != null)
-                SetTag("password", value: value);
-        }
-    }
+			if (value != null)
+				SetTag("password", value: value);
+		}
+	}
 
-    public string? Reason
-    {
-        get => GetTag("reason");
-        set
-        {
-            RemoveTag("reason");
+	public string? Reason
+	{
+		get => GetTag("reason");
+		set
+		{
+			RemoveTag("reason");
 
-            if (value != null)
-                SetTag("reason", value: value);
-        }
-    }
+			if (value != null)
+				SetTag("reason", value: value);
+		}
+	}
 }

@@ -8,7 +8,7 @@
 		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<Description>Lightweight XMPP library.</Description>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<NoWarn>CS1591</NoWarn>
 
 		<PackageId>XmppSharp</PackageId>

@@ -1,45 +1,44 @@
-﻿using XmppSharp.Attributes;
+using System.Xml;
+using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Extensions.XEP0202;
 
-[XmppTag("time", Namespaces.EntityTime)]
+[Tag("time", Namespaces.EntityTime)]
 public class EntityTime : XmppElement
 {
-    public EntityTime() : base("time", Namespaces.EntityTime)
-    {
+	public EntityTime() : base("time", Namespaces.EntityTime)
+	{
 
-    }
+	}
 
-    public DateTimeOffset? UtcTime
-    {
-        get
-        {
-            var temp = GetTag("utc");
+	public DateTimeOffset? UtcTime
+	{
+		get
+		{
+			if (GetTag("utc") is string s)
+				return XmlConvert.ToDateTimeOffset(s);
 
-            if (temp == null)
-                return null;
+			return default;
+		}
+		set
+		{
+			RemoveTag("utc");
 
-            return DateTimeOffset.Parse(temp);
-        }
-        set
-        {
-            RemoveTag("utc");
+			if (value != null)
+				SetTag("utc", value: XmlConvert.ToString(value.Value));
+		}
+	}
 
-            if (value != null)
-                SetTag("utc", value: ((DateTimeOffset)value).ToString(Xml.XmppTimestampFormat));
-        }
-    }
+	public string? TimeZone
+	{
+		get => GetTag("tzo");
+		set
+		{
+			RemoveTag("tzo");
 
-    public string? TimeZone
-    {
-        get => GetTag("tzo");
-        set
-        {
-            RemoveTag("tzo");
-
-            if (value != null)
-                SetTag("tzo", value: value);
-        }
-    }
+			if (value != null)
+				SetTag("tzo", value: value);
+		}
+	}
 }

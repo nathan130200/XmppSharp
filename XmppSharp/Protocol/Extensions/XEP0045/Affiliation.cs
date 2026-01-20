@@ -1,22 +1,22 @@
-﻿using XmppSharp.Attributes;
+using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 
-[XmppEnum]
+
 public enum Affiliation
 {
-    [XmppMember("none")]
-    None,
+	[XmppEnumMember("none")]
+	None = 1,
 
-    [XmppMember("outcast")]
-    Outcast,
+	[XmppEnumMember("outcast")]
+	Outcast,
 
-    [XmppMember("member")]
-    Member,
+	[XmppEnumMember("member")]
+	Member,
 
-    [XmppMember("admin")]
-    Admin,
+	[XmppEnumMember("admin")]
+	Admin,
 
-    [XmppMember("owner")]
-    Owner,
+	[XmppEnumMember("owner")]
+	Owner,
 }
