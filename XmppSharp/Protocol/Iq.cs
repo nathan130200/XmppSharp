@@ -1,4 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
+using XmppSharp.Abstractions;
 using XmppSharp.Attributes;
 using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
@@ -26,9 +26,7 @@ public class Iq : Stanza
 		set => base.Type = XmppEnum.ToXml(value);
 	}
 
-	readonly record struct QueryInfo(string TagName, string? Namespace);
-
-	static readonly List<QueryInfo> s_KnownQueries = new();
+	static readonly HashSet<XmlTagInfo> s_QueryTypes = new();
 
 	static Iq()
 	{
@@ -59,44 +57,41 @@ public class Iq : Stanza
 		RegisterQuery("vCard", Namespaces.vCard);
 	}
 
-	public static void RegisterQuery(string tag, string? ns)
+	public static void RegisterQuery(string tagName, string namespaceURI)
 	{
-		lock (s_KnownQueries)
-		{
-			var index = s_KnownQueries.FindIndex(x => x.TagName == tag && x.Namespace == ns);
+		lock (s_QueryTypes)
+			s_QueryTypes.Add(new(tagName, namespaceURI));
+	}
 
-			if (index == -1)
-				s_KnownQueries.Add(new(tag, ns));
+	XmppElement? FindQueryElement()
+	{
+		XmppElement? result = null;
+
+		XmlTagInfo[] types;
+
+		lock (s_QueryTypes)
+			types = [.. s_QueryTypes];
+
+		foreach (var type in types)
+		{
+			if (Element(type.Name, type.Namespace) is XmppElement temp)
+			{
+				result = temp;
+				break;
+			}
 		}
+
+		return result;
 	}
 
 	public XmppElement? Query
 	{
-		get
-		{
-			QueryInfo[] entries;
-
-			lock (s_KnownQueries)
-				entries = s_KnownQueries.ToArray();
-
-			foreach (var entry in entries)
-			{
-				if (FindQueryElement(entry.TagName, entry.Namespace, out var result))
-					return result;
-			}
-
-			return default;
-		}
+		get => FindQueryElement();
 		set
 		{
-			Query?.Remove();
+			RemoveNodes();
+
 			AddChild(value);
 		}
-	}
-
-	bool FindQueryElement(string tagName, string? ns, [NotNullWhen(true)] out XmppElement? result)
-	{
-		result = Element(tagName, ns);
-		return result != null;
 	}
 }
