@@ -33,7 +33,7 @@ public class Stream : DirectionalElement
 	public void GenerateId()
 		=> Id = Guid.NewGuid().ToString("d");
 
-	public string StartTag()
+	public override string ToString(bool indented)
 	{
 		var sb = new StringBuilder();
 
