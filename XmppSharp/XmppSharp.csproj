@@ -11,8 +11,8 @@
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<IncludeSymbols>True</IncludeSymbols>
 		<PackageOutputPath>C:/nuget_packages</PackageOutputPath>
-		<Version>1.0.1</Version>
-		<PackageVersion>$(Version)-beta</PackageVersion>
+		<Version>7.0.0</Version>
+		<PackageVersion>$(Version)-beta-1</PackageVersion>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
