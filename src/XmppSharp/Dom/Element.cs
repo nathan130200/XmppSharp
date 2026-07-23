@@ -9,16 +9,16 @@ namespace XmppSharp.Dom;
 
 public class Element : Container
 {
-	internal QName _elementName;
+	internal QualifiedName _name;
 	internal readonly List<Attribute> _attributes = [];
 
 	public Element(string name, string? ns, object? value = default)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
-		_elementName = new(XmlConvert.VerifyName(name));
+		_name = new(XmlConvert.VerifyName(name));
 
-		if (!_elementName.Prefix.IsEmpty)
+		if (_name.Prefix != null)
 			ArgumentException.ThrowIfNullOrWhiteSpace(ns);
 
 		Namespace = ns;
@@ -29,18 +29,18 @@ public class Element : Container
 
 	public string Name
 	{
-		get => _elementName.Name;
-		internal set => _elementName = new(value);
+		get => _name.ToString();
+		internal set => _name = new(value);
 	}
 
-	public ReadOnlySpan<char> LocalName => _elementName.LocalName;
+	public string LocalName => _name.LocalName;
 
-	public ReadOnlySpan<char> Prefix => _elementName.Prefix;
+	public string? Prefix => _name.Prefix;
 
 	public string? Namespace
 	{
-		get => GetNamespace(_elementName.Prefix);
-		set => SetNamespace(_elementName.Prefix, value);
+		get => GetNamespace(_name.Prefix);
+		set => SetNamespace(_name.Prefix, value);
 	}
 
 	[NotNull]
@@ -148,19 +148,6 @@ public class Element : Container
 			return _attributes.Find(x => x.Name == name)?.Value;
 	}
 
-	internal void RemoveAttributeInternal(Attribute? attr)
-	{
-		lock (_attributes)
-		{
-			if (attr?._parent != this)
-				return;
-
-			_attributes.Remove(attr);
-
-			attr._parent = null;
-		}
-	}
-
 	public bool RemoveAttribute(string name)
 	{
 		lock (_attributes)
@@ -208,9 +195,9 @@ public class Element : Container
 		}
 	}
 
-	public string? GetNamespace(ReadOnlySpan<char> prefix)
+	public string? GetNamespace(string? prefix)
 	{
-		var name = prefix.IsEmpty ? "xmlns" : $"xmlns:{prefix}";
+		var name = prefix == null ? "xmlns" : $"xmlns:{prefix}";
 
 		if (GetAttribute(name) is string inScope)
 			return inScope;
@@ -221,9 +208,9 @@ public class Element : Container
 		return null;
 	}
 
-	public void SetNamespace(ReadOnlySpan<char> prefix, string? ns)
+	public void SetNamespace(string? prefix, string? ns)
 	{
-		var name = prefix.IsEmpty ? "xmlns" : $"xmlns:{prefix}";
+		var name = prefix == null ? "xmlns" : $"xmlns:{prefix}";
 
 		if (ns is null)
 			RemoveAttribute(name);
@@ -233,9 +220,7 @@ public class Element : Container
 
 	protected void WriteStartElement(XmlWriter writer)
 	{
-		var (prefix, localName) = _elementName;
-
-		writer.WriteStartElement(prefix, localName, Namespace);
+		writer.WriteStartElement(_name.Prefix, _name.LocalName, Namespace);
 
 		lock (_attributes)
 		{

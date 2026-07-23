@@ -14,7 +14,7 @@ public sealed class Handshake() : Element("handshake", Namespaces.Component)
 		InnerText = ComputeHash(streamId, password);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public bool CanAuthenticate(string token) => InnerText == token;
 
 	public static string ComputeHash(string streamId, string password)
