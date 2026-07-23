@@ -10,7 +10,9 @@ public sealed class Jid : IEquatable<Jid>
 
 	public Jid(string jid)
 	{
-		_value = jid ?? string.Empty;
+		ArgumentNullException.ThrowIfNull(jid);
+
+		_value = jid;
 
 		_at = _value.IndexOf('@');
 
@@ -33,39 +35,39 @@ public sealed class Jid : IEquatable<Jid>
 		{
 			var buf = ArrayPool<char>.Shared.Rent(size);
 
-			var ofs = 0;
+			var pos = 0;
 
 			try
 			{
 				if (!user.IsEmpty)
 				{
-					user.CopyTo(buf.AsSpan(ofs));
+					user.CopyTo(buf.AsSpan(pos));
 
-					ofs += user.Length;
+					pos += user.Length;
 
-					_at = ofs;
+					_at = pos;
 
-					buf[ofs++] = '@';
+					buf[pos++] = '@';
 				}
 
 				if (!server.IsEmpty)
 				{
-					server.CopyTo(buf.AsSpan(ofs));
-					ofs += server.Length;
+					server.CopyTo(buf.AsSpan(pos));
+					pos += server.Length;
 				}
 
 				if (!resource.IsEmpty)
 				{
-					buf[ofs] = '/';
+					buf[pos] = '/';
 
-					_slash = ofs++;
+					_slash = pos++;
 
-					resource.CopyTo(buf.AsSpan(ofs));
+					resource.CopyTo(buf.AsSpan(pos));
 
-					ofs += resource.Length;
+					pos += resource.Length;
 				}
 
-				_value = new string(buf.AsSpan(0, ofs));
+				_value = new string(buf, 0, pos);
 
 				_hashCode = BuildHashCode(User, Server, Resource);
 			}
