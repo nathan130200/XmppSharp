@@ -5,32 +5,42 @@ namespace XmppSharp.Dom.Abstractions;
 
 internal readonly struct QName : IEquatable<QName>
 {
-	readonly int _hashCode;
+	readonly int _hashCode, _colon;
 
-	public readonly string Name;
-	public readonly string LocalName;
-	public readonly string? Prefix;
+	readonly string _name;
+
+	public readonly string Name => _name;
+
+	public readonly ReadOnlySpan<char> Prefix
+		=> _colon > 0 ? _name.AsSpan(0.._colon) : [];
+
+	public readonly ReadOnlySpan<char> LocalName
+		=> _colon > 0 ? _name.AsSpan((_colon + 1)..) : _name;
 
 	public QName(string name)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
-		Name = XmlConvert.VerifyName(name);
+		_name = XmlConvert.VerifyName(name);
 
-		var colon = name.IndexOf(':');
-
-		if (colon == -1)
-			LocalName = name;
-		else
-		{
-			Prefix = name[..colon];
-			LocalName = name[(colon + 1)..];
-		}
-
-		_hashCode = HashCode.Combine(Prefix?.GetHashCode(StringComparison.Ordinal), LocalName.GetHashCode(StringComparison.Ordinal));
+		_colon = _name.IndexOf(':');
 	}
 
-	public readonly override string ToString() => Name;
+	public void Deconstruct(out string? prefix, out string localName)
+	{
+		if (_colon > 0)
+		{
+			prefix = _name[0.._colon];
+			localName = _name[(_colon + 1)..];
+		}
+		else
+		{
+			prefix = null;
+			localName = _name;
+		}
+	}
+
+	public readonly override string ToString() => _name;
 
 	public readonly override int GetHashCode() => _hashCode;
 
@@ -39,13 +49,11 @@ internal readonly struct QName : IEquatable<QName>
 
 	public bool Equals(QName other)
 	{
-		if (ReferenceEquals(Name, other.Name))
+		if (ReferenceEquals(_name, other._name))
 			return true;
 
-		return Name.Equals(other.Name, StringComparison.Ordinal);
+		return _name.Equals(other._name, StringComparison.Ordinal);
 	}
-
-	public static implicit operator bool(QName name) => name.Name != null;
 
 	public static bool operator ==(QName x, QName y) => x.Equals(y);
 

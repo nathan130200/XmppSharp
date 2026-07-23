@@ -6,7 +6,7 @@ namespace XmppSharp.Dom;
 
 public class Attribute : IXmlNode
 {
-	internal QName _name;
+	internal QName _attributeName;
 
 	internal Element? _parent;
 
@@ -14,47 +14,46 @@ public class Attribute : IXmlNode
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
-		_name = new(XmlConvert.VerifyName(name));
+		_attributeName = new(XmlConvert.VerifyName(name));
 
 		Value = Convert.ToString(value, CultureInfo.InvariantCulture);
 	}
 
 	public Element? Parent => _parent;
 
-	public bool IsNamespaceDeclaration => string.Equals(_name.LocalName, "xmlns", StringComparison.Ordinal)
-		|| string.Equals(_name.Prefix, "xmlns", StringComparison.Ordinal);
+	public bool IsNamespaceDeclaration => _attributeName.LocalName.Equals("xmlns", StringComparison.Ordinal)
+		|| _attributeName.Prefix.Equals("xmlns", StringComparison.Ordinal);
 
-	public string Name => _name.ToString();
+	public string Name => _attributeName.Name;
 
-	public string LocalName => _name.LocalName;
+	public ReadOnlySpan<char> LocalName => _attributeName.LocalName;
 
-	public string? Prefix => _name.Prefix;
+	public ReadOnlySpan<char> Prefix => _attributeName.Prefix;
 
 	public string? Value { get; set; }
 
-	public Attribute Clone() => new(Name, Value);
+	public Attribute Clone() => new(_attributeName.Name, Value);
 
 	IXmlNode IXmlNode.Clone() => Clone();
 
-	void IXmlNode.Remove()
-	{
-		throw new NotSupportedException();
-	}
+	void IXmlNode.Remove() => _parent?.RemoveAttributeInternal(this);
 
 	public void WriteTo(XmlWriter writer)
 	{
-		if (_name.Prefix == null)
-			writer.WriteAttributeString(_name.LocalName, Value);
+		var (prefix, localName) = _attributeName;
+
+		if (prefix == null)
+			writer.WriteAttributeString(localName, Value);
 		else
 		{
-			var ns = _name.Prefix switch
+			var ns = _attributeName.Prefix switch
 			{
 				"xml" => Namespaces.Xml,
 				"xmlns" => Namespaces.Xmlns,
-				_ => _parent?.GetNamespace(_name.Prefix)
+				_ => _parent?.GetNamespace(_attributeName.Prefix)
 			};
 
-			writer.WriteAttributeString(_name.Prefix, _name.LocalName, ns, Value);
+			writer.WriteAttributeString(prefix, localName, ns, Value);
 		}
 	}
 }
