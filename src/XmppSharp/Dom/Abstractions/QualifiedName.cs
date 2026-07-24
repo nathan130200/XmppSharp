@@ -5,52 +5,53 @@ namespace XmppSharp.Dom.Abstractions;
 
 internal readonly struct QualifiedName : IEquatable<QualifiedName>
 {
-	readonly int _hashCode;
-	readonly string _str;
+    readonly int _hashCode;
 
-	public readonly string LocalName;
+    public readonly string Name;
 
-	public readonly string? Prefix;
+    public readonly string LocalName;
 
-	public QualifiedName(string name)
-	{
-		ArgumentException.ThrowIfNullOrWhiteSpace(name);
+    public readonly string? Prefix;
 
-		_str = XmlConvert.VerifyName(name);
+    public QualifiedName(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
-		var colon = name.IndexOf(':');
+        Name = XmlConvert.VerifyName(name);
 
-		if (colon == -1)
-			LocalName = name;
-		else
-		{
-			Prefix = name[..colon];
-			LocalName = name[(colon + 1)..];
-		}
+        var colon = name.IndexOf(':');
 
-		_hashCode = HashCode.Combine(Prefix?.GetHashCode(StringComparison.Ordinal), LocalName.GetHashCode(StringComparison.Ordinal));
-	}
+        if (colon == -1)
+            LocalName = name;
+        else
+        {
+            Prefix = name[..colon];
+            LocalName = name[(colon + 1)..];
+        }
 
-	public readonly override string ToString() => _str;
+        _hashCode = HashCode.Combine(Prefix?.GetHashCode(StringComparison.Ordinal), LocalName.GetHashCode(StringComparison.Ordinal));
+    }
 
-	public static implicit operator string(QualifiedName name) => name._str;
+    public readonly override string ToString() => Name;
 
-	public readonly override int GetHashCode() => _hashCode;
+    public static implicit operator string(QualifiedName name) => name.Name;
 
-	public readonly override bool Equals([NotNullWhen(true)] object? obj)
-		=> obj is QualifiedName other && Equals(other);
+    public readonly override int GetHashCode() => _hashCode;
 
-	public bool Equals(QualifiedName other)
-	{
-		if (ReferenceEquals(_str, other._str))
-			return true;
+    public readonly override bool Equals([NotNullWhen(true)] object? obj)
+        => obj is QualifiedName other && Equals(other);
 
-		return _str.Equals(other._str, StringComparison.Ordinal);
-	}
+    public bool Equals(QualifiedName other)
+    {
+        if (ReferenceEquals(Name, other.Name))
+            return true;
 
-	public static implicit operator bool(QualifiedName name) => name._str != null;
+        return Name.Equals(other.Name, StringComparison.Ordinal);
+    }
 
-	public static bool operator ==(QualifiedName x, QualifiedName y) => x.Equals(y);
+    public static implicit operator bool(QualifiedName name) => name.Name != null;
 
-	public static bool operator !=(QualifiedName x, QualifiedName y) => !x.Equals(y);
+    public static bool operator ==(QualifiedName x, QualifiedName y) => x.Equals(y);
+
+    public static bool operator !=(QualifiedName x, QualifiedName y) => !x.Equals(y);
 }

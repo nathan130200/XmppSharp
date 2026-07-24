@@ -4,69 +4,69 @@ namespace XmppSharp.Protocol.Base;
 
 public enum ErrorCondition
 {
-	[XmppEnumMember("bad-request")]
-	BadRequest,
+    [XmppEnumMember("bad-request")]
+    BadRequest,
 
-	[XmppEnumMember("conflict")]
-	Conflict,
+    [XmppEnumMember("conflict")]
+    Conflict,
 
-	[XmppEnumMember("feature-not-implemented")]
-	FeatureNotImplemented,
+    [XmppEnumMember("feature-not-implemented")]
+    FeatureNotImplemented,
 
-	[XmppEnumMember("forbidden")]
-	Forbidden,
+    [XmppEnumMember("forbidden")]
+    Forbidden,
 
-	[XmppEnumMember("gone")]
-	Gone,
+    [XmppEnumMember("gone")]
+    Gone,
 
-	[XmppEnumMember("internal-server-error")]
-	InternalServerError,
+    [XmppEnumMember("internal-server-error")]
+    InternalServerError,
 
-	[XmppEnumMember("item-not-found")]
-	ItemNotFound,
+    [XmppEnumMember("item-not-found")]
+    ItemNotFound,
 
-	[XmppEnumMember("jid-malformed")]
-	JidMalformed,
+    [XmppEnumMember("jid-malformed")]
+    JidMalformed,
 
-	[XmppEnumMember("not-acceptable")]
-	NotAcceptable,
+    [XmppEnumMember("not-acceptable")]
+    NotAcceptable,
 
-	[XmppEnumMember("not-allowed")]
-	NotAllowed,
+    [XmppEnumMember("not-allowed")]
+    NotAllowed,
 
-	[XmppEnumMember("not-authorized")]
-	NotAuthorized,
+    [XmppEnumMember("not-authorized")]
+    NotAuthorized,
 
-	[XmppEnumMember("policy-violation")]
-	PolicyViolation,
+    [XmppEnumMember("policy-violation")]
+    PolicyViolation,
 
-	[XmppEnumMember("recipient-unavailable")]
-	RecipientUnavailable,
+    [XmppEnumMember("recipient-unavailable")]
+    RecipientUnavailable,
 
-	[XmppEnumMember("redirect")]
-	Redirect,
+    [XmppEnumMember("redirect")]
+    Redirect,
 
-	[XmppEnumMember("registration-required")]
-	RegistrationRequired,
+    [XmppEnumMember("registration-required")]
+    RegistrationRequired,
 
-	[XmppEnumMember("remote-server-not-found")]
-	RemoteServerNotFound,
+    [XmppEnumMember("remote-server-not-found")]
+    RemoteServerNotFound,
 
-	[XmppEnumMember("remote-server-timeout")]
-	RemoteServerTimeout,
+    [XmppEnumMember("remote-server-timeout")]
+    RemoteServerTimeout,
 
-	[XmppEnumMember("resource-constraint")]
-	ResourceConstraint,
+    [XmppEnumMember("resource-constraint")]
+    ResourceConstraint,
 
-	[XmppEnumMember("service-unavailable")]
-	ServiceUnavailable,
+    [XmppEnumMember("service-unavailable")]
+    ServiceUnavailable,
 
-	[XmppEnumMember("subscription-required")]
-	SubscriptionRequired,
+    [XmppEnumMember("subscription-required")]
+    SubscriptionRequired,
 
-	[XmppEnumMember("undefined-condition")]
-	UndefinedCondition,
+    [XmppEnumMember("undefined-condition")]
+    UndefinedCondition,
 
-	[XmppEnumMember("unexpected-request")]
-	UnexpectedRequest,
+    [XmppEnumMember("unexpected-request")]
+    UnexpectedRequest,
 }

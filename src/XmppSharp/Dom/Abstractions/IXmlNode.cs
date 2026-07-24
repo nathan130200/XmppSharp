@@ -4,11 +4,11 @@ namespace XmppSharp.Dom.Abstractions;
 
 public interface IXmlNode
 {
-	Element? Parent { get; }
+    Element? Parent { get; }
 
-	IXmlNode Clone();
+    IXmlNode Clone();
 
-	void WriteTo(XmlWriter writer);
+    void WriteTo(XmlWriter writer);
 
-	void Remove();
+    void Remove();
 }

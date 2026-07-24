@@ -4,28 +4,28 @@ namespace XmppSharp.Protocol;
 
 public enum PresenceType
 {
-	Available,
+    Available,
 
-	[XmppEnumMember("error")]
-	Error,
+    [XmppEnumMember("error")]
+    Error,
 
-	[XmppEnumMember("probe")]
-	Probe,
+    [XmppEnumMember("probe")]
+    Probe,
 
-	[XmppEnumMember("subscribe")]
-	Subscribe,
+    [XmppEnumMember("subscribe")]
+    Subscribe,
 
-	[XmppEnumMember("subscribed")]
-	Subscribed,
+    [XmppEnumMember("subscribed")]
+    Subscribed,
 
-	[XmppEnumMember("unavailable")]
-	Unavailable,
+    [XmppEnumMember("unavailable")]
+    Unavailable,
 
-	[XmppEnumMember("unsubscribe")]
-	Unsubscribe,
+    [XmppEnumMember("unsubscribe")]
+    Unsubscribe,
 
-	[XmppEnumMember("unsubscribed")]
-	Unsubscribed,
+    [XmppEnumMember("unsubscribed")]
+    Unsubscribed,
 
 
 }

@@ -4,16 +4,16 @@ namespace XmppSharp.Dom.Abstractions;
 
 public abstract class Node : IXmlNode
 {
-	internal Element? _parent;
+    internal Element? _parent;
 
-	public Element? Parent => _parent;
+    public Element? Parent => _parent;
 
-	public abstract Node Clone();
+    public abstract Node Clone();
 
-	public abstract void WriteTo(XmlWriter writer);
+    public abstract void WriteTo(XmlWriter writer);
 
-	IXmlNode IXmlNode.Clone() => Clone();
+    IXmlNode IXmlNode.Clone() => Clone();
 
-	public void Remove()
-		=> _parent?.RemoveChild(this);
+    public void Remove()
+        => _parent?.RemoveChild(this);
 }

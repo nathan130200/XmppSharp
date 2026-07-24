@@ -3,5 +3,5 @@
 [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
 public sealed class XmppEnumMemberAttribute(string name) : Attribute
 {
-	public string Name { get; } = string.Intern(name);
+    public string Name { get; } = string.Intern(name);
 }

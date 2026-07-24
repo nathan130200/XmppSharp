@@ -4,15 +4,15 @@ namespace XmppSharp.Protocol;
 
 public enum IqType
 {
-	[XmppEnumMember("error")]
-	Error,
+    [XmppEnumMember("error")]
+    Error,
 
-	[XmppEnumMember("get")]
-	Get,
+    [XmppEnumMember("get")]
+    Get,
 
-	[XmppEnumMember("set")]
-	Set,
+    [XmppEnumMember("set")]
+    Set,
 
-	[XmppEnumMember("result")]
-	Result
+    [XmppEnumMember("result")]
+    Result
 }

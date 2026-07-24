@@ -8,21 +8,21 @@ namespace XmppSharp.Protocol;
 [Tag("message", Namespaces.Component)]
 public sealed class Message() : Stanza("message")
 {
-	public MessageType Type
-	{
-		get => XmppEnum<MessageType>.Parse(GetAttribute("type")!);
-		set => SetAttribute("type", XmppEnum<MessageType>.GetName(value));
-	}
+    public MessageType Type
+    {
+        get => XmppEnum<MessageType>.Parse(GetAttribute("type")!);
+        set => SetAttribute("type", XmppEnum<MessageType>.GetName(value));
+    }
 
-	public string? Body
-	{
-		get => GetTag("body", Namespace);
-		set
-		{
-			if (value is null)
-				RemoveTag("body", Namespace);
-			else
-				SetTag("body", Namespace);
-		}
-	}
+    public string? Body
+    {
+        get => GetTag("body", Namespace);
+        set
+        {
+            if (value is null)
+                RemoveTag("body", Namespace);
+            else
+                SetTag("body", Namespace);
+        }
+    }
 }

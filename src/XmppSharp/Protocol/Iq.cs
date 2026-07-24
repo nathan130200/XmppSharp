@@ -8,9 +8,9 @@ namespace XmppSharp.Protocol;
 [Tag("iq", Namespaces.Component)]
 public sealed class Iq() : Stanza("iq")
 {
-	public IqType Type
-	{
-		get => XmppEnum<IqType>.Parse(GetAttribute("type")!);
-		set => SetAttribute("type", XmppEnum<IqType>.GetName(value));
-	}
+    public IqType Type
+    {
+        get => XmppEnum<IqType>.Parse(GetAttribute("type")!);
+        set => SetAttribute("type", XmppEnum<IqType>.GetName(value));
+    }
 }

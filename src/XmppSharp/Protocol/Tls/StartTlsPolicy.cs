@@ -2,6 +2,6 @@
 
 public enum StartTlsPolicy
 {
-	Optional = 1,
-	Required = 2
+    Optional = 1,
+    Required = 2
 }
