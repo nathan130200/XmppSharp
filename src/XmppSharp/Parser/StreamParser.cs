@@ -134,6 +134,52 @@ public sealed class StreamParser : IDisposable
 		}
 	}
 
+	public void Reset()
+	{
+		lock (_syncRoot)
+		{
+			ObjectDisposedException.ThrowIf(_disposed, this);
+
+			_depth = 0;
+
+			_context = null;
+
+			_parser.Reset();
+
+			while (_ns.PopScope()) ;
+		}
+	}
+
+	public void Suspend(bool resumable = true)
+	{
+		lock (_syncRoot)
+		{
+			ObjectDisposedException.ThrowIf(_disposed, this);
+
+			_parser.Suspend(resumable);
+		}
+	}
+
+	public void Resume()
+	{
+		lock (_syncRoot)
+		{
+			ObjectDisposedException.ThrowIf(_disposed, this);
+
+			_parser.Resume();
+		}
+	}
+
+	public void Parse(ReadOnlySpan<byte> bytes)
+	{
+		lock (_syncRoot)
+		{
+			ObjectDisposedException.ThrowIf(_disposed, this);
+
+			_parser.Parse(bytes);
+		}
+	}
+
 	public void Dispose()
 	{
 		lock (_syncRoot)

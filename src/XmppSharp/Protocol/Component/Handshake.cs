@@ -9,33 +9,26 @@ namespace XmppSharp.Protocol.Component;
 [Tag("handshake", Namespaces.Component)]
 public sealed class Handshake() : Element("handshake", Namespaces.Component)
 {
-    public Handshake(string streamId, string password) : this()
-    {
-        InnerText = ComputeHash(streamId, password);
-    }
+	public Handshake(string streamId, string password) : this()
+	{
+		InnerText = ComputeHash(streamId, password);
+	}
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public bool CanAuthenticate(string token) => InnerText == token;
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public bool CanAuthenticate(string token) => InnerText == token;
 
-    public static string ComputeHash(string streamId, string password)
-    {
-        ArgumentNullException.ThrowIfNull(streamId);
+	public static string ComputeHash(string streamId, string password)
+	{
+		ArgumentNullException.ThrowIfNull(streamId);
 
-        ArgumentNullException.ThrowIfNull(password);
+		ArgumentNullException.ThrowIfNull(password);
 
-        var size = StringHelper.GetMaxByteCount(streamId.Length)
-            + StringHelper.GetMaxByteCount(password.Length);
+		var bytes = StringHelper.ToBytes(string.Concat(streamId, password));
 
-        using var array = new RentedArray<byte>(size, true);
+		Span<byte> buf = stackalloc byte[SHA1.HashSizeInBytes];
 
-        var pos = StringHelper.GetBytes(streamId, array.Span);
+		SHA1.HashData(bytes, buf);
 
-        StringHelper.GetBytes(password, array.Span[pos..]);
-
-        Span<byte> outBuf = stackalloc byte[SHA1.HashSizeInBytes];
-
-        SHA1.HashData(array.Span, outBuf);
-
-        return Convert.ToHexStringLower(outBuf);
-    }
+		return Convert.ToHexStringLower(buf);
+	}
 }
