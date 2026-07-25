@@ -1,0 +1,10 @@
+# Suppress: EC103
+
+root = true
+
+[*]
+indent_style = tab
+
+[*.{yml,yaml,xml,json}]
+indent_size  = 2
+indent_style = space
