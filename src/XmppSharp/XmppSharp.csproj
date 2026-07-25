@@ -7,8 +7,7 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
 		<PackageTags>xmpp; xmpp library; jabber; xml; xml parser</PackageTags>
-		<VersionSuffix>beta-1</VersionSuffix>
-		<Version>6.5.0-$(VersionSuffix)</Version>
+		<Version>7.0.0-preview-1</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -16,6 +15,10 @@
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Expat.Net" Version="2.8.2-preview-1" />
 	</ItemGroup>
 
 </Project>
