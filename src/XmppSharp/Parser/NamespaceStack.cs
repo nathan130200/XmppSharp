@@ -1,71 +1,96 @@
-﻿namespace XmppSharp.Parser;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace XmppSharp.Parser;
 
 public class NamespaceStack
 {
-    readonly Stack<Dictionary<string, string>> _scopes = [];
+	readonly Stack<Scope> _scopes = [];
 
-    public string? DefaultNamespace => LookupNamespace(default);
+	class Scope
+	{
+		Dictionary<string, string>? _dictionary;
 
-    public void PushScope()
-    {
-        lock (this)
-        {
-            _scopes.Push(new(2, StringComparer.Ordinal));
-        }
-    }
+		public void Add(string key, string value)
+		{
+			_dictionary ??= new(2, StringComparer.Ordinal);
 
-    public bool PopScope()
-    {
-        lock (this)
-        {
-            if (_scopes.TryPop(out var scope))
-            {
-                scope.Clear();
-                return true;
-            }
-        }
+			_dictionary.Add(key, value);
+		}
 
-        return false;
-    }
+		public void Clear()
+		{
+			_dictionary?.Clear();
 
-    public void AddNamespace(string prefix, string uri)
-    {
-        ArgumentNullException.ThrowIfNull(prefix);
+			_dictionary = null;
+		}
 
-        if (!string.IsNullOrWhiteSpace(prefix))
-            ArgumentException.ThrowIfNullOrWhiteSpace(uri);
+		public bool TryLookup(ReadOnlySpan<char> prefix, [NotNullWhen(true)] out string? uri)
+		{
+			uri = default;
 
-        lock (this)
-        {
-            _scopes.Peek().Add(prefix, uri);
-        }
-    }
+			if (_dictionary is null)
+				return false;
 
-    public IReadOnlyDictionary<string, string> GetNamespacesInScope()
-    {
-        lock (_scopes)
-            return _scopes.Peek();
-    }
+			var lookup = _dictionary.GetAlternateLookup<ReadOnlySpan<char>>();
 
-    public string? LookupNamespace(ReadOnlySpan<char> prefix)
-    {
-        if (prefix.Equals("xml", StringComparison.Ordinal))
-            return Namespaces.Xml;
+			return lookup.TryGetValue(prefix, out uri);
+		}
+	}
 
-        if (prefix.Equals("xmlns", StringComparison.Ordinal))
-            return Namespaces.Xmlns;
+	public string? DefaultNamespace => LookupNamespace(default);
 
-        lock (this)
-        {
-            foreach (var scope in _scopes)
-            {
-                var lookup = scope.GetAlternateLookup<ReadOnlySpan<char>>();
+	public void PushScope()
+	{
+		lock (this)
+		{
+			_scopes.Push(new());
+		}
+	}
 
-                if (lookup.TryGetValue(prefix, out var result))
-                    return result;
-            }
-        }
+	public bool PopScope()
+	{
+		lock (this)
+		{
+			if (_scopes.TryPop(out var scope))
+			{
+				scope?.Clear();
+				return true;
+			}
+		}
 
-        return null;
-    }
+		return false;
+	}
+
+	public void AddNamespace(string prefix, string uri)
+	{
+		ArgumentNullException.ThrowIfNull(prefix);
+
+		if (!string.IsNullOrWhiteSpace(prefix))
+			ArgumentException.ThrowIfNullOrWhiteSpace(uri);
+
+		lock (this)
+		{
+			_scopes.Peek().Add(prefix, uri);
+		}
+	}
+
+	public string? LookupNamespace(ReadOnlySpan<char> prefix)
+	{
+		if (prefix.Equals("xml", StringComparison.Ordinal))
+			return Namespaces.Xml;
+
+		if (prefix.Equals("xmlns", StringComparison.Ordinal))
+			return Namespaces.Xmlns;
+
+		lock (this)
+		{
+			foreach (var scope in _scopes)
+			{
+				if (scope.TryLookup(prefix, out var result))
+					return result;
+			}
+		}
+
+		return null;
+	}
 }
