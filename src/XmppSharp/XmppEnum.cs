@@ -32,7 +32,7 @@ public static class XmppEnum<T> where T : struct, Enum
 
 	public static IEnumerable<string> GetNames() => s_Members.Keys;
 
-	public static IEnumerable<KeyValuePair<string, T>> GetMembers() => s_Members;
+	public static ImmutableDictionary<string, T> GetMembers() => s_Members;
 
 	public static T Parse(string value)
 	{
