@@ -47,22 +47,37 @@ public static class ElementFactory
 		public static bool operator !=(ElementKey x, ElementKey y) => !x.Equals(y);
 	}
 
-	static readonly EqualityComparer<ElementKey> s_KeyComparer;
+	// ---------------------------------------
 
-	static readonly ConcurrentDictionary<ElementKey, Delegate> s_ElementTypeMap;
+	static readonly ConcurrentDictionary<ElementKey, Delegate> s_ElementTypes;
+
+	// ---------------------------------------
+
+	class ElementKeyComparer : IEqualityComparer<ElementKey>
+	{
+		public static ElementKeyComparer Shared { get; } = new();
+
+		public bool Equals(ElementKey x, ElementKey y)
+		{
+			return x.Equals(y);
+		}
+
+		public int GetHashCode([DisallowNull] ElementKey obj)
+		{
+			return obj.GetHashCode();
+		}
+	}
+
+	// ---------------------------------------
 
 	static ElementFactory()
 	{
-		s_KeyComparer = EqualityComparer<ElementKey>.Create
-		(
-			(x, y) => x.Equals(y),
-			static x => x.GetHashCode()
-		);
-
-		s_ElementTypeMap = new(s_KeyComparer);
+		s_ElementTypes = new(ElementKeyComparer.Shared);
 
 		RegisterAssembly(typeof(ElementFactory).Assembly);
 	}
+
+	// ---------------------------------------
 
 	public static void RegisterAssembly(Assembly assembly)
 	{
@@ -108,7 +123,7 @@ public static class ElementFactory
 		var fn = Expression.Lambda(Expression.New(ctor)).Compile();
 
 		foreach (var attr in attributes)
-			s_ElementTypeMap[new(attr.Name, attr.Namespace, true)] = fn;
+			s_ElementTypes[new(attr.Name, attr.Namespace, true)] = fn;
 	}
 
 	public static Element CreateElement(string name, string? ns)
@@ -117,7 +132,7 @@ public static class ElementFactory
 
 		var entry = new ElementKey(name, ns, false);
 
-		if (s_ElementTypeMap.TryGetValue(entry, out var fn))
+		if (s_ElementTypes.TryGetValue(entry, out var fn))
 		{
 			try
 			{

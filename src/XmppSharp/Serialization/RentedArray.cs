@@ -27,7 +27,14 @@ public sealed class RentedArray<T>(int size, bool clearArray = false) : IDisposa
 	}
 
 	void ThrowIfDisposed()
-		=> ObjectDisposedException.ThrowIf(_disposed, this);
+	{
+#if NET7_0_OR_GREATER
+		ObjectDisposedException.ThrowIf(_disposed, this);
+#else
+		if (_disposed)
+			throw new ObjectDisposedException(nameof(RentedArray<>));
+#endif
+	}
 
 	public void Dispose()
 	{

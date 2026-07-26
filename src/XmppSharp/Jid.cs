@@ -9,6 +9,9 @@ public sealed class Jid : IEquatable<Jid>
 	readonly int _at, _slash;
 	readonly int _hashCode;
 
+
+#if NET8_0_OR_GREATER
+
 	public ReadOnlySpan<char> User
 		=> _at != -1 ? _value.AsSpan(0.._at) : [];
 
@@ -28,6 +31,56 @@ public sealed class Jid : IEquatable<Jid>
 
 	public ReadOnlySpan<char> Resource
 		=> _slash != -1 ? _value.AsSpan((_slash + 1)..) : [];
+
+#else
+
+
+	public ReadOnlySpan<char> User
+	{
+		get
+		{
+			if (_at == -1) return [];
+
+			var pos = 0.._at;
+
+			var (ofs, len) = pos.GetOffsetAndLength(_value.Length);
+
+			return _value.AsSpan(ofs, len);
+		}
+	}
+
+	public ReadOnlySpan<char> Server
+	{
+		get
+		{
+			if (_at == -1 && _slash == -1)
+				return _value;
+
+			Range cursor = _slash == -1
+				? (_at + 1)..
+				: (_at + 1).._slash;
+
+			var (ofs, len) = cursor.GetOffsetAndLength(_value.Length);
+
+			return _value.AsSpan(ofs, len);
+		}
+	}
+
+	public ReadOnlySpan<char> Resource
+	{
+		get
+		{
+			if (_slash == -1) return [];
+
+			var pos = (_slash + 1)..;
+
+			var (ofs, len) = pos.GetOffsetAndLength(_value.Length);
+
+			return _value.AsSpan(ofs, len);
+		}
+	}
+
+#endif
 
 	public static Jid Empty { get; } = new();
 

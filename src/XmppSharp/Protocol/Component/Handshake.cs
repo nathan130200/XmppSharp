@@ -14,6 +14,8 @@ public sealed class Handshake() : Element("handshake", Namespaces.Component)
 		InnerText = ComputeHash(streamId, password);
 	}
 
+	const int HashSizeInBytes = 20;
+
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public bool CanAuthenticate(string token) => InnerText == token;
 
@@ -25,10 +27,15 @@ public sealed class Handshake() : Element("handshake", Namespaces.Component)
 
 		var bytes = StringHelper.ToBytes(string.Concat(streamId, password));
 
-		Span<byte> buf = stackalloc byte[SHA1.HashSizeInBytes];
+		Span<byte> buf = stackalloc byte[HashSizeInBytes];
 
 		SHA1.HashData(bytes, buf);
 
+#if NET9_0_OR_GREATER
 		return Convert.ToHexStringLower(buf);
+#else
+		return Convert.ToHexString(SHA1.HashData(bytes)).ToLowerInvariant();
+#endif // NET9_0_OR_GREATER
+
 	}
 }

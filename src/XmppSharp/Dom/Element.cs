@@ -14,12 +14,13 @@ public class Element : Container
 
 	public Element(string name, string? ns, object? value = default)
 	{
-		ArgumentException.ThrowIfNullOrWhiteSpace(name);
+		if (string.IsNullOrWhiteSpace(name))
+			throw new ArgumentException(default, nameof(name));
 
 		_name = new(XmlConvert.VerifyName(name));
 
 		if (_name.Prefix != null)
-			ArgumentException.ThrowIfNullOrWhiteSpace(ns);
+			throw new ArgumentException(default, nameof(ns));
 
 		Namespace = ns;
 
@@ -300,7 +301,7 @@ public class Element : Container
 	}
 
 	public string? GetTag(string name, string? ns = null)
-		=> Element(name, ns)?.InnerText;
+		=> this.Element(name, ns)?.InnerText;
 
 	public Element SetTag(string name, string? ns = null, object? value = default)
 	{
@@ -317,31 +318,54 @@ public class Element : Container
 		return el;
 	}
 
-	public T GetAttribute<T>(string name, T defaultValue, IFormatProvider? fmt = default) where T : IParsable<T>
-	{
-		var rawValue = GetAttribute(name);
+#if NET7_0_OR_GREATER
 
-		if (rawValue != null)
-		{
-			if (T.TryParse(rawValue, fmt ?? CultureInfo.InvariantCulture, out var result))
-				return result;
-		}
+public T GetAttribute<T>(string name, T defaultValue, IFormatProvider? fmt = default) where T : IParsable<T>
+{
+	var rawValue = GetAttribute(name);
+
+	if (rawValue != null)
+	{
+		if (T.TryParse(rawValue, fmt ?? CultureInfo.InvariantCulture, out var result))
+			return result;
+	}
+
+	return defaultValue;
+}
+
+public T? GetAttribute<T>(string name, IFormatProvider? fmt = default) where T : struct, IParsable<T>
+{
+	var rawValue = GetAttribute(name);
+
+	if (rawValue != null)
+	{
+		if (T.TryParse(rawValue, fmt ?? CultureInfo.InvariantCulture, out var result))
+			return result;
+	}
+
+	return default;
+}	
+
+
+#else // NET6_0
+
+	public T? GetAttribute<T>(string name, IFormatProvider? fmt = default) where T : struct
+	{
+		if (ValueConverter.TryConvert<T>(GetAttribute(name), fmt, out var result))
+			return result;
+
+		return default;
+	}
+
+	public T GetAttribute<T>(string name, T defaultValue, IFormatProvider? fmt = default) where T : struct
+	{
+		if (ValueConverter.TryConvert<T>(GetAttribute(name), fmt, out var result))
+			return result;
 
 		return defaultValue;
 	}
 
-	public T? GetAttribute<T>(string name, IFormatProvider? fmt = default) where T : struct, IParsable<T>
-	{
-		var rawValue = GetAttribute(name);
-
-		if (rawValue != null)
-		{
-			if (T.TryParse(rawValue, fmt ?? CultureInfo.InvariantCulture, out var result))
-				return result;
-		}
-
-		return default;
-	}
+#endif // NET7_0_OR_GREATER
 
 	public sealed override string ToString() => ToString(false);
 

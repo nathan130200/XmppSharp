@@ -31,9 +31,26 @@ public class NamespaceStack
 			if (_dictionary is null)
 				return false;
 
+#if NET9_0_OR_GREATER
+
 			var lookup = _dictionary.GetAlternateLookup<ReadOnlySpan<char>>();
 
 			return lookup.TryGetValue(prefix, out uri);
+
+#else // < NET8_0
+
+			foreach (var (key, value) in _dictionary)
+			{
+				if (prefix.Equals(key, StringComparison.Ordinal))
+				{
+					uri = value;
+					return true;
+				}
+			}
+
+			return false;
+
+#endif // >= NET9_0_OR_GREATER
 		}
 	}
 
@@ -65,8 +82,11 @@ public class NamespaceStack
 	{
 		ArgumentNullException.ThrowIfNull(prefix);
 
-		if (!string.IsNullOrWhiteSpace(prefix))
-			ArgumentException.ThrowIfNullOrWhiteSpace(uri);
+		// Declaring namespace without prefix with empty uri is used to "unset" or "clear" uri in current scope. (xmlns="")
+		// But declaring namespace with an prefix but empty uri is invalid. (xmlns:prefix="")
+
+		if (string.IsNullOrWhiteSpace(uri))
+			throw new ArgumentException("Namespace with prefix must have an URI.", nameof(uri));
 
 		lock (this)
 		{

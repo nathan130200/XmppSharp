@@ -16,7 +16,7 @@ public sealed class Error : Element
 	public ErrorType Type
 	{
 		get => XmppEnum<ErrorType>.ParseOrDefault(GetAttribute("type"));
-		set => SetAttribute("type", XmppEnum<ErrorType>.GetNameOrDefault(value));
+		set => SetAttribute("type", XmppEnum<ErrorType>.GetNameOrDefault(value, null));
 	}
 
 	public int? Code

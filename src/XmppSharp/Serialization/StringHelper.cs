@@ -18,26 +18,4 @@ public static class StringHelper
 
 	public static string ToString(byte[] buf)
 		=> s_UTF8_NotBOM.GetString(buf);
-
-	public static string ToHex(string s)
-	{
-		var maxBytes = GetMaxByteCount(s.Length);
-
-		using var array = new RentedArray<byte>(maxBytes);
-
-		var written = GetBytes(s, array.Span);
-
-		return Convert.ToHexString(array.Span[..written]);
-	}
-
-	public static string ToHexLower(string s)
-	{
-		var maxBytes = GetMaxByteCount(s.Length);
-
-		using var array = new RentedArray<byte>(maxBytes);
-
-		var written = GetBytes(s, array.Span);
-
-		return Convert.ToHexStringLower(array.Span[..written]);
-	}
 }

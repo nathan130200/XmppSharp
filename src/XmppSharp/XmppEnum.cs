@@ -1,17 +1,20 @@
-﻿using System.Collections.Frozen;
+﻿using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using XmppSharp.Attributes;
+
+#if NET9_0_OR_GREATER
+using System.Runtime.CompilerServices;
+#endif
 
 namespace XmppSharp;
 
 [EditorBrowsable(EditorBrowsableState.Never)]
 public static class XmppEnum<T> where T : struct, Enum
 {
-	static readonly IEnumerable<string> s_Names;
-	static readonly FrozenDictionary<string, T> s_Members;
+	static readonly ImmutableDictionary<string, T> s_Members;
+
 	static readonly EqualityComparer<T> s_ValueComparer;
 
 	static XmppEnum()
@@ -20,20 +23,14 @@ public static class XmppEnum<T> where T : struct, Enum
 					  where f.FieldType == typeof(T)
 					  let attr = f.GetCustomAttribute<XmppEnumMemberAttribute>()
 					  where attr != null
-					  select new
-					  {
-						  Key = attr.Name,
-						  Value = (T)f.GetValue(null)!
-					  };
+					  select new KeyValuePair<string, T>(attr.Name, (T)f.GetValue(null)!);
 
-		s_Members = members.ToFrozenDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal);
-
-		s_Names = members.Select(x => x.Key);
+		s_Members = members.ToImmutableDictionary(x => x.Key, x => x.Value);
 
 		s_ValueComparer = EqualityComparer<T>.Default;
 	}
 
-	public static IEnumerable<string> GetNames() => s_Names;
+	public static IEnumerable<string> GetNames() => s_Members.Keys;
 
 	public static IEnumerable<KeyValuePair<string, T>> GetMembers() => s_Members;
 
@@ -75,7 +72,9 @@ public static class XmppEnum<T> where T : struct, Enum
 		throw new InvalidOperationException($"Unknown value '{value}' for enum type '{typeof(T).Name}'.");
 	}
 
+#if NET9_0_OR_GREATER
 	[OverloadResolutionPriority(1)]
+#endif
 	public static string? GetNameOrDefault(T value, string? defaultValue = default)
 	{
 		foreach (var entry in s_Members)
@@ -87,7 +86,8 @@ public static class XmppEnum<T> where T : struct, Enum
 		return defaultValue;
 	}
 
-	[OverloadResolutionPriority(0)]
+#if NET9_0_OR_GREATER
+	[OverloadResolutionPriority(1)]
 	public static string GetNameOrDefault(T value, T defaultValue = default)
 	{
 		foreach (var entry in s_Members)
@@ -98,6 +98,18 @@ public static class XmppEnum<T> where T : struct, Enum
 
 		return GetName(defaultValue);
 	}
+#else
+	public static string GetNameOrDefault(T value, T defaultValue)
+	{
+		foreach (var entry in s_Members)
+		{
+			if (s_ValueComparer.Equals(entry.Value, value))
+				return entry.Key;
+		}
+
+		return GetName(defaultValue);
+	}
+#endif
 
 	public static bool TryParse(string? value, out T result)
 	{

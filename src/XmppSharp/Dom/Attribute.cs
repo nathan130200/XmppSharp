@@ -12,9 +12,7 @@ public class Attribute : IXmlNode
 
 	public Attribute(string name, object? value)
 	{
-		ArgumentException.ThrowIfNullOrWhiteSpace(name);
-
-		_name = new(XmlConvert.VerifyName(name));
+		_name = new(name);
 
 		Value = Convert.ToString(value, CultureInfo.InvariantCulture);
 	}

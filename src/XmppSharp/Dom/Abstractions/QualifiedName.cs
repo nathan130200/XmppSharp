@@ -15,7 +15,8 @@ internal readonly struct QualifiedName : IEquatable<QualifiedName>
 
 	public QualifiedName(string name)
 	{
-		ArgumentException.ThrowIfNullOrWhiteSpace(name);
+		if (string.IsNullOrWhiteSpace(name))
+			throw new ArgumentNullException(nameof(name));
 
 		Name = XmlConvert.VerifyName(name);
 

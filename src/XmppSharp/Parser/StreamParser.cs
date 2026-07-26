@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Expat;
 using XmppSharp.Dom;
 using XmppSharp.Protocol.Base;
@@ -20,7 +21,11 @@ public sealed class StreamParser : IDisposable
 
 	public event StreamEndEventHandler? OnStreamEnd;
 
+#if NET9_0_OR_GREATER
 	readonly Lock _syncRoot = new();
+#else
+	readonly object _syncRoot = new();
+#endif
 
 	readonly XmlParser _parser;
 
@@ -134,11 +139,22 @@ public sealed class StreamParser : IDisposable
 		}
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	void ThrowIfDisposed()
+	{
+#if NET7_0_OR_GREATER
+		ObjectDisposedException.ThrowIf(_disposed, this);
+#else
+		if (_disposed)
+			throw new ObjectDisposedException(nameof(StreamParser));
+#endif
+	}
+
 	public void Reset()
 	{
 		lock (_syncRoot)
 		{
-			ObjectDisposedException.ThrowIf(_disposed, this);
+			ThrowIfDisposed();
 
 			_depth = 0;
 
@@ -154,7 +170,7 @@ public sealed class StreamParser : IDisposable
 	{
 		lock (_syncRoot)
 		{
-			ObjectDisposedException.ThrowIf(_disposed, this);
+			ThrowIfDisposed();
 
 			_parser.Suspend(resumable);
 		}
@@ -164,7 +180,7 @@ public sealed class StreamParser : IDisposable
 	{
 		lock (_syncRoot)
 		{
-			ObjectDisposedException.ThrowIf(_disposed, this);
+			ThrowIfDisposed();
 
 			_parser.Resume();
 		}
@@ -174,7 +190,7 @@ public sealed class StreamParser : IDisposable
 	{
 		lock (_syncRoot)
 		{
-			ObjectDisposedException.ThrowIf(_disposed, this);
+			ThrowIfDisposed();
 
 			_parser.Parse(bytes);
 		}
