@@ -8,9 +8,9 @@ public sealed class StreamStream : DirectionalElement
 {
 	public StreamStream() : base("stream:stream", Namespaces.Stream)
 	{
-		SetNamespace(string.Empty, Stanza.DefaultElementNamespace);
+		// its safe to set default namespace, later parser can override this.
 
-		SetAttribute("version", "1.0");
+		SetNamespace(string.Empty, Stanza.DefaultNamespace);
 	}
 
 	public string? Id

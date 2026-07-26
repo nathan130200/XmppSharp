@@ -28,6 +28,8 @@ public class Element : Container
 			SetValue(value);
 	}
 
+	public bool IsRootElement => _parent is null;
+
 	public string Name
 	{
 		get => _name.ToString();
@@ -44,10 +46,13 @@ public class Element : Container
 		set => SetNamespace(_name.Prefix, value);
 	}
 
-	public string? DefaultNamespace
+	public IEnumerable<Attribute> Attributes()
 	{
-		get => GetNamespace(string.Empty);
-		set => SetNamespace(string.Empty, value);
+		lock (_attributes)
+		{
+			foreach (var attr in _attributes)
+				yield return attr;
+		}
 	}
 
 	[NotNull]

@@ -8,10 +8,10 @@ public abstract class Stanza : DirectionalElement
 	static readonly AsyncLocal<string?> s_DefaultNamespace = new();
 
 	[NotNull, DebuggerBrowsable(DebuggerBrowsableState.Never)]
-	public static string? DefaultElementNamespace
+	public static string? DefaultNamespace
 	{
 		get => s_DefaultNamespace.Value ?? Namespaces.Client;
-		set => s_DefaultNamespace.Value = value != null ? ValidateNamespace(value) : null;
+		set => s_DefaultNamespace.Value = ValidateNamespace(value);
 	}
 
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -23,20 +23,22 @@ public abstract class Stanza : DirectionalElement
 	static string ValidateName(string name)
 	{
 		if (!s_ValidNames.Contains(name))
-			throw new ArgumentOutOfRangeException(nameof(name));
+			throw new ArgumentException("Unknown stanza type.", nameof(name));
 
 		return name;
 	}
 
-	internal static string ValidateNamespace(string ns)
+	internal static string? ValidateNamespace(string? ns)
 	{
+		if (ns is null) return null;
+
 		if (!s_ValidNamespaces.Contains(ns))
-			throw new ArgumentOutOfRangeException(nameof(ns));
+			throw new ArgumentException("Unknown stanza namespace.", nameof(ns));
 
 		return ns;
 	}
 
-	internal Stanza(string name) : base(ValidateName(name), DefaultElementNamespace)
+	internal Stanza(string name) : base(ValidateName(name), DefaultNamespace)
 	{
 
 	}

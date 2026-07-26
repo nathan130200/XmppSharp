@@ -206,7 +206,7 @@ class Component : IDisposable
 
 	void InitStream()
 	{
-		Stanza.DefaultElementNamespace = Namespaces.Component;
+		Stanza.DefaultNamespace = Namespaces.Component;
 
 		Send(new StreamStream
 		{
