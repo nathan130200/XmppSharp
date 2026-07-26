@@ -8,7 +8,7 @@ public sealed class StreamStream : DirectionalElement
 {
 	public StreamStream() : base("stream:stream", Namespaces.Stream)
 	{
-		SetNamespace(string.Empty, Stanza.DefaultNamespace);
+		SetNamespace(string.Empty, Stanza.DefaultElementNamespace);
 
 		SetAttribute("version", "1.0");
 	}

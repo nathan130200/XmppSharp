@@ -8,7 +8,7 @@ public abstract class Stanza : DirectionalElement
 	static readonly AsyncLocal<string?> s_DefaultNamespace = new();
 
 	[NotNull, DebuggerBrowsable(DebuggerBrowsableState.Never)]
-	public static string? DefaultNamespace
+	public static string? DefaultElementNamespace
 	{
 		get => s_DefaultNamespace.Value ?? Namespaces.Client;
 		set => s_DefaultNamespace.Value = value != null ? ValidateNamespace(value) : null;
@@ -36,7 +36,7 @@ public abstract class Stanza : DirectionalElement
 		return ns;
 	}
 
-	internal Stanza(string name) : base(ValidateName(name), DefaultNamespace)
+	internal Stanza(string name) : base(ValidateName(name), DefaultElementNamespace)
 	{
 
 	}

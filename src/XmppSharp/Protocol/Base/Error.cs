@@ -8,7 +8,7 @@ namespace XmppSharp.Protocol.Base;
 [Tag("error", Namespaces.Server)]
 public sealed class Error : Element
 {
-	public Error() : base("error", Stanza.DefaultNamespace)
+	public Error() : base("error", Stanza.DefaultElementNamespace)
 	{
 
 	}
