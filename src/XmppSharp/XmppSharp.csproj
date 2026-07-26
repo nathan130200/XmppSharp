@@ -9,6 +9,7 @@
 		<RepositoryUrl>https://github.com/nathan130200/XmppSharp</RepositoryUrl>
 		<PackageTags>xmpp; xmpp library; jabber; xml; xml parser</PackageTags>
 		<Version>7.0.0-preview-1</Version>
+		<IsTrimmable>false</IsTrimmable>
 	</PropertyGroup>
 
 	<ItemGroup>
