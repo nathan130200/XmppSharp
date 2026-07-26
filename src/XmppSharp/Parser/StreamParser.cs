@@ -37,6 +37,8 @@ public sealed class StreamParser : IDisposable
 
 	int _depth;
 
+	public int Depth => _depth;
+
 	static readonly XmlParserOptions s_DefaultXmlOptions = new(XmlParserOptions.Default)
 	{
 		BillionLaughsAttackProtectionMaximumAmplification = 50f, // half percent
