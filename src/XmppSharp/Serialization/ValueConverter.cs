@@ -18,24 +18,25 @@ public static class ValueConverter
 
 	static ValueConverter()
 	{
-		var defaultNumberStyle = NumberStyles.Number;
+		NumberStyles defaultIntegerFormat = NumberStyles.Integer,
+			defaultFloatFormat = NumberStyles.Float;
 
 		// signed types
-		RegisterConverter(CreateNumberParser<sbyte>(sbyte.TryParse, defaultNumberStyle));
-		RegisterConverter(CreateNumberParser<short>(short.TryParse, defaultNumberStyle));
-		RegisterConverter(CreateNumberParser<int>(int.TryParse, defaultNumberStyle));
-		RegisterConverter(CreateNumberParser<long>(long.TryParse, defaultNumberStyle));
+		RegisterConverter(CreateNumberParser<sbyte>(sbyte.TryParse, defaultIntegerFormat));
+		RegisterConverter(CreateNumberParser<short>(short.TryParse, defaultIntegerFormat));
+		RegisterConverter(CreateNumberParser<int>(int.TryParse, defaultIntegerFormat));
+		RegisterConverter(CreateNumberParser<long>(long.TryParse, defaultIntegerFormat));
 
 		// unsigned types
-		RegisterConverter(CreateNumberParser<byte>(byte.TryParse, defaultNumberStyle));
-		RegisterConverter(CreateNumberParser<ushort>(ushort.TryParse, defaultNumberStyle));
-		RegisterConverter(CreateNumberParser<uint>(uint.TryParse, defaultNumberStyle));
-		RegisterConverter(CreateNumberParser<ulong>(ulong.TryParse, defaultNumberStyle));
+		RegisterConverter(CreateNumberParser<byte>(byte.TryParse, defaultIntegerFormat));
+		RegisterConverter(CreateNumberParser<ushort>(ushort.TryParse, defaultIntegerFormat));
+		RegisterConverter(CreateNumberParser<uint>(uint.TryParse, defaultIntegerFormat));
+		RegisterConverter(CreateNumberParser<ulong>(ulong.TryParse, defaultIntegerFormat));
 
 		// floating point types
-		RegisterConverter(CreateNumberParser<float>(float.TryParse, defaultNumberStyle));
-		RegisterConverter(CreateNumberParser<double>(double.TryParse, defaultNumberStyle));
-		RegisterConverter(CreateNumberParser<decimal>(decimal.TryParse, defaultNumberStyle));
+		RegisterConverter(CreateNumberParser<float>(float.TryParse, defaultFloatFormat));
+		RegisterConverter(CreateNumberParser<double>(double.TryParse, defaultFloatFormat));
+		RegisterConverter(CreateNumberParser<decimal>(decimal.TryParse, defaultFloatFormat));
 
 		// other .net types
 
@@ -45,21 +46,46 @@ public static class ValueConverter
 
 			if (s.Length == 1)
 			{
-				result = s[0] == '1';
-				return true;
+				if (char.IsDigit(s[0]))
+				{
+					var isDecimalTrue = (s[0] - '0') > 0;
+					result = isDecimalTrue;
+					return true;
+				}
+
+				// don't consider letters as valid boolean value
+
+				return false;
 			}
 			else
 			{
 				if (s.Equals(bool.TrueString, StringComparison.Ordinal))
 					result = true;
+
 				else if (s.Equals(bool.FalseString, StringComparison.Ordinal))
 					result = false;
+
 				else
 				{
-					if (!BigInteger.TryParse(s, NumberStyles.Any, fmt, out var temp)) // all attempts to parse boolean!
-						return bool.TryParse(s, out result);
+					if (BigInteger.TryParse(s, NumberStyles.Integer, fmt, out var asInt))
+					{
+						result = asInt > BigInteger.Zero;
+						return true;
+					}
 
-					result = temp >= BigInteger.One;
+					if (double.TryParse(s, NumberStyles.Float, fmt, out var asDouble))
+					{
+						if (double.IsNaN(asDouble) || double.IsInfinity(asDouble))
+							goto fallback;
+
+						result = asDouble > 0d;
+
+						return true;
+					}
+
+					fallback:
+
+					return bool.TryParse(s, out result);
 				}
 			}
 
