@@ -17,7 +17,10 @@ public class Element : Container
 		_name = new(name);
 
 		if (_name.Prefix != null)
-			throw new ArgumentException(default, nameof(ns));
+		{
+			if (string.IsNullOrWhiteSpace(ns))
+				throw new ArgumentException("A namespace URI is required when a prefix is specified.", nameof(ns));
+		}
 
 		Namespace = ns;
 
@@ -150,6 +153,18 @@ public class Element : Container
 	{
 		lock (_attributes)
 			return _attributes.Find(x => x.Name == name)?.Value;
+	}
+
+	internal void RemoveAttribute(Attribute? attr)
+	{
+		lock (_attributes)
+		{
+			if (attr?._parent != this) return;
+
+			attr._parent = null;
+
+			_attributes.Remove(attr);
+		}
 	}
 
 	public bool RemoveAttribute(string name)

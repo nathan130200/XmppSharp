@@ -1,8 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
 namespace XmppSharp.Dom.Abstractions;
 
+[DebuggerDisplay("{Name,nq}")]
 internal readonly struct QualifiedName : IEquatable<QualifiedName>
 {
 	readonly int _hashCode;
@@ -16,7 +18,7 @@ internal readonly struct QualifiedName : IEquatable<QualifiedName>
 	public QualifiedName(string name)
 	{
 		if (string.IsNullOrWhiteSpace(name))
-			throw new ArgumentNullException(nameof(name));
+			throw new ArgumentException("Xml name cannot be null or whitespace.", nameof(name));
 
 		Name = XmlConvert.VerifyName(name);
 

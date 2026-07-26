@@ -30,14 +30,12 @@ public class Attribute : IXmlNode
 
 	public string? Value { get; set; }
 
-	public Attribute Clone() => new(Name, Value);
+	internal Attribute Clone() => new(Name, Value);
 
 	IXmlNode IXmlNode.Clone() => Clone();
 
 	void IXmlNode.Remove()
-	{
-		throw new NotSupportedException();
-	}
+		=> _parent?.RemoveAttribute(this);
 
 	public void WriteTo(XmlWriter writer)
 	{
