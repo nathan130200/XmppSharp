@@ -14,10 +14,7 @@ public class Element : Container
 
 	public Element(string name, string? ns, object? value = default)
 	{
-		if (string.IsNullOrWhiteSpace(name))
-			throw new ArgumentException(default, nameof(name));
-
-		_name = new(XmlConvert.VerifyName(name));
+		_name = new(name);
 
 		if (_name.Prefix != null)
 			throw new ArgumentException(default, nameof(ns));
@@ -42,6 +39,12 @@ public class Element : Container
 	{
 		get => GetNamespace(_name.Prefix);
 		set => SetNamespace(_name.Prefix, value);
+	}
+
+	public string? DefaultNamespace
+	{
+		get => GetNamespace(string.Empty);
+		set => SetNamespace(string.Empty, value);
 	}
 
 	[NotNull]
