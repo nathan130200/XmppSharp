@@ -4,9 +4,13 @@ namespace XmppSharp.Serialization;
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 
-public delegate bool ValueConverterDelegate<T>(ReadOnlySpan<char> s, IFormatProvider? fmt, out T result);
+public delegate bool ValueConverter<T>(ReadOnlySpan<char> s, IFormatProvider? fmt, out T result);
+
+public delegate bool NumberParser<T>(ReadOnlySpan<char> s, NumberStyles styles, IFormatProvider? fmt, out T result);
 
 public static class ValueConverter
 {
@@ -14,24 +18,53 @@ public static class ValueConverter
 
 	static ValueConverter()
 	{
+		var defaultNumberStyle = NumberStyles.Number;
+
 		// signed types
-		RegisterConverter(CreateNumberParser<sbyte>(sbyte.TryParse, NumberStyles.Integer));
-		RegisterConverter(CreateNumberParser<short>(short.TryParse, NumberStyles.Integer));
-		RegisterConverter(CreateNumberParser<int>(int.TryParse, NumberStyles.Integer));
-		RegisterConverter(CreateNumberParser<long>(long.TryParse, NumberStyles.Integer));
+		RegisterConverter(CreateNumberParser<sbyte>(sbyte.TryParse, defaultNumberStyle));
+		RegisterConverter(CreateNumberParser<short>(short.TryParse, defaultNumberStyle));
+		RegisterConverter(CreateNumberParser<int>(int.TryParse, defaultNumberStyle));
+		RegisterConverter(CreateNumberParser<long>(long.TryParse, defaultNumberStyle));
 
 		// unsigned types
-		RegisterConverter(CreateNumberParser<byte>(byte.TryParse, NumberStyles.Integer));
-		RegisterConverter(CreateNumberParser<ushort>(ushort.TryParse, NumberStyles.Integer));
-		RegisterConverter(CreateNumberParser<uint>(uint.TryParse, NumberStyles.Integer));
-		RegisterConverter(CreateNumberParser<ulong>(ulong.TryParse, NumberStyles.Integer));
+		RegisterConverter(CreateNumberParser<byte>(byte.TryParse, defaultNumberStyle));
+		RegisterConverter(CreateNumberParser<ushort>(ushort.TryParse, defaultNumberStyle));
+		RegisterConverter(CreateNumberParser<uint>(uint.TryParse, defaultNumberStyle));
+		RegisterConverter(CreateNumberParser<ulong>(ulong.TryParse, defaultNumberStyle));
 
 		// floating point types
-		RegisterConverter(CreateNumberParser<float>(float.TryParse, NumberStyles.Float));
-		RegisterConverter(CreateNumberParser<double>(double.TryParse, NumberStyles.Float));
-		RegisterConverter(CreateNumberParser<decimal>(decimal.TryParse, NumberStyles.Float));
+		RegisterConverter(CreateNumberParser<float>(float.TryParse, defaultNumberStyle));
+		RegisterConverter(CreateNumberParser<double>(double.TryParse, defaultNumberStyle));
+		RegisterConverter(CreateNumberParser<decimal>(decimal.TryParse, defaultNumberStyle));
 
-		// standard .net types
+		// other .net types
+
+		RegisterConverter<bool>(static (s, fmt, out result) =>
+		{
+			result = default;
+
+			if (s.Length == 1)
+			{
+				result = s[0] == '1';
+				return true;
+			}
+			else
+			{
+				if (s.Equals(bool.TrueString, StringComparison.Ordinal))
+					result = true;
+				else if (s.Equals(bool.FalseString, StringComparison.Ordinal))
+					result = false;
+				else
+				{
+					if (!BigInteger.TryParse(s, NumberStyles.Any, fmt, out var temp)) // all attempts to parse boolean!
+						return bool.TryParse(s, out result);
+
+					result = temp >= BigInteger.One;
+				}
+			}
+
+			return true;
+		});
 
 		RegisterConverter<DateTime>(static (s, fmt, out result) =>
 		{
@@ -47,28 +80,71 @@ public static class ValueConverter
 		{
 			return TimeSpan.TryParse(s, fmt, out result);
 		});
+
+		// custom types
+
+		RegisterConverter<Jid>(static (s, fmt, out result) =>
+		{
+			result = default!;
+
+			if (s != null)
+				result = new Jid(s.ToString());
+
+			return result != null;
+		});
 	}
 
-	delegate bool NumberParser<T>(ReadOnlySpan<char> s, NumberStyles styles, IFormatProvider? fmt, out T result);
-
-	static ValueConverterDelegate<T> CreateNumberParser<T>(NumberParser<T> fn, NumberStyles styles)
+	public static ValueConverter<T> CreateNumberParser<T>(NumberParser<T> fn, NumberStyles styles)
 	{
+		ArgumentNullException.ThrowIfNull(fn);
+
 		return (s, fmt, out result) =>
 		{
-			return fn(s, styles, fmt, out result);
+			try
+			{
+				return fn(s, styles, fmt, out result);
+			}
+			catch (Exception ex)
+			{
+				Trace.WriteLine($"<ValueConverter> Uncaught exception while parsing value '{s}' to type '{typeof(T)}': {ex}");
+
+				result = default!;
+
+				return false;
+			}
 		};
 	}
 
-	public static void RegisterConverter<T>(ValueConverterDelegate<T> fn)
+	public static bool TryGetConverter<T>([NotNullWhen(true)] out ValueConverter<T>? result)
+	{
+		result = default;
+
+		if (s_Converters.TryGetValue(typeof(T), out var fn))
+			result = (ValueConverter<T>)fn;
+
+		return result != null;
+	}
+
+	public static ValueConverter<T> GetConverter<T>()
+	{
+		var key = typeof(T);
+
+		if (s_Converters.TryGetValue(key, out var fn))
+			return (ValueConverter<T>)fn;
+
+		throw new InvalidOperationException($"Unknown value converter for type '{key}'.");
+	}
+
+	public static void RegisterConverter<T>(ValueConverter<T> fn)
 	{
 		var key = typeof(T);
 
 		if (s_Converters.TryAdd(key, fn))
-			Trace.WriteLine($"<ValueConverter> Add value converter  for type '{key}' -> {fn}");
+			Trace.WriteLine($"<ValueConverter> Add value converter for type '{key}'.");
 		else
 		{
+			Trace.WriteLine($"<ValueConverter> Replace existing value converter for type '{key}'.");
 			s_Converters[key] = fn;
-			Trace.WriteLine($"<ValueConverter> Replace existing value converter for type '{key}' -> {fn}");
 		}
 	}
 
@@ -79,7 +155,7 @@ public static class ValueConverter
 		if (!s_Converters.TryGetValue(typeof(T), out var fn))
 			return false;
 
-		return ((ValueConverterDelegate<T>)fn)(s, fmt ?? CultureInfo.InvariantCulture, out result);
+		return ((ValueConverter<T>)fn)(s, fmt ?? CultureInfo.InvariantCulture, out result);
 	}
 }
 

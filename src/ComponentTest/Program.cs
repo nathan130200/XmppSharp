@@ -1,4 +1,7 @@
 ﻿using System.Net;
+using XmppSharp;
+using XmppSharp.Protocol;
+using XmppSharp.Protocol.Base;
 
 using var component = new Component();
 
@@ -15,7 +18,20 @@ component.OnError += ex =>
 
 component.OnElement += e =>
 {
+	if (e is Stanza stz)
+	{
+		stz.SwitchDirection();
 
+		stz.SetAttribute("type", XmppEnum<IqType>.GetName(IqType.Error));
+
+		stz.Error = new Error()
+		{
+			Type = ErrorType.Cancel,
+			Condition = ErrorCondition.FeatureNotImplemented
+		};
+
+		component.Send(stz);
+	}
 };
 
 component.Connect(IPEndPoint.Parse("127.0.0.1:5275"), "example.warface", "youshallnotpass");

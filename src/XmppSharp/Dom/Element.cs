@@ -375,7 +375,7 @@ public T? GetAttribute<T>(string name, IFormatProvider? fmt = default) where T :
 		return default;
 	}
 
-	public T GetAttribute<T>(string name, T defaultValue, IFormatProvider? fmt = default) where T : struct
+	public T GetAttribute<T>(string name, T defaultValue, IFormatProvider? fmt = default)
 	{
 		if (ValueConverter.TryConvert<T>(GetAttribute(name), fmt, out var result))
 			return result;
