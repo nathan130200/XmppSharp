@@ -87,7 +87,7 @@ public static class XmppEnum<T> where T : struct, Enum
 	}
 
 #if NET9_0_OR_GREATER
-	[OverloadResolutionPriority(1)]
+	[OverloadResolutionPriority(0)]
 	public static string GetNameOrDefault(T value, T defaultValue = default)
 	{
 		foreach (var entry in s_Members)
