@@ -13,152 +13,176 @@ namespace XmppSharp.Serialization;
 
 public static class StanzaExtensionFactory
 {
-    internal sealed class StanzaExtensionInfo
-    {
-        public required Type ExtensionType { get; init; }
+	internal sealed class StanzaExtensionInfo
+	{
+		public required Type ExtensionType { get; init; }
 
-        public required Func<StanzaExtension> ParameterlessConstructor { get; init; }
+		public required Func<Element, StanzaExtension> ElementConstructor { get; init; }
 
-        public required Func<Element, StanzaExtension> ElementConstructor { get; init; }
+		public required bool IsCloneable { get; init; }
+	}
 
-        public required bool IsCloneable { get; init; }
-    }
+	internal static readonly ConcurrentDictionary<XName, StanzaExtensionInfo> s_FactoryTypeMap = [];
 
-    internal static readonly ConcurrentDictionary<XName, StanzaExtensionInfo> s_FactoryTypeMap = [];
+	static StanzaExtensionFactory()
+	{
 
-    static StanzaExtensionFactory()
-    {
-
-    }
+	}
 
 #pragma warning disable
-    [ModuleInitializer]
+	[ModuleInitializer]
 #pragma warning restore
-    internal static void Init()
-    {
-        RegisterExtensions(typeof(StanzaExtensionFactory).Assembly);
-    }
+	internal static void Init()
+	{
+		RegisterExtensions(typeof(StanzaExtensionFactory).Assembly);
+	}
 
-    internal static bool CanReplaceExtensions
-        = AppContext.TryGetSwitch("Jabber.Net.StanzaExtensionFactory.AllowReplaceExistingExtensions", out var value) && value;
+	internal static bool CanReplaceExtensions
+		= AppContext.TryGetSwitch("Jabber.Net.StanzaExtensionFactory.AllowReplaceExistingExtensions", out var value) && value;
 
-    public static void RegisterExtensions(Assembly assembly)
-    {
-        var baseType = typeof(StanzaExtension);
+	public static void RegisterExtensions(Assembly assembly)
+	{
+		var baseType = typeof(StanzaExtension);
 
-        var entries = from type in assembly.GetTypes()
-                      where type.IsClass && !type.IsAbstract && type.IsSubclassOf(baseType)
-                      let attrs = type.GetCustomAttributes<StanzaExtensionAttribute>()
-                      where attrs.Any()
-                      select new
-                      {
-                          Type = type,
-                          Keys = attrs.Select(x => XName.Get(x.LocalName, x.Namespace))
-                      };
+		var entries = from type in assembly.GetTypes()
+					  where type.IsClass && !type.IsAbstract && type.IsSubclassOf(baseType)
+					  let attrs = type.GetCustomAttributes<StanzaExtensionAttribute>()
+					  where attrs.Any()
+					  select new
+					  {
+						  Type = type,
+						  Keys = attrs.Select(x => XName.Get(x.LocalName, x.Namespace))
+					  };
 
-        if (!entries.Any())
-            throw new InvalidOperationException($"Assembly '{assembly}' does not have any stanza extension implementation.");
+		if (!entries.Any())
+			throw new InvalidOperationException($"Assembly '{assembly}' does not have any stanza extension implementation.");
 
-        foreach (var entry in entries)
-        {
-            var parameterlessConstructor = TryBindParameterlessConstructor(entry.Type);
+		foreach (var entry in entries)
+		{
+			var elementConstructor = TryBindElementConstructor(entry.Type);
 
-            var elementConstructor = TryBindElementConstructor(entry.Type);
+			var isCloneable = false;
 
-            var isCloneable = false;
+			if (entry.Type.GetMethod("Clone") is MethodInfo cloneMethod)
+				isCloneable = !(cloneMethod.IsAbstract || cloneMethod.DeclaringType != entry.Type);
 
-            if (entry.Type.GetMethod("Clone") is MethodInfo cloneMethod)
-                isCloneable = !(cloneMethod.IsAbstract || cloneMethod.DeclaringType != entry.Type);
+			foreach (var key in entry.Keys)
+			{
+				bool isReplaced = false;
 
-            foreach (var key in entry.Keys)
-            {
-                bool isReplaced = false;
+				if (s_FactoryTypeMap.TryGetValue(key, out var current))
+				{
+					if (!CanReplaceExtensions)
+						throw new InvalidOperationException($"Stanza extension already registered for element '{key}' (implementation: '{current.ExtensionType}').");
 
-                if (s_FactoryTypeMap.TryGetValue(key, out var current))
-                {
-                    if (!CanReplaceExtensions)
-                        throw new InvalidOperationException($"Stanza extension already registered for element '{key}' (implementation: '{current.ExtensionType}').");
+					isReplaced = true;
+				}
 
-                    isReplaced = true;
-                }
+				s_FactoryTypeMap[key] = new()
+				{
+					ExtensionType = entry.Type,
+					ElementConstructor = elementConstructor,
+					IsCloneable = isCloneable
+				};
 
-                s_FactoryTypeMap[key] = new()
-                {
-                    ExtensionType = entry.Type,
-                    ParameterlessConstructor = parameterlessConstructor,
-                    ElementConstructor = elementConstructor,
-                    IsCloneable = isCloneable
-                };
+				Trace.WriteLine($"[Stanza Extension Factory] {(isReplaced ? "Replaced" : "Registered")} implementation type '{entry.Type}' for element '{key}'.");
+			}
+		}
+	}
 
-                Trace.WriteLine($"[Stanza Extension Factory] {(isReplaced ? "Replaced" : "Registered")} implementation type '{entry.Type}' for element '{key}'.");
-            }
-        }
-    }
+	static readonly BindingFlags s_CtorMethodFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
-    static readonly BindingFlags s_CtorMethodFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+	static readonly Type s_BaseType = typeof(Element);
 
-    static Func<StanzaExtension> TryBindParameterlessConstructor(Type type)
-    {
-        var ctor = type.GetConstructor(s_CtorMethodFlags, [])
-            ?? throw new InvalidOperationException($"Cannot find parameterless constructor for stanza extension type '{type}'.");
+	static readonly Type[] s_ElementCtorTypes = [typeof(Element)];
 
-        var expr = Expression.Lambda<Func<StanzaExtension>>(Expression.New(ctor));
+	static readonly ParameterExpression s_ElementParameter = Expression.Parameter(s_BaseType);
 
-        return expr.Compile();
-    }
+	static Func<Element, StanzaExtension> TryBindElementConstructor(Type type)
+	{
+		var ctor = type.GetConstructor(s_CtorMethodFlags, s_ElementCtorTypes)
+			?? throw new InvalidOperationException($"Cannot find element constructor for stanza extension type '{type}'.");
 
-    static readonly Type s_BaseType = typeof(Element);
+		var expr = Expression.Lambda<Func<Element, StanzaExtension>>(
+			Expression.New(ctor, s_ElementParameter),
+				s_ElementParameter);
 
-    static readonly Type[] s_ElementCtorTypes = [typeof(Element)];
+		return expr.Compile();
+	}
 
-    static readonly ParameterExpression s_ElementParameter = Expression.Parameter(s_BaseType);
+	static bool TryGetExtensionInfo(ReadOnlySpan<char> localName, ReadOnlySpan<char> ns, [NotNullWhen(true)] out StanzaExtensionInfo? result)
+	{
+		result = null;
 
-    static Func<Element, StanzaExtension> TryBindElementConstructor(Type type)
-    {
-        var ctor = type.GetConstructor(s_CtorMethodFlags, s_ElementCtorTypes)
-            ?? throw new InvalidOperationException($"Cannot find element constructor for stanza extension type '{type}'.");
+		foreach (var (key, value) in s_FactoryTypeMap)
+		{
+			if (localName.SequenceEqual(key.LocalName) && ns.SequenceEqual(key.NamespaceName))
+			{
+				result = value;
+				return true;
+			}
+		}
 
-        var expr = Expression.Lambda<Func<Element, StanzaExtension>>(
-            Expression.New(ctor, s_ElementParameter),
-                s_ElementParameter);
+		return false;
+	}
 
-        return expr.Compile();
-    }
+	public static StanzaExtension Create(Element element)
+	{
+		if (!TryGetExtensionInfo(element.LocalName, element.Namespace, out var entry))
+			throw new InvalidOperationException($"Stanza extension for element '{element.LocalName} (uri: {element.Namespace}) is not registered.");
 
-    public static TExtension Create<TExtension>() where TExtension : StanzaExtension
-    {
-        var extensionType = typeof(TExtension);
+		return entry.ElementConstructor(element);
+	}
 
-        var entry = s_FactoryTypeMap.Values.FirstOrDefault(x => x.ExtensionType == extensionType)
-            ?? throw new InvalidOperationException($"Stanza extension for type '{typeof(TExtension)} is not registered.");
+	public static T Create<T>(Element element) where T : StanzaExtension
+	{
+		if (!TryGetExtensionInfo(element.LocalName, element.Namespace, out var info))
+			throw new InvalidOperationException($"Stanza extension for element '{element.LocalName} (uri: {element.Namespace}) is not registered.");
 
-        return (TExtension)entry.ParameterlessConstructor();
-    }
+		if (info.ExtensionType != typeof(T))
+			throw new InvalidOperationException("Stanza extension type mismatch.");
 
-    public static TExtension Create<TExtension>(Element element) where TExtension : StanzaExtension
-        => (TExtension)Create(element);
+		return (T)info.ElementConstructor(element);
+	}
 
-    static bool TryGetExtensionInfo(ReadOnlySpan<char> localName, ReadOnlySpan<char> ns, [NotNullWhen(true)] out StanzaExtensionInfo? result)
-    {
-        result = null;
+	public static bool TryCreate(Element element, [NotNullWhen(true)] out StanzaExtension? se)
+	{
+		se = null;
 
-        foreach (var (key, value) in s_FactoryTypeMap)
-        {
-            if (localName.SequenceEqual(key.LocalName) && ns.SequenceEqual(key.NamespaceName))
-            {
-                result = value;
-                return true;
-            }
-        }
+		if (TryGetExtensionInfo(element.LocalName, element.Namespace, out var info))
+		{
+			try
+			{
+				se = info.ElementConstructor(element);
+			}
+			catch (Exception ex)
+			{
+				Trace.WriteLine(ex);
+			}
+		}
 
-        return false;
-    }
+		return se != null;
+	}
 
-    public static StanzaExtension Create(Element element)
-    {
-        if (!TryGetExtensionInfo(element.LocalName, element.Namespace, out var entry))
-            throw new InvalidOperationException($"Stanza extension for element '{element.LocalName} (uri: {element.Namespace}) is not registered.");
+	public static bool TryCreate<T>(Element element, [NotNullWhen(true)] out T? se) where T : StanzaExtension
+	{
+		se = null;
 
-        return entry.ElementConstructor(element);
-    }
+		if (TryGetExtensionInfo(element.LocalName, element.Namespace, out var info))
+		{
+			if (info.ExtensionType != typeof(T))
+				return false;
+
+			try
+			{
+				se = (T)info.ElementConstructor(element);
+			}
+			catch (Exception ex)
+			{
+				Trace.WriteLine(ex);
+			}
+		}
+
+		return se != null;
+	}
 }
