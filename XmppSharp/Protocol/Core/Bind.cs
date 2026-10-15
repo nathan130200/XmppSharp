@@ -15,7 +15,7 @@ public sealed class Bind : StanzaExtension
 	{
 		Resource = element.GetTag("resource", Namespaces.Bind);
 
-		Resource = element.GetTag("jid", Namespaces.Bind);
+		Jid = element.GetTag("jid", Namespaces.Bind);
 	}
 
 	public string? Resource { get; set; }
