@@ -1,9 +1,4 @@
 <Solution>
-  <Folder Name="/Samples/">
-    <Project Path="src/ComponentTest/ComponentTest.csproj" />
-  </Folder>
-  <Folder Name="/Solution Items/">
-    <File Path=".editorconfig" />
-  </Folder>
   <Project Path="src/XmppSharp/XmppSharp.csproj" />
+  <Project Path="src/XmppSharp.Test/XmppSharp.Test.csproj" />
 </Solution>

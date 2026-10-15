@@ -1,0 +1,164 @@
+﻿using Jabber.Abstractions;
+using Jabber.Attributes;
+using Jabber.Dom;
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Xml.Linq;
+
+namespace Jabber.Serialization;
+
+public static class StanzaExtensionFactory
+{
+    internal sealed class StanzaExtensionInfo
+    {
+        public required Type ExtensionType { get; init; }
+
+        public required Func<StanzaExtension> ParameterlessConstructor { get; init; }
+
+        public required Func<Element, StanzaExtension> ElementConstructor { get; init; }
+
+        public required bool IsCloneable { get; init; }
+    }
+
+    internal static readonly ConcurrentDictionary<XName, StanzaExtensionInfo> s_FactoryTypeMap = [];
+
+    static StanzaExtensionFactory()
+    {
+
+    }
+
+#pragma warning disable
+    [ModuleInitializer]
+#pragma warning restore
+    internal static void Init()
+    {
+        RegisterExtensions(typeof(StanzaExtensionFactory).Assembly);
+    }
+
+    internal static bool CanReplaceExtensions
+        = AppContext.TryGetSwitch("Jabber.Net.StanzaExtensionFactory.AllowReplaceExistingExtensions", out var value) && value;
+
+    public static void RegisterExtensions(Assembly assembly)
+    {
+        var baseType = typeof(StanzaExtension);
+
+        var entries = from type in assembly.GetTypes()
+                      where type.IsClass && !type.IsAbstract && type.IsSubclassOf(baseType)
+                      let attrs = type.GetCustomAttributes<StanzaExtensionAttribute>()
+                      where attrs.Any()
+                      select new
+                      {
+                          Type = type,
+                          Keys = attrs.Select(x => XName.Get(x.LocalName, x.Namespace))
+                      };
+
+        if (!entries.Any())
+            throw new InvalidOperationException($"Assembly '{assembly}' does not have any stanza extension implementation.");
+
+        foreach (var entry in entries)
+        {
+            var parameterlessConstructor = TryBindParameterlessConstructor(entry.Type);
+
+            var elementConstructor = TryBindElementConstructor(entry.Type);
+
+            var isCloneable = false;
+
+            if (entry.Type.GetMethod("Clone") is MethodInfo cloneMethod)
+                isCloneable = !(cloneMethod.IsAbstract || cloneMethod.DeclaringType != entry.Type);
+
+            foreach (var key in entry.Keys)
+            {
+                bool isReplaced = false;
+
+                if (s_FactoryTypeMap.TryGetValue(key, out var current))
+                {
+                    if (!CanReplaceExtensions)
+                        throw new InvalidOperationException($"Stanza extension already registered for element '{key}' (implementation: '{current.ExtensionType}').");
+
+                    isReplaced = true;
+                }
+
+                s_FactoryTypeMap[key] = new()
+                {
+                    ExtensionType = entry.Type,
+                    ParameterlessConstructor = parameterlessConstructor,
+                    ElementConstructor = elementConstructor,
+                    IsCloneable = isCloneable
+                };
+
+                Trace.WriteLine($"[Stanza Extension Factory] {(isReplaced ? "Replaced" : "Registered")} implementation type '{entry.Type}' for element '{key}'.");
+            }
+        }
+    }
+
+    static readonly BindingFlags s_CtorMethodFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+    static Func<StanzaExtension> TryBindParameterlessConstructor(Type type)
+    {
+        var ctor = type.GetConstructor(s_CtorMethodFlags, [])
+            ?? throw new InvalidOperationException($"Cannot find parameterless constructor for stanza extension type '{type}'.");
+
+        var expr = Expression.Lambda<Func<StanzaExtension>>(Expression.New(ctor));
+
+        return expr.Compile();
+    }
+
+    static readonly Type s_BaseType = typeof(Element);
+
+    static readonly Type[] s_ElementCtorTypes = [typeof(Element)];
+
+    static readonly ParameterExpression s_ElementParameter = Expression.Parameter(s_BaseType);
+
+    static Func<Element, StanzaExtension> TryBindElementConstructor(Type type)
+    {
+        var ctor = type.GetConstructor(s_CtorMethodFlags, s_ElementCtorTypes)
+            ?? throw new InvalidOperationException($"Cannot find element constructor for stanza extension type '{type}'.");
+
+        var expr = Expression.Lambda<Func<Element, StanzaExtension>>(
+            Expression.New(ctor, s_ElementParameter),
+                s_ElementParameter);
+
+        return expr.Compile();
+    }
+
+    public static TExtension Create<TExtension>() where TExtension : StanzaExtension
+    {
+        var extensionType = typeof(TExtension);
+
+        var entry = s_FactoryTypeMap.Values.FirstOrDefault(x => x.ExtensionType == extensionType)
+            ?? throw new InvalidOperationException($"Stanza extension for type '{typeof(TExtension)} is not registered.");
+
+        return (TExtension)entry.ParameterlessConstructor();
+    }
+
+    public static TExtension Create<TExtension>(Element element) where TExtension : StanzaExtension
+        => (TExtension)Create(element);
+
+    static bool TryGetExtensionInfo(ReadOnlySpan<char> localName, ReadOnlySpan<char> ns, [NotNullWhen(true)] out StanzaExtensionInfo? result)
+    {
+        result = null;
+
+        foreach (var (key, value) in s_FactoryTypeMap)
+        {
+            if (localName.SequenceEqual(key.LocalName) && ns.SequenceEqual(key.NamespaceName))
+            {
+                result = value;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static StanzaExtension Create(Element element)
+    {
+        if (!TryGetExtensionInfo(element.LocalName, element.Namespace, out var entry))
+            throw new InvalidOperationException($"Stanza extension for element '{element.LocalName} (uri: {element.Namespace}) is not registered.");
+
+        return entry.ElementConstructor(element);
+    }
+}
