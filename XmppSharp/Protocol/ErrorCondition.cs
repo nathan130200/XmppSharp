@@ -131,7 +131,7 @@ public enum ErrorCondition
 	/// The error condition is not one of those defined by the other conditions in this list.
 	/// </summary>
 	[XmppEnumMember("undefined-condition")]
-	UndefinedCondition = 0,
+	UndefinedCondition,
 
 	/// <summary>
 	/// The recipient or server understood the request but was not expecting it at this time (e.g., the request was out of order).
