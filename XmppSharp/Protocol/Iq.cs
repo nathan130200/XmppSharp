@@ -7,17 +7,15 @@ public class Iq : Stanza
 {
 	static readonly XmppEnumMapping<IqType> s_TypeParser = XmppEnumMapping<IqType>.Shared;
 
-	public Iq()
+	public Iq(IqType type)
 	{
+		if (!Enum.IsDefined(type))
+			throw new ArgumentOutOfRangeException(nameof(type));
 
-	}
-
-	public Iq(IqType type) : this()
-	{
 		Type = type;
 	}
 
-	internal Iq(Element element) : base(element)
+	public Iq(Element element) : base(element)
 	{
 		Type = s_TypeParser.Parse(element.Attribute("type"));
 

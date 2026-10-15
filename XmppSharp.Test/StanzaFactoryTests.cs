@@ -53,18 +53,16 @@ public class StanzaFactoryTests(ITestOutputHelper Output)
 		DiscoInfo ext;
 
 		{
-			var element = new Element("query", Namespaces.DiscoInfo);
-
-			element.C("identity", x =>
-			{
-				x.SetAttribute("category", "conference");
-				x.SetAttribute("type", "text");
-			});
-
-			element.C("feature", x =>
-			{
-				x.SetAttribute("var", feature);
-			});
+			var element = new Element("query", Namespaces.DiscoInfo)
+				.C("identity", x =>
+				{
+					x.SetAttribute("category", "conference");
+					x.SetAttribute("type", "text");
+				})
+				.C("feature", x =>
+				{
+					x.SetAttribute("var", feature);
+				});
 
 			ext = StanzaExtensionFactory.Create<DiscoInfo>(element);
 		}
@@ -88,11 +86,11 @@ public class StanzaFactoryTests(ITestOutputHelper Output)
 	[InlineData(ErrorType.Continue, ErrorCondition.RecipientUnavailable)]
 	public void TrySerializeStanzaErrorExtension(ErrorType type, ErrorCondition cond)
 	{
-		var ext = new Error();
-
-		ext.Type = type;
-
-		ext.Condition = cond;
+		var ext = new Error
+		{
+			Type = type,
+			Condition = cond
+		};
 
 		var tag = ext.Serialize()!;
 

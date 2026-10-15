@@ -228,6 +228,14 @@ public sealed class Element : Container
 		attr._parent = null;
 	}
 
+	public void SetValue(object? value)
+	{
+		RemoveNodes();
+
+		if (value is not null)
+			Value = Convert.ToString(value, CultureInfo.InvariantCulture);
+	}
+
 	[NotNull]
 	public string? Value
 	{

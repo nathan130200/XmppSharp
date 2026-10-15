@@ -84,4 +84,64 @@ public class StanzaTests(ITestOutputHelper Output)
 
 		Output.WriteLine("XML: " + element);
 	}
+
+	[Fact]
+	public void CreateMultiCultureMessage()
+	{
+		var msg = new Message(MessageType.GroupChat);
+		msg.SetBody("pt-BR", "Olá Mundo!");
+		msg.SetBody(string.Empty, "Hello World!");
+
+		var xml = msg.Serialize();
+
+		Assert.Equal("groupchat", xml.Attribute("type"));
+
+		var bodies = xml.Elements("body");
+
+		var bodyWithoutLang = bodies.First(x => !x.HasAttribute("xml:lang"));
+
+		Assert.Equal("Hello World!", bodyWithoutLang.Value);
+
+		var bodyWithLang = bodies.First(x => x.HasAttribute("xml:lang"));
+
+		Assert.Equal("Olá Mundo!", bodyWithLang.Value);
+
+		Output.WriteLine("XML: " + xml.ToString(true));
+	}
+
+	[Fact]
+	public void ParseMultiCultureMessage()
+	{
+		var xml = new Element("message", Namespaces.Client)
+			.C("body", x =>
+			{
+				x.SetAttribute("xml:lang", "pt-BR");
+				x.Value = "Olá Mundo!";
+			})
+			.C("body", x =>
+			{
+				x.Value = "Hello World!";
+			})
+			.C("subject", x =>
+			{
+				x.Value = "Message For You!";
+			})
+			.C("subject", x =>
+			{
+				x.SetAttribute("xml:lang", "pt-BR");
+				x.Value = "Mensagem Para Você!";
+			});
+
+		var msg = new Message(xml);
+
+		Assert.Equal("Hello World!", msg.Body);
+
+		Assert.Equal("Olá Mundo!", msg.GetBody("pt-BR"));
+
+		Assert.Equal("Message For You!", msg.Subject);
+
+		Assert.Equal("Mensagem Para Você!", msg.GetSubject("pt-BR"));
+
+		Output.WriteLine("XML: " + msg.Serialize().ToString(true));
+	}
 }
