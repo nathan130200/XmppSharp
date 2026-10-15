@@ -38,7 +38,7 @@ public static class StanzaExtensionFactory
 	}
 
 	internal static bool CanReplaceExtensions
-		= AppContext.TryGetSwitch("Jabber.Net.StanzaExtensionFactory.AllowReplaceExistingExtensions", out var value) && value;
+		= AppContext.TryGetSwitch("XmppSharp.StanzaExtensionFactory.AllowReplaceExistingExtensions", out var value) && value;
 
 	public static void RegisterExtensions(Assembly assembly)
 	{
