@@ -13,6 +13,24 @@ public abstract class Container : Node
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	internal static readonly IEnumerable<Element> s_EmptyElementList = [];
 
+	public Node? FirstNode
+	{
+		get
+		{
+			lock (_children)
+				return _children.Count > 0 ? _children[0] : null;
+		}
+	}
+
+	public Node? LastNode
+	{
+		get
+		{
+			lock (_children)
+				return _children.Count > 0 ? _children[^1] : null;
+		}
+	}
+
 	public IEnumerable<Node> Nodes()
 	{
 		List<Node>? result = null;
