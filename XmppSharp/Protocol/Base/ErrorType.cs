@@ -1,21 +1,21 @@
-﻿using Jabber.Attributes;
+﻿using XmppSharp.Attributes;
 
 namespace XmppSharp.Protocol.Base;
 
 public enum ErrorType
 {
-    [XmppEnumMember("auth")]
-    Auth = 1,
+	[XmppEnumMember("auth")]
+	Auth = 1,
 
-    [XmppEnumMember("cancel")]
-    Cancel,
+	[XmppEnumMember("cancel")]
+	Cancel,
 
-    [XmppEnumMember("continue")]
-    Continue,
+	[XmppEnumMember("continue")]
+	Continue,
 
-    [XmppEnumMember("modify")]
-    Modify,
+	[XmppEnumMember("modify")]
+	Modify,
 
-    [XmppEnumMember("wait")]
-    Wait
+	[XmppEnumMember("wait")]
+	Wait
 }

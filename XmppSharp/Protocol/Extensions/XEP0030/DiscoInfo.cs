@@ -1,6 +1,5 @@
-﻿using Jabber.Attributes;
-using XmppSharp;
-using XmppSharp.Abstractions;
+﻿using XmppSharp.Abstractions;
+using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Extensions.XEP0030;
@@ -8,152 +7,152 @@ namespace XmppSharp.Protocol.Extensions.XEP0030;
 [StanzaExtension("query", Namespaces.DiscoInfo)]
 public class DiscoInfo : StanzaExtension
 {
-    List<Identity>? _identities;
-    HashSet<string>? _features;
+	List<Identity>? _identities;
+	HashSet<string>? _features;
 
-    public DiscoInfo()
-    {
+	public DiscoInfo()
+	{
 
-    }
+	}
 
-    protected DiscoInfo(Element element) : base(element)
-    {
-        foreach (var tag in element.Elements("feature"))
-        {
-            string? feature = tag.Attribute("var");
+	protected DiscoInfo(Element element) : base(element)
+	{
+		foreach (var tag in element.Elements("feature"))
+		{
+			string? feature = tag.Attribute("var");
 
-            if (string.IsNullOrWhiteSpace(feature))
-                continue;
+			if (string.IsNullOrWhiteSpace(feature))
+				continue;
 
-            _features ??= [];
+			_features ??= [];
 
-            _features.Add(feature);
-        }
+			_features.Add(feature);
+		}
 
-        foreach (var tag in element.Elements("identity"))
-        {
-            string? category = tag.Attribute("category");
-            string? type = tag.Attribute("type");
-            string? name = tag.Attribute("name");
+		foreach (var tag in element.Elements("identity"))
+		{
+			string? category = tag.Attribute("category");
+			string? type = tag.Attribute("type");
+			string? name = tag.Attribute("name");
 
-            if (string.IsNullOrWhiteSpace(category) || string.IsNullOrWhiteSpace(type))
-                continue;
+			if (string.IsNullOrWhiteSpace(category) || string.IsNullOrWhiteSpace(type))
+				continue;
 
-            _identities ??= [];
+			_identities ??= [];
 
-            _identities.Add(new(category, type, name));
-        }
-    }
+			_identities.Add(new(category, type, name));
+		}
+	}
 
-    public void AddFeature(string name)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+	public void AddFeature(string name)
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
-        lock (this)
-        {
-            _features ??= [];
-            _features.Add(name);
-        }
-    }
+		lock (this)
+		{
+			_features ??= [];
+			_features.Add(name);
+		}
+	}
 
-    public void RemoveAllFeatures()
-    {
-        lock (this)
-            _features?.Clear();
-    }
+	public void RemoveAllFeatures()
+	{
+		lock (this)
+			_features?.Clear();
+	}
 
-    public bool HasFeature(string name)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+	public bool HasFeature(string name)
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
-        lock (this)
-        {
-            if (_features == null) return false;
+		lock (this)
+		{
+			if (_features == null) return false;
 
-            return _features.Contains(name);
-        }
-    }
+			return _features.Contains(name);
+		}
+	}
 
-    public void AddIdentity(Identity identity)
-    {
-        ArgumentNullException.ThrowIfNull(identity);
+	public void AddIdentity(Identity identity)
+	{
+		ArgumentNullException.ThrowIfNull(identity);
 
-        lock (this)
-        {
-            _identities ??= [];
+		lock (this)
+		{
+			_identities ??= [];
 
-            _identities.Add(identity);
-        }
-    }
+			_identities.Add(identity);
+		}
+	}
 
-    public void AddIdentity(string category, string type, string? name)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(category);
+	public void AddIdentity(string category, string type, string? name)
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace(category);
 
-        ArgumentException.ThrowIfNullOrWhiteSpace(type);
+		ArgumentException.ThrowIfNullOrWhiteSpace(type);
 
-        lock (this)
-        {
-            _identities ??= [];
+		lock (this)
+		{
+			_identities ??= [];
 
-            _identities.Add(new(category, type, name));
-        }
-    }
+			_identities.Add(new(category, type, name));
+		}
+	}
 
-    public IEnumerable<string> Features
-    {
-        get
-        {
-            lock (this)
-            {
-                if (_features is null)
-                    return [];
+	public IEnumerable<string> Features
+	{
+		get
+		{
+			lock (this)
+			{
+				if (_features is null)
+					return [];
 
-                return [.. _features];
-            }
-        }
-    }
+				return [.. _features];
+			}
+		}
+	}
 
-    public IEnumerable<Identity> Identities
-    {
-        get
-        {
-            lock (this)
-            {
-                if (_identities is null)
-                    return [];
+	public IEnumerable<Identity> Identities
+	{
+		get
+		{
+			lock (this)
+			{
+				if (_identities is null)
+					return [];
 
-                return [.. _identities];
-            }
-        }
-    }
+				return [.. _identities];
+			}
+		}
+	}
 
-    public override Element Serialize()
-    {
-        var result = new Element("query", Namespaces.DiscoInfo);
+	public override Element Serialize()
+	{
+		var result = new Element("query", Namespaces.DiscoInfo);
 
-        lock (this)
-        {
-            if (_identities != null)
-            {
-                foreach (var identity in _identities)
-                {
-                    result.C("identity", x =>
-                    {
-                        x.SetAttribute("category", identity.Category);
-                        x.SetAttribute("type", identity.Type);
-                        x.SetAttribute("name", identity.Name);
-                    });
-                }
-            }
+		lock (this)
+		{
+			if (_identities != null)
+			{
+				foreach (var identity in _identities)
+				{
+					result.C("identity", x =>
+					{
+						x.SetAttribute("category", identity.Category);
+						x.SetAttribute("type", identity.Type);
+						x.SetAttribute("name", identity.Name);
+					});
+				}
+			}
 
-            if (_features != null)
-            {
-                foreach (var featureName in _features)
-                    result.C("feature", x => x.SetAttribute("var", featureName));
-            }
-        }
+			if (_features != null)
+			{
+				foreach (var featureName in _features)
+					result.C("feature", x => x.SetAttribute("var", featureName));
+			}
+		}
 
-        return result;
-    }
+		return result;
+	}
 }

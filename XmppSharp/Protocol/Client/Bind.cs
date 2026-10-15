@@ -1,6 +1,5 @@
-﻿using Jabber.Attributes;
-using XmppSharp;
-using XmppSharp.Abstractions;
+﻿using XmppSharp.Abstractions;
+using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Client;
@@ -8,32 +7,32 @@ namespace XmppSharp.Protocol.Client;
 [StanzaExtension("bind", Namespaces.Bind)]
 public sealed class Bind : StanzaExtension
 {
-    public Bind()
-    {
+	public Bind()
+	{
 
-    }
+	}
 
-    internal Bind(Element element) : base(element)
-    {
-        Resource = element.GetTag("resource", Namespaces.Bind);
+	internal Bind(Element element) : base(element)
+	{
+		Resource = element.GetTag("resource", Namespaces.Bind);
 
-        Resource = element.GetTag("jid", Namespaces.Bind);
-    }
+		Resource = element.GetTag("jid", Namespaces.Bind);
+	}
 
-    public string? Resource { get; set; }
+	public string? Resource { get; set; }
 
-    public Jid? Jid { get; set; }
+	public Jid? Jid { get; set; }
 
-    public override Element Serialize()
-    {
-        var result = new Element("bind", Namespaces.Bind);
+	public override Element Serialize()
+	{
+		var result = new Element("bind", Namespaces.Bind);
 
-        if (Jid is { } jid)
-            result.SetTag("jid", Namespaces.Bind, jid);
+		if (Jid is { } jid)
+			result.SetTag("jid", Namespaces.Bind, jid);
 
-        if (Resource is { } resource)
-            result.SetTag("resource", Namespaces.Bind, resource);
+		if (Resource is { } resource)
+			result.SetTag("resource", Namespaces.Bind, resource);
 
-        return result;
-    }
+		return result;
+	}
 }

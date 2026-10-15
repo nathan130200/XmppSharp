@@ -1,5 +1,5 @@
-﻿using Jabber.Attributes;
-using XmppSharp.Abstractions;
+﻿using XmppSharp.Abstractions;
+using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Client;
@@ -7,15 +7,15 @@ namespace XmppSharp.Protocol.Client;
 [StanzaExtension("session", Namespaces.Session)]
 public sealed class Session : StanzaExtension
 {
-    public Session()
-    {
+	public Session()
+	{
 
-    }
+	}
 
-    internal Session(Element element) : base(element)
-    {
+	internal Session(Element element) : base(element)
+	{
 
-    }
+	}
 
-    public override Element Serialize() => new("session", Namespaces.Session);
+	public override Element Serialize() => new("session", Namespaces.Session);
 }

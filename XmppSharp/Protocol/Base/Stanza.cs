@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using XmppSharp;
 using XmppSharp.Abstractions;
 using XmppSharp.Dom;
 using XmppSharp.Serialization;
@@ -8,105 +7,122 @@ namespace XmppSharp.Protocol.Base;
 
 public abstract class Stanza : IXmppSerializable
 {
-    public string? Id { get; set; }
-    public Jid? From { get; set; }
-    public Jid? To { get; set; }
+	public string? Id { get; set; }
+	public Jid? From { get; set; }
+	public Jid? To { get; set; }
 
-    List<StanzaExtension>? _extensions;
+	static readonly AsyncLocal<string?> s_DefaultNamespace = new();
 
-    public void SwitchDirection()
-    {
-        (From, To) = (To, From);
-    }
+	[NotNull]
+	public static string? DefaultNamespace
+	{
+		get => s_DefaultNamespace.Value ?? Namespaces.Client;
+		set => s_DefaultNamespace.Value = value;
+	}
 
-    public Stanza()
-    {
+	List<StanzaExtension>? _extensions;
 
-    }
+	public void SwitchDirection()
+	{
+		(From, To) = (To, From);
+	}
 
-    public Stanza(Element element)
-    {
-        ArgumentNullException.ThrowIfNull(element);
+	public Stanza()
+	{
 
-        Id = element.GetAttribute("id");
+	}
 
-        From = element.GetAttribute("from");
+	public Stanza(Element element)
+	{
+		ArgumentNullException.ThrowIfNull(element);
 
-        To = element.GetAttribute("to");
-    }
+		Id = element.GetAttribute("id");
 
-    public bool FindExtension<TExtension>([NotNullWhen(true)] out TExtension? result) where TExtension : StanzaExtension
-    {
-        result = GetExtension<TExtension>();
+		From = element.GetAttribute("from");
 
-        return result != null;
-    }
+		To = element.GetAttribute("to");
+	}
 
-    public TExtension? GetExtension<TExtension>() where TExtension : StanzaExtension
-    {
-        lock (this)
-        {
-            if (_extensions is null) return null;
+	public IEnumerable<StanzaExtension> GetExtensions()
+	{
+		lock (this)
+		{
+			if (_extensions is null) return [];
 
-            foreach (var ext in _extensions)
-            {
-                if (ext is TExtension result)
-                    return result;
-            }
-        }
+			return [.. _extensions];
+		}
+	}
 
-        return null;
-    }
+	public bool FindExtension<T>([NotNullWhen(true)] out T? result) where T : StanzaExtension
+		=> (result = GetExtension<T>()) != null;
 
-    public TExtension AddExtension<TExtension>() where TExtension : StanzaExtension
-    {
-        lock (this)
-        {
-            _extensions ??= [];
+	public T? GetExtension<T>() where T : StanzaExtension
+	{
+		lock (this)
+		{
+			if (_extensions is null) return null;
 
-            if (GetExtension<TExtension>() is not { } result)
-            {
-                result = StanzaExtensionFactory.Create<TExtension>();
+			foreach (var ext in _extensions)
+			{
+				if (ext is T result)
+					return result;
+			}
+		}
 
-                _extensions.Add(result);
-            }
+		return null;
+	}
 
-            return result;
-        }
-    }
+	internal void TryAddExtension(Element element)
+	{
+		if (StanzaExtensionFactory.TryCreate(element, out var se))
+		{
+			_extensions ??= [];
+			_extensions.Add(se);
+		}
+	}
 
-    public void AddExtension<TExtension>(Action<TExtension> callback) where TExtension : StanzaExtension
-    {
-        ArgumentNullException.ThrowIfNull(callback);
+	public T AddExtension<T>() where T : StanzaExtension, new()
+	{
+		lock (this)
+		{
+			_extensions ??= [];
 
-        callback(AddExtension<TExtension>());
-    }
+			if (GetExtension<T>() is not { } result)
+			{
+				result = new T();
 
-    internal StanzaExtension RegisterExtensionFromElement(Element element)
-    {
-        lock (this)
-        {
-            _extensions ??= [];
+				_extensions.Add(result);
+			}
 
-            var se = StanzaExtensionFactory.Create(element);
+			return result;
+		}
+	}
 
-            _extensions.Add(se);
+	public void AddExtension<T>(Action<T> callback) where T : StanzaExtension, new()
+	{
+		ArgumentNullException.ThrowIfNull(callback);
 
-            return se;
-        }
-    }
+		lock (this)
+		{
+			var se = new T();
 
-    public void RemoveAllExtensions()
-    {
-        lock (this)
-        {
-            if (_extensions is null) return;
+			_extensions ??= [];
 
-            _extensions.Clear();
-        }
-    }
+			_extensions.Add(se);
 
-    public abstract Stanza Clone();
+			callback(se);
+		}
+	}
 
-    public abstract Element Serialize();
+	public void RemoveExtensions()
+	{
+		lock (this)
+		{
+			if (_extensions is null) return;
+
+			_extensions.Clear();
+		}
+	}
+
+	public abstract Element Serialize();
 }
