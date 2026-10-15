@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using XmppSharp.Dom;
+﻿using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol;
 
@@ -23,9 +22,4 @@ public sealed class DynamicStanzaExtension : StanzaExtension
 	{
 		return _element;
 	}
-
-	public static explicit operator DynamicStanzaExtension(Element element) => new(element);
-
-	[return: NotNullIfNotNull(nameof(extension))]
-	public static implicit operator Element?(DynamicStanzaExtension? extension) => extension?._element;
 }

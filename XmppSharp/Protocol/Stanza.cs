@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using XmppSharp.Dom;
 using XmppSharp.Serialization;
 
@@ -10,7 +11,8 @@ public abstract class Stanza : IXmppSerializable
 	public Jid? From { get; set; }
 	public Jid? To { get; set; }
 
-	static readonly AsyncLocal<string?> s_DefaultNamespace = new();
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+	internal static readonly AsyncLocal<string?> s_DefaultNamespace = new();
 
 	[NotNull]
 	public static string? DefaultNamespace
@@ -19,7 +21,8 @@ public abstract class Stanza : IXmppSerializable
 		set => s_DefaultNamespace.Value = value;
 	}
 
-	List<StanzaExtension>? _extensions;
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+	internal List<StanzaExtension>? _extensions;
 
 	public void SwitchDirection()
 	{
@@ -52,8 +55,26 @@ public abstract class Stanza : IXmppSerializable
 		}
 	}
 
-	public bool FindExtension<T>([NotNullWhen(true)] out T? result) where T : StanzaExtension
-		=> (result = GetExtension<T>()) != null;
+	public IEnumerable<T> GetExtensions<T>() where T : StanzaExtension
+	{
+		List<T>? result = null;
+
+		lock (this)
+		{
+			if (_extensions is null) return [];
+
+			foreach (var ext in _extensions)
+			{
+				if (ext is T temp)
+				{
+					result ??= [];
+
+					result.Add(temp);
+				}
+			}
+		}
+		return result ?? Enumerable.Empty<T>();
+	}
 
 	public T? GetExtension<T>() where T : StanzaExtension
 	{
@@ -71,13 +92,14 @@ public abstract class Stanza : IXmppSerializable
 		return null;
 	}
 
-	internal void TryAddExtension(Element element)
+	public void AddExtension(Element element)
 	{
-		if (StanzaExtensionFactory.TryCreate(element, out var se))
-		{
-			_extensions ??= [];
-			_extensions.Add(se);
-		}
+		_extensions ??= [];
+
+		if (StanzaExtensionFactory.TryCreate(element, out var extension))
+			_extensions.Add(extension);
+		else
+			_extensions.Add(new DynamicStanzaExtension(element));
 	}
 
 	public void AddExtension(StanzaExtension extension)

@@ -22,7 +22,7 @@ public class Iq : Stanza
 		Type = s_TypeParser.Parse(element.Attribute("type"));
 
 		foreach (var child in element.Elements())
-			TryAddExtension(child);
+			AddExtension(child);
 	}
 
 	public IqType Type { get; set; }
