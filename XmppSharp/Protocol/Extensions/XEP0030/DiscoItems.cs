@@ -1,13 +1,18 @@
-﻿using XmppSharp.Attributes;
+﻿using System.Diagnostics.CodeAnalysis;
+using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Extensions.XEP0030;
 
+/// <summary>
+/// This is a implementation of disco info extension.
+/// </summary>
 [StanzaExtension("query", Namespaces.DiscoItems)]
-public sealed class DiscoItems : StanzaExtension
+public sealed class DiscoItems : BaseStanzaExtension
 {
-	List<Item>? _items;
+	IEnumerable<Item>? _items = [];
 
+	/// <inheritdoc/>
 	public DiscoItems()
 	{
 
@@ -16,6 +21,8 @@ public sealed class DiscoItems : StanzaExtension
 	internal DiscoItems(Element element) : base(element)
 	{
 		Node = element.Attribute("node");
+
+		List<Item>? items = null;
 
 		foreach (var item in element.Elements("item", Namespaces.DiscoItems))
 		{
@@ -27,25 +34,45 @@ public sealed class DiscoItems : StanzaExtension
 
 			string? node = item.Attribute("node");
 
-			AddItem(new(jid, name, node));
+			items ??= [];
+
+			items.Add(new Item(jid, name, node));
 		}
+
+		_items = items;
 	}
 
+	/// <summary>
+	/// Gets or sets the node identifier.
+	/// </summary>
 	public string? Node { get; set; }
 
-	public IEnumerable<Item> Items
+	/// <summary>
+	/// Gets list of items.
+	/// </summary>
+	[NotNull]
+	public IEnumerable<Item>? Items
 	{
 		get
 		{
 			lock (this)
 			{
-				if (_items == null) return [];
+				if (_items is null) return [];
 
-				return [.. _items];
+				return _items;
+			}
+		}
+
+		set
+		{
+			lock (this)
+			{
+				_items = value;
 			}
 		}
 	}
 
+	/// <inheritdoc/>
 	public override Element Serialize()
 	{
 		var result = new Element("query", Namespaces.DiscoItems);
@@ -69,25 +96,5 @@ public sealed class DiscoItems : StanzaExtension
 		}
 
 		return result;
-	}
-
-	public void RemoveItems()
-	{
-		lock (this)
-		{
-			if (_items == null) return;
-
-			_items.Clear();
-		}
-	}
-
-	public void AddItem(Item item)
-	{
-		lock (this)
-		{
-			_items ??= [];
-
-			_items.Add(item);
-		}
 	}
 }

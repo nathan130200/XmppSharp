@@ -5,15 +5,32 @@ using XmppSharp.Serialization;
 
 namespace XmppSharp.Protocol;
 
+/// <summary>
+/// Base class for XMPP stanza abstractions.
+/// </summary>
 public abstract class Stanza : IXmppSerializable
 {
+	/// <summary>
+	/// The ID of the stanza.
+	/// </summary>
 	public string? Id { get; set; }
+
+	/// <summary>
+	/// The origin of the stanza.
+	/// </summary>
 	public Jid? From { get; set; }
+
+	/// <summary>
+	/// The stanza destination.
+	/// </summary>
 	public Jid? To { get; set; }
 
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	internal static readonly AsyncLocal<string?> s_DefaultNamespace = new();
 
+	/// <summary>
+	/// Default namespace of stanza used in serializer.
+	/// </summary>
 	[NotNull]
 	public static string? DefaultNamespace
 	{
@@ -22,19 +39,29 @@ public abstract class Stanza : IXmppSerializable
 	}
 
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
-	internal List<StanzaExtension>? _extensions;
+	internal List<BaseStanzaExtension>? _extensions;
 
+	/// <summary>
+	/// Swap values between <see cref="From"/> and <see cref="To"/>.
+	/// </summary>
 	public void SwitchDirection()
 	{
 		(From, To) = (To, From);
 	}
 
+	/// <summary>
+	/// Parameterless constructor.
+	/// </summary>
 	public Stanza()
 	{
 
 	}
 
-	public Stanza(Element element)
+	/// <summary>
+	/// Element constructor, used to parse existing element.
+	/// </summary>
+	/// <param name="element">Element to extract stanza components.</param>
+	internal Stanza(Element element)
 	{
 		ArgumentNullException.ThrowIfNull(element);
 
@@ -45,7 +72,10 @@ public abstract class Stanza : IXmppSerializable
 		To = element.GetAttribute("to");
 	}
 
-	public IEnumerable<StanzaExtension> GetExtensions()
+	/// <summary>
+	/// Returns the list of the stanza extensions.
+	/// </summary>
+	public IEnumerable<BaseStanzaExtension> GetExtensions()
 	{
 		lock (this)
 		{
@@ -55,7 +85,11 @@ public abstract class Stanza : IXmppSerializable
 		}
 	}
 
-	public IEnumerable<T> GetExtensions<T>() where T : StanzaExtension
+	/// <summary>
+	/// Find all stanza extensions with given type.
+	/// </summary>
+	/// <typeparam name="T">The extension type to look for.</typeparam>
+	public IEnumerable<T> GetExtensions<T>() where T : BaseStanzaExtension
 	{
 		List<T>? result = null;
 
@@ -76,7 +110,11 @@ public abstract class Stanza : IXmppSerializable
 		return result ?? Enumerable.Empty<T>();
 	}
 
-	public T? GetExtension<T>() where T : StanzaExtension
+	/// <summary>
+	/// Find first stanza extensions of given type.
+	/// </summary>
+	/// <typeparam name="T">The extension type to look for.</typeparam>
+	public T? GetExtension<T>() where T : BaseStanzaExtension
 	{
 		lock (this)
 		{
@@ -92,6 +130,10 @@ public abstract class Stanza : IXmppSerializable
 		return null;
 	}
 
+	/// <summary>
+	/// Add stanza extension from element.
+	/// </summary>
+	/// <param name="element">The element to parse.</param>
 	public void AddExtension(Element element)
 	{
 		_extensions ??= [];
@@ -99,10 +141,14 @@ public abstract class Stanza : IXmppSerializable
 		if (StanzaExtensionFactory.TryCreate(element, out var extension))
 			_extensions.Add(extension);
 		else
-			_extensions.Add(new DynamicStanzaExtension(element));
+			_extensions.Add(new StanzaExtension(element));
 	}
 
-	public void AddExtension(StanzaExtension extension)
+	/// <summary>
+	/// Add stanza extension.
+	/// </summary>
+	/// <param name="extension">The extendion to add.</param>
+	public void AddExtension(BaseStanzaExtension extension)
 	{
 		ArgumentNullException.ThrowIfNull(extension);
 
@@ -114,7 +160,12 @@ public abstract class Stanza : IXmppSerializable
 		}
 	}
 
-	public T AddExtension<T>() where T : StanzaExtension, new()
+	/// <summary>
+	/// Create and add stanza extension to this stanza.
+	/// </summary>
+	/// <typeparam name="T">The extension type to construct.</typeparam>
+	/// <returns>Stanza extension type of <typeparamref name="T"/>.</returns>
+	public T AddExtension<T>() where T : BaseStanzaExtension, new()
 	{
 		lock (this)
 		{
@@ -131,7 +182,12 @@ public abstract class Stanza : IXmppSerializable
 		}
 	}
 
-	public void AddExtension<T>(Action<T> callback) where T : StanzaExtension, new()
+	/// <summary>
+	/// Create and add stanza extension to this stanza.
+	/// </summary>
+	/// <param name="callback">Callback to mutate the stanza extension instance.</param>
+	/// <typeparam name="T">The extension type to construct.</typeparam>
+	public void AddExtension<T>(Action<T> callback) where T : BaseStanzaExtension, new()
 	{
 		ArgumentNullException.ThrowIfNull(callback);
 
@@ -147,7 +203,10 @@ public abstract class Stanza : IXmppSerializable
 		}
 	}
 
-	public void RemoveExtensions()
+	/// <summary>
+	/// Remove all stanza extensions.
+	/// </summary>
+	public void RemoveAllExtensions()
 	{
 		lock (this)
 		{
@@ -157,5 +216,8 @@ public abstract class Stanza : IXmppSerializable
 		}
 	}
 
+	/// <summary>
+	/// Abstract method to construct XML element of this stanza.
+	/// </summary>
 	public abstract Element Serialize();
 }

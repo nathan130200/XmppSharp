@@ -3,8 +3,17 @@ using System.Text;
 
 namespace XmppSharp.Protocol.Extensions.XEP0114;
 
+/// <summary>
+/// Helper class to create XMPP component handshake.
+/// </summary>
 public static class Handshake
 {
+	/// <summary>
+	/// Calculates the component's authentication token.
+	/// </summary>
+	/// <param name="streamId">Stream ID sent by the server.</param>
+	/// <param name="secret">Shared secret used by the server to connect.</param>
+	/// <returns></returns>
 	public static string CreateAuthenticationToken(ReadOnlySpan<char> streamId, ReadOnlySpan<char> secret)
 	{
 		var size = Encoding.UTF8.GetMaxByteCount(streamId.Length + secret.Length);

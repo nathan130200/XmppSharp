@@ -16,4 +16,8 @@
 		<PackageReference Include="Expat.Net" Version="2.9.0-preview-1" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Protocol\Extensions\XEP0004\" />
+	</ItemGroup>
+
 </Project>

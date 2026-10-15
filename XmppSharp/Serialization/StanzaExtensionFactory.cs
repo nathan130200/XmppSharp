@@ -17,7 +17,7 @@ public static class StanzaExtensionFactory
 	{
 		public required Type ExtensionType { get; init; }
 
-		public required Func<Element, StanzaExtension> ElementConstructor { get; init; }
+		public required Func<Element, BaseStanzaExtension> ElementConstructor { get; init; }
 
 		public required bool IsCloneable { get; init; }
 	}
@@ -42,7 +42,7 @@ public static class StanzaExtensionFactory
 
 	public static void RegisterExtensions(Assembly assembly)
 	{
-		var baseType = typeof(StanzaExtension);
+		var baseType = typeof(BaseStanzaExtension);
 
 		var entries = from type in assembly.GetTypes()
 					  where type.IsClass && !type.IsAbstract && type.IsSubclassOf(baseType)
@@ -98,12 +98,12 @@ public static class StanzaExtensionFactory
 
 	static readonly ParameterExpression s_ElementParameter = Expression.Parameter(s_BaseType);
 
-	static Func<Element, StanzaExtension> TryBindElementConstructor(Type type)
+	static Func<Element, BaseStanzaExtension> TryBindElementConstructor(Type type)
 	{
 		var ctor = type.GetConstructor(s_CtorMethodFlags, s_ElementCtorTypes)
 			?? throw new InvalidOperationException($"Cannot find element constructor for stanza extension type '{type}'.");
 
-		var expr = Expression.Lambda<Func<Element, StanzaExtension>>(
+		var expr = Expression.Lambda<Func<Element, BaseStanzaExtension>>(
 			Expression.New(ctor, s_ElementParameter),
 				s_ElementParameter);
 
@@ -126,7 +126,7 @@ public static class StanzaExtensionFactory
 		return false;
 	}
 
-	public static StanzaExtension Create(Element element)
+	public static BaseStanzaExtension Create(Element element)
 	{
 		if (!TryGetExtensionInfo(element.LocalName, element.Namespace, out var entry))
 			throw new InvalidOperationException($"Stanza extension for element '{element.LocalName} (uri: {element.Namespace}) is not registered.");
@@ -134,7 +134,7 @@ public static class StanzaExtensionFactory
 		return entry.ElementConstructor(element);
 	}
 
-	public static T Create<T>(Element element) where T : StanzaExtension
+	public static T Create<T>(Element element) where T : BaseStanzaExtension
 	{
 		if (!TryGetExtensionInfo(element.LocalName, element.Namespace, out var info))
 			throw new InvalidOperationException($"Stanza extension for element '{element.LocalName} (uri: {element.Namespace}) is not registered.");
@@ -145,7 +145,7 @@ public static class StanzaExtensionFactory
 		return (T)info.ElementConstructor(element);
 	}
 
-	public static bool TryCreate(Element element, [NotNullWhen(true)] out StanzaExtension? se)
+	public static bool TryCreate(Element element, [NotNullWhen(true)] out BaseStanzaExtension? se)
 	{
 		se = null;
 
@@ -164,7 +164,7 @@ public static class StanzaExtensionFactory
 		return se != null;
 	}
 
-	public static bool TryCreate<T>(Element element, [NotNullWhen(true)] out T? se) where T : StanzaExtension
+	public static bool TryCreate<T>(Element element, [NotNullWhen(true)] out T? se) where T : BaseStanzaExtension
 	{
 		se = null;
 

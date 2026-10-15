@@ -26,7 +26,7 @@ public class StanzaTests(ITestOutputHelper Output)
 				x.SetAttribute("master_node", "localhost");
 			});
 
-			stz.AddExtension(new DynamicStanzaExtension(query));
+			stz.AddExtension(new StanzaExtension(query));
 		}
 
 		var result = stz.Serialize();

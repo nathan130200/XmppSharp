@@ -3,115 +3,99 @@ using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Extensions.XEP0030;
 
+/// <summary>
+/// This is a implementation of disco items extension.
+/// </summary>
 [StanzaExtension("query", Namespaces.DiscoInfo)]
-public class DiscoInfo : StanzaExtension
+public class DiscoInfo : BaseStanzaExtension
 {
-	List<Identity>? _identities;
-	HashSet<string>? _features;
+	IEnumerable<Identity>? _identities;
+	IEnumerable<string>? _features;
 
+	/// <inheritdoc/>
 	public DiscoInfo()
 	{
 
 	}
 
-	protected DiscoInfo(Element element) : base(element)
+	internal DiscoInfo(Element element) : base(element)
 	{
-		foreach (var tag in element.Elements("feature"))
+		Node = element.Attribute("node");
+
 		{
-			string? feature = tag.Attribute("var");
+			List<string>? features = null;
 
-			if (string.IsNullOrWhiteSpace(feature))
-				continue;
+			foreach (var child in element.Elements("feature"))
+			{
+				string? feature = child.Attribute("var");
 
-			_features ??= [];
+				if (string.IsNullOrWhiteSpace(feature))
+					continue;
 
-			_features.Add(feature);
+				features ??= [];
+
+				features.Add(feature);
+			}
+
+			_features = features;
 		}
 
-		foreach (var tag in element.Elements("identity"))
 		{
-			string? category = tag.Attribute("category");
-			string? type = tag.Attribute("type");
-			string? name = tag.Attribute("name");
+			List<Identity>? temp = null;
 
-			if (string.IsNullOrWhiteSpace(category) || string.IsNullOrWhiteSpace(type))
-				continue;
+			foreach (var child in element.Elements("identity"))
+			{
+				string? category = child.Attribute("category");
+				string? type = child.Attribute("type");
 
-			_identities ??= [];
+				if (string.IsNullOrWhiteSpace(category) || string.IsNullOrWhiteSpace(type))
+					continue;
 
-			_identities.Add(new(category, type, name));
-		}
-	}
+				string? name = child.Attribute("name");
 
-	public void AddFeature(string name)
-	{
-		ArgumentException.ThrowIfNullOrWhiteSpace(name);
+				temp ??= [];
 
-		lock (this)
-		{
-			_features ??= [];
-			_features.Add(name);
-		}
-	}
+				temp.Add(new(category, type, name));
+			}
 
-	public void RemoveAllFeatures()
-	{
-		lock (this)
-			_features?.Clear();
-	}
-
-	public bool HasFeature(string name)
-	{
-		ArgumentException.ThrowIfNullOrWhiteSpace(name);
-
-		lock (this)
-		{
-			if (_features == null) return false;
-
-			return _features.Contains(name);
+			_identities = temp;
 		}
 	}
 
-	public void AddIdentity(Identity identity)
-	{
-		ArgumentNullException.ThrowIfNull(identity);
+	/// <summary>
+	/// Gets or sets the node identifier.
+	/// </summary>
+	public string? Node { get; set; }
 
-		lock (this)
-		{
-			_identities ??= [];
-
-			_identities.Add(identity);
-		}
-	}
-
-	public void AddIdentity(string category, string type, string? name)
-	{
-		ArgumentException.ThrowIfNullOrWhiteSpace(category);
-
-		ArgumentException.ThrowIfNullOrWhiteSpace(type);
-
-		lock (this)
-		{
-			_identities ??= [];
-
-			_identities.Add(new(category, type, name));
-		}
-	}
-
+	/// <summary>
+	/// Gets or sets supported features by the entity.
+	/// </summary>
 	public IEnumerable<string> Features
 	{
 		get
 		{
 			lock (this)
 			{
-				if (_features is null)
-					return [];
+				if (_features is null) return [];
 
-				return [.. _features];
+				return _features;
+			}
+		}
+		set
+		{
+			lock (this)
+			{
+				if (value is null)
+					_features = null;
+				else
+					_features = [.. value];
 			}
 		}
 	}
 
+	/// <summary>
+	/// Gets or sets identities of the entity.
+	/// </summary>
 	public IEnumerable<Identity> Identities
 	{
 		get
@@ -124,8 +108,14 @@ public class DiscoInfo : StanzaExtension
 				return [.. _identities];
 			}
 		}
+		set
+		{
+			lock (this)
+				_identities = value;
+		}
 	}
 
+	/// <inheritdoc/>
 	public override Element Serialize()
 	{
 		var result = new Element("query", Namespaces.DiscoInfo);

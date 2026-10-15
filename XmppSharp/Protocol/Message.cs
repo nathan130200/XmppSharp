@@ -3,6 +3,9 @@ using XmppSharp.Serialization;
 
 namespace XmppSharp.Protocol;
 
+/// <summary>
+/// An abstraction of a message stanza.
+/// </summary>
 public sealed class Message : Stanza
 {
 	static readonly XmppEnumMapping<MessageType> s_TypeParser
@@ -11,6 +14,10 @@ public sealed class Message : Stanza
 	Dictionary<string, string>? _bodies;
 	Dictionary<string, string>? _subjects;
 
+	/// <summary>
+	/// Creates a Message.
+	/// </summary>
+	/// <param name="type">The type of message.</param>
 	public Message(MessageType type)
 	{
 		if (!Enum.IsDefined(type))
@@ -19,6 +26,7 @@ public sealed class Message : Stanza
 		Type = type;
 	}
 
+	/// <inheritdoc/>
 	public Message(Element element) : base(element)
 	{
 		Type = s_TypeParser.ParseOrDefault(element.Attribute("type"), MessageType.Normal);
@@ -42,12 +50,21 @@ public sealed class Message : Stanza
 		}
 	}
 
+	/// <summary>
+	/// The message type.
+	/// </summary>
 	public MessageType Type
 	{
 		get;
 		set;
 	}
 
+	/// <summary>
+	/// Gets the message body.
+	/// </summary>
+	/// <param name="language">The language identifier for the desired language code.</param>
+	/// <returns>The message body.</returns>
+	/// <remarks>The <paramref name="language"/> parameter can be empty string to get message body with default language (without a <c>xml:lang</c> attribute)</remarks>
 	public string? GetBody(string language)
 	{
 		ArgumentNullException.ThrowIfNull(language);
@@ -56,6 +73,11 @@ public sealed class Message : Stanza
 			return _bodies?.GetValueOrDefault(language);
 	}
 
+
+	/// <summary>
+	/// Gets the message subject.
+	/// </summary>
+	/// <param name="language">The language identifier code (or empty string for default language).</param>
 	public string? GetSubject(string language)
 	{
 		ArgumentNullException.ThrowIfNull(language);
@@ -64,6 +86,11 @@ public sealed class Message : Stanza
 			return _subjects?.GetValueOrDefault(language);
 	}
 
+	/// <summary>
+	/// Sets the message body.
+	/// </summary>
+	/// <param name="language">The language identifier code (or empty string for default language).</param>
+	/// <param name="content">The message body text for the given language.</param>
 	public void SetBody(string language, string? content)
 	{
 		ArgumentNullException.ThrowIfNull(language);
@@ -80,6 +107,11 @@ public sealed class Message : Stanza
 		}
 	}
 
+	/// <summary>
+	/// Sets the message subject.
+	/// </summary>
+	/// <param name="language">The language identifier code (or empty string for default language).</param>
+	/// <param name="content">The message subject for the given language.</param>
 	public void SetSubject(string language, string? content)
 	{
 		ArgumentNullException.ThrowIfNull(language);
@@ -96,24 +128,35 @@ public sealed class Message : Stanza
 		}
 	}
 
+	/// <summary>
+	/// Gets or sets message body with default language.
+	/// </summary>
 	public string? Body
 	{
 		get => GetBody(string.Empty);
 		set => SetBody(string.Empty, value);
 	}
 
+	/// <summary>
+	/// Gets or sets message subject with default language.
+	/// </summary>
 	public string? Subject
 	{
 		get => GetSubject(string.Empty);
 		set => SetSubject(string.Empty, value);
 	}
 
+	/// <summary>
+	/// The thread ID of a message stanza.
+	/// </summary>
+	/// <remarks>Empty for non-message stanzas.</remarks>
 	public string? Thread
 	{
 		get;
 		set;
 	}
 
+	/// <inheritdoc />
 	public override Element Serialize()
 	{
 		var result = new Element("message", DefaultNamespace);

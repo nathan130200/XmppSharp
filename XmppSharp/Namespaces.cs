@@ -4,6 +4,7 @@
 
 namespace XmppSharp;
 
+#pragma warning disable
 
 public static class Namespaces
 {
@@ -32,5 +33,4 @@ public static class Namespaces
 	public const string DiscoItems = "http://jabber.org/protocol/disco#items";
 	public const string CryOnline = "urn:cryonline:k01";
 	public const string Ping = "urn:xmpp:ping";
-	public const string Delay = "urn:xmpp:delay";
 }

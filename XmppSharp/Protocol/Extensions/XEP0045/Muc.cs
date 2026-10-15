@@ -4,9 +4,15 @@ using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Extensions.XEP0045;
 
+/// <summary>
+/// An abstraction of a MUC query.
+/// </summary>
 [StanzaExtension("x", Namespaces.Muc)]
-public sealed class Muc : StanzaExtension
+public sealed class Muc : BaseStanzaExtension
 {
+	/// <summary>
+	/// Creates a new MUC object.
+	/// </summary>
 	public Muc()
 	{
 
@@ -33,28 +39,35 @@ public sealed class Muc : StanzaExtension
 		}
 	}
 
+	/// <summary>
+	/// Gets or sets room history to request.
+	/// </summary>
 	public History? History { get; set; }
 
+	/// <summary>
+	/// Gets or sets room password to join.
+	/// </summary>
 	public string? Password { get; set; }
 
+	/// <inheritdoc />
 	public override Element Serialize()
 	{
 		var result = new Element("x", Namespaces.Muc);
 
-		if (Password is { } pwd)
-			result.SetTag("password", Namespaces.Muc, value: pwd);
+		if (Password is { } password)
+			result.SetTag("password", value: password);
 
-		if (History is { } state)
+		if (History is { } history)
 		{
 			result.C("history", x =>
 			{
-				x.SetAttribute("maxchars", state.MaxChars);
+				x.SetAttribute("maxchars", history.MaxChars);
 
-				x.SetAttribute("maxstanzas", state.MaxStanzas);
+				x.SetAttribute("maxstanzas", history.MaxStanzas);
 
-				x.SetAttribute("seconds", state.Seconds);
+				x.SetAttribute("seconds", history.Seconds);
 
-				if (state.Since is { } since)
+				if (history.Since is { } since)
 					x.SetAttribute("since", XmlConvert.ToString(since));
 			});
 		}
