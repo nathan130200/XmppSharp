@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -6,6 +7,9 @@ using XmppSharp.Attributes;
 
 namespace XmppSharp.Serialization;
 
+#pragma warning disable
+
+[EditorBrowsable(EditorBrowsableState.Advanced)]
 public sealed class XmppEnumMapping<T>
 		where T : struct, Enum
 {
@@ -23,13 +27,13 @@ public sealed class XmppEnumMapping<T>
 					  where attr != null
 					  select new
 					  {
-						  attr.Name,
+						  Key = attr.Value,
 						  Value = (T)f.GetValue(null)!
 					  };
 
-		NameToValue = members.ToFrozenDictionary(x => x.Name, x => x.Value);
+		NameToValue = members.ToFrozenDictionary(x => x.Key, x => x.Value);
 
-		ValueToName = members.ToFrozenDictionary(x => x.Value, x => x.Name);
+		ValueToName = members.ToFrozenDictionary(x => x.Value, x => x.Key);
 	}
 
 	[OverloadResolutionPriority(1)]

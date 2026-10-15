@@ -1,25 +1,33 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 using System.Xml;
 using XmppSharp.Dom.Abstractions;
 
 namespace XmppSharp.Dom;
 
+/// <summary>Represents text content node.</summary>
 public sealed class Text : Node
 {
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	string? _value;
 
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	StringBuilder? _builder;
 
+	/// <summary>Initialize new instance of <see cref="Text"/>.</summary>
 	public Text()
 	{
 		_value = string.Empty;
 	}
 
+	/// <summary>Initialize new instance of <see cref="Text"/>.</summary>
+	/// <param name="value">Initial text content.</param>
 	public Text(string? value)
 	{
 		_value = value ?? string.Empty;
 	}
 
+	/// <summary>Gets the string content.</summary>
 	public string Value
 	{
 		get
@@ -34,6 +42,8 @@ public sealed class Text : Node
 		}
 	}
 
+	/// <summary>Append content to this node</summary>
+	/// <param name="value">Content to add.</param>
 	public void Append(ReadOnlySpan<char> value)
 	{
 		if (value.IsEmpty)
@@ -48,6 +58,8 @@ public sealed class Text : Node
 		_builder.Append(value);
 	}
 
+	/// <summary>Append UTF-8 content to this node</summary>
+	/// <param name="bytes">Content to add.</param>
 	public void AppendUtf8(ReadOnlySpan<byte> bytes)
 	{
 		var numChars = Encoding.UTF8.GetCharCount(bytes);
@@ -61,6 +73,7 @@ public sealed class Text : Node
 		Append(span);
 	}
 
+	/// <inheritdoc/>
 	public override Node Clone()
 	{
 		if (_builder is null)
@@ -73,10 +86,12 @@ public sealed class Text : Node
 		};
 	}
 
+	/// <inheritdoc/>
 	public override void WriteTo(XmlWriter writer)
 	{
 		writer.WriteString(Value);
 	}
 
+	/// <inheritdoc/>
 	public override string ToString() => Value;
 }

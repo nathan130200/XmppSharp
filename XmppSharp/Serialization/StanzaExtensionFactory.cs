@@ -11,6 +11,8 @@ using XmppSharp.Protocol;
 
 namespace XmppSharp.Serialization;
 
+#pragma warning disable
+
 public static class StanzaExtensionFactory
 {
 	internal sealed class StanzaExtensionInfo
@@ -29,9 +31,7 @@ public static class StanzaExtensionFactory
 
 	}
 
-#pragma warning disable
 	[ModuleInitializer]
-#pragma warning restore
 	internal static void Init()
 	{
 		RegisterExtensions(typeof(StanzaExtensionFactory).Assembly);

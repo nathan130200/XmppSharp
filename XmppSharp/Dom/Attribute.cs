@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Xml;
 using XmppSharp.Dom.Abstractions;
@@ -8,14 +9,15 @@ namespace XmppSharp.Dom;
 /// <summary>
 /// Represents an XML attribute.
 /// </summary>
-public sealed class Attribute : IXmppNode
+public sealed class Attribute : IXmlNode
 {
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	internal Element? _parent;
-
 
 	/// <inheritdoc/>
 	public Element? Parent => _parent;
 
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	readonly int _prefixEnd;
 
 	/// <summary>
@@ -73,9 +75,9 @@ public sealed class Attribute : IXmppNode
 
 	internal Attribute Clone() => new(Name, Value);
 
-	IXmppNode IXmppNode.Clone() => Clone();
+	IXmlNode IXmlNode.Clone() => Clone();
 
-	void IXmppNode.WriteTo(XmlWriter writer) => WriteTo(writer);
+	void IXmlNode.WriteTo(XmlWriter writer) => WriteTo(writer);
 
 	/// <summary>
 	/// Remove this attribute from its parent.

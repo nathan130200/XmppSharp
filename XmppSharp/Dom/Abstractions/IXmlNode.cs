@@ -5,7 +5,7 @@ namespace XmppSharp.Dom.Abstractions;
 /// <summary>
 /// Represents a basic XML node contract.
 /// </summary>
-public interface IXmppNode
+public interface IXmlNode
 {
 	/// <summary>
 	/// Gets the owner element of this node.
@@ -13,10 +13,10 @@ public interface IXmppNode
 	Element? Parent { get; }
 
 	/// <summary>
-	/// Clone current element recursively.
+	/// Clone current node recursively.
 	/// </summary>
 	/// <returns>New cloned instance from this node.</returns>
-	IXmppNode Clone();
+	IXmlNode Clone();
 
 	/// <summary>
 	/// Serialize this node.

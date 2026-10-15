@@ -1,7 +1,9 @@
 ﻿namespace XmppSharp.Attributes;
 
+/// <summary>Represents attribute descriptor for enum members.</summary>
 [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
-public sealed class XmppEnumMemberAttribute(string name) : Attribute
+public sealed class XmppEnumMemberAttribute(string value) : Attribute
 {
-	public string Name { get; } = name;
+	/// <summary>Gets the string value.</summary>
+	public string Value { get; } = value;
 }

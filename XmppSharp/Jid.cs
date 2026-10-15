@@ -3,14 +3,27 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace XmppSharp;
 
+/// <summary>
+/// Represents a jabber identifier.
+/// </summary>
 public sealed class Jid : IEquatable<Jid>
 {
 	static readonly SearchValues<char> s_EscapeNodeChars = SearchValues.Create("\\ \"&'/:<>@");
 	readonly string _value;
 	readonly int _at, _slash, _hashCode;
 
-	public static Jid Empty { get; } = new(string.Empty);
+	/// <summary>Gets a empty instance of JID.</summary>
+	public static Jid Empty { get; } = new();
 
+	Jid()
+	{
+		_value = string.Empty;
+		_at = _slash = -1;
+		_hashCode = 0;
+	}
+
+	/// <summary>Initialize a new instance of <see cref="Jid"/>.</summary>
+	/// <param name="jid">String to parse.</param>
 	public Jid(string jid)
 	{
 		ArgumentNullException.ThrowIfNull(jid);
@@ -39,6 +52,10 @@ public sealed class Jid : IEquatable<Jid>
 			throw new ArgumentException(default, nameof(server));
 	}
 
+	/// <summary>Initialize a new instance of <see cref="Jid"/>.</summary>
+	/// <param name="user">Local part of JID.</param>
+	/// <param name="server">Domain part of JID.</param>
+	/// <param name="resource">Resource part of JID.</param>
 	public Jid(ReadOnlySpan<char> user, ReadOnlySpan<char> server, ReadOnlySpan<char> resource)
 	{
 		_at = _slash = -1;
@@ -100,9 +117,11 @@ public sealed class Jid : IEquatable<Jid>
 		}
 	}
 
+	/// <summary>Gets the local part of JID.</summary>
 	public ReadOnlySpan<char> User
 		=> _at != -1 ? _value.AsSpan(0.._at) : [];
 
+	/// <summary>Gets the domain part of JID.</summary>
 	public ReadOnlySpan<char> Server
 	{
 		get
@@ -115,13 +134,17 @@ public sealed class Jid : IEquatable<Jid>
 		}
 	}
 
+	/// <summary>Gets the resource of JID.</summary>
 	public ReadOnlySpan<char> Resource
 		=> _slash != -1 ? _value.AsSpan((_slash + 1)..) : [];
 
+	/// <summary>Gets the computed hash code of this JID.</summary>
 	public override int GetHashCode() => _hashCode;
 
+	/// <inheritdoc/>
 	public override bool Equals(object? obj) => obj is Jid other && Equals(other);
 
+	/// <inheritdoc/>
 	public bool Equals(Jid? other)
 	{
 		if (other is null) return false;
@@ -133,6 +156,7 @@ public sealed class Jid : IEquatable<Jid>
 			&& Resource.Equals(other.Resource, StringComparison.Ordinal);
 	}
 
+	/// <summary>Gets JID instance as string representation.</summary>
 	public override string ToString() => _value;
 
 	static int BuildHashCode(ReadOnlySpan<char> user, ReadOnlySpan<char> server, ReadOnlySpan<char> resource)
@@ -146,6 +170,7 @@ public sealed class Jid : IEquatable<Jid>
 		return state.ToHashCode();
 	}
 
+	/// <summary>Implicit convert string to JID.</summary>
 	[return: NotNullIfNotNull(nameof(jid))]
 	public static implicit operator Jid?(string? jid)
 	{
@@ -154,11 +179,14 @@ public sealed class Jid : IEquatable<Jid>
 		return new Jid(jid);
 	}
 
+	/// <summary>Implicit convert JID to string.</summary>
 	[return: NotNullIfNotNull(nameof(jid))]
 	public static implicit operator string?(Jid? jid) => jid?.ToString();
 
+	/// <inheritdoc />
 	public static bool operator !=(Jid? x, Jid? y) => !(x == y);
 
+	/// <inheritdoc />
 	public static bool operator ==(Jid? x, Jid? y)
 	{
 		if (ReferenceEquals(x, y)) return true;

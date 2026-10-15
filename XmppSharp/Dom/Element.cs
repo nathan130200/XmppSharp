@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,9 +13,13 @@ namespace XmppSharp.Dom;
 /// </summary>
 public sealed class Element : Container
 {
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	internal readonly List<Attribute> _attributes = [];
 
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	int _prefixEnd;
+
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	string _name;
 
 	/// <summary>
