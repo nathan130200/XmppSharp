@@ -15,20 +15,23 @@ public sealed class Muc : StanzaExtension
 
 	internal Muc(Element element) : base(element)
 	{
-		if (element.Element("history") is not { } history) return;
+		Password = element.GetTag("password");
 
-		History = new()
+		if (element.Element("history") is { } history)
 		{
-			MaxChars = history.Attribute("maxchars"),
+			History = new()
+			{
+				MaxChars = history.Attribute("maxchars"),
 
-			MaxStanzas = history.Attribute("maxstanzas"),
+				MaxStanzas = history.Attribute("maxstanzas"),
 
-			Seconds = history.Attribute("seconds"),
+				Seconds = history.Attribute("seconds"),
 
-			Since = history.Attribute("since") is { } since
-				? XmlConvert.ToDateTimeOffset(since)
-				: null
-		};
+				Since = history.Attribute("since") is { } since
+					? XmlConvert.ToDateTimeOffset(since)
+					: null
+			};
+		}
 	}
 
 	public History? History { get; set; }
