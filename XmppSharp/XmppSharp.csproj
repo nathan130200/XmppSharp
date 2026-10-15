@@ -9,11 +9,11 @@
 		<PackageTags>xmpp, xmpp library, xmpp parser, xml parser, jabber</PackageTags>
 		<RepositoryUrl>https://github.com/nathan130200/Jabber.Net</RepositoryUrl>
 		<Copyright>FRNathan13</Copyright>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Expat.Net" Version="2.9.0-preview-1" />
-		<PackageReference Include="linqtotwitter" Version="6.15.0" />
 	</ItemGroup>
 
 </Project>
