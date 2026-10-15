@@ -15,7 +15,7 @@ public sealed class Message : Stanza
 	Dictionary<string, string>? _subjects;
 
 	/// <summary>
-	/// Creates a Message.
+	/// Initialize a new instance of <see cref="Message"/> class.
 	/// </summary>
 	/// <param name="type">The type of message.</param>
 	public Message(MessageType type)
@@ -26,7 +26,9 @@ public sealed class Message : Stanza
 		Type = type;
 	}
 
-	/// <inheritdoc/>
+	/// <summary>
+	/// Initialize a new instance of <see cref="Message"/> class from given element.
+	/// </summary>
 	public Message(Element element) : base(element)
 	{
 		Type = s_TypeParser.ParseOrDefault(element.Attribute("type"), MessageType.Normal);

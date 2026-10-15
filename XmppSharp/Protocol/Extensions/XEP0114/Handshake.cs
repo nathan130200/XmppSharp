@@ -4,7 +4,7 @@ using System.Text;
 namespace XmppSharp.Protocol.Extensions.XEP0114;
 
 /// <summary>
-/// Helper class to create XMPP component handshake.
+/// Implementation of handshake protocol helpers.
 /// </summary>
 public static class Handshake
 {

@@ -2,6 +2,9 @@
 
 namespace XmppSharp.Dom.Abstractions;
 
+/// <summary>
+/// Represents a base class of Container node.
+/// </summary>
 public abstract class Container : Node
 {
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -13,6 +16,9 @@ public abstract class Container : Node
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
 	internal static readonly IEnumerable<Element> s_EmptyElementList = [];
 
+	/// <summary>
+	/// Gets the first node.
+	/// </summary>
 	public Node? FirstNode
 	{
 		get
@@ -22,6 +28,9 @@ public abstract class Container : Node
 		}
 	}
 
+	/// <summary>
+	/// Gets the last node.
+	/// </summary>
 	public Node? LastNode
 	{
 		get
@@ -31,6 +40,9 @@ public abstract class Container : Node
 		}
 	}
 
+	/// <summary>
+	/// Gets a collection of child nodes.
+	/// </summary>
 	public IEnumerable<Node> Nodes()
 	{
 		List<Node>? result = null;
@@ -49,6 +61,9 @@ public abstract class Container : Node
 		return result ?? s_EmptyNodeList;
 	}
 
+	/// <summary>
+	/// Gets a collection of <see cref="Dom.Element" /> nodes.
+	/// </summary>
 	public IEnumerable<Element> Elements()
 	{
 		List<Element>? result = null;
@@ -69,6 +84,12 @@ public abstract class Container : Node
 		return result ?? s_EmptyElementList;
 	}
 
+	/// <summary>
+	/// Gets the first matching element occurrence.
+	/// </summary>
+	/// <param name="name">Element qualified name.</param>
+	/// <param name="ns">Namespace URI.</param>
+	/// <remarks>If <paramref name="ns"/> parameter is <see langword="null" /> it will inherit the namespace of the current element.</remarks>
 	public Element? Element(string name, string? ns = default)
 	{
 		ns ??= (this as Element)?.Namespace;
@@ -87,6 +108,12 @@ public abstract class Container : Node
 		return result;
 	}
 
+	/// <summary>
+	/// Gets an collection of matching elements.
+	/// </summary>
+	/// <param name="name">Element qualified name.</param>
+	/// <param name="ns">Namespace URI.</param>
+	/// <remarks>If <paramref name="ns"/> parameter is <see langword="null" /> it will inherit the namespace of the current element.</remarks>
 	public IEnumerable<Element> Elements(string name, string? ns = default)
 	{
 		ns ??= (this as Element)?.Namespace;
@@ -98,6 +125,9 @@ public abstract class Container : Node
 		}
 	}
 
+	/// <summary>
+	/// Remove all child nodes.
+	/// </summary>
 	public void RemoveNodes()
 	{
 		lock (_children)
@@ -111,6 +141,9 @@ public abstract class Container : Node
 		}
 	}
 
+	/// <summary>
+	/// Gets a collection of descendant nodes of this element, in document order.
+	/// </summary>
 	public IEnumerable<Node> DescendantNodes()
 	{
 		List<Node>? result = null;
@@ -118,6 +151,9 @@ public abstract class Container : Node
 		return result ?? s_EmptyNodeList;
 	}
 
+	/// <summary>
+	/// Gets a collection of current node, its descendant nodes, in document order.
+	/// </summary>
 	public IEnumerable<Node> DescendantNodesAndSelf()
 	{
 		yield return this;

@@ -6,17 +6,17 @@
 public sealed class Identity : IEquatable<Identity>
 {
 	/// <summary>
-	/// The identity's category
+	/// The identity's category.
 	/// </summary>
 	public string Category { get; }
 
 	/// <summary>
-	/// 
+	/// The identity's type.
 	/// </summary>
 	public string Type { get; }
 
 	/// <summary>
-	/// 
+	/// The identity's name.
 	/// </summary>
 	public string? Name { get; }
 
@@ -61,9 +61,9 @@ public sealed class Identity : IEquatable<Identity>
 	/// <inheritdoc />
 	public static bool operator ==(Identity? x, Identity? y)
 	{
-		if (ReferenceEquals(x, y)) return true;
-
 		if (x is null) return y is null;
+
+		if (ReferenceEquals(x, y)) return true;
 
 		return x.Equals(y);
 	}

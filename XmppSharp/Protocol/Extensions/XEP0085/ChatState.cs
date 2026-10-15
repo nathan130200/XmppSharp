@@ -24,7 +24,7 @@ public class ChatState : BaseStanzaExtension
 	public ChatStateType Type { get; }
 
 	/// <summary>
-	/// Constructor
+	/// Initialize a new instance of <see cref="ChatState"/> class.
 	/// </summary>
 	/// <param name="type">The chat state.</param>
 	public ChatState(ChatStateType type)

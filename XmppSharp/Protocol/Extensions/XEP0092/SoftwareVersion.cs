@@ -11,8 +11,9 @@ public sealed class SoftwareVersion : BaseStanzaExtension
 {
 	const string XMLNS_VERSION = "jabber:iq:version";
 
-
-	/// <inheritdoc/>
+	/// <summary>
+	/// Initialize a new instance of <see cref="SoftwareVersion"/> class.
+	/// </summary>
 	public SoftwareVersion()
 	{
 	}

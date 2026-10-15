@@ -12,7 +12,9 @@ public sealed class DiscoItems : BaseStanzaExtension
 {
 	IEnumerable<Item>? _items = [];
 
-	/// <inheritdoc/>
+	/// <summary>
+	/// Initialize a new instance of <see cref="DiscoItems"/> class.
+	/// </summary>
 	public DiscoItems()
 	{
 
@@ -45,7 +47,11 @@ public sealed class DiscoItems : BaseStanzaExtension
 	/// <summary>
 	/// Gets or sets the node identifier.
 	/// </summary>
-	public string? Node { get; set; }
+	public string? Node
+	{
+		get;
+		set;
+	}
 
 	/// <summary>
 	/// Gets list of items.
@@ -62,7 +68,6 @@ public sealed class DiscoItems : BaseStanzaExtension
 				return _items;
 			}
 		}
-
 		set
 		{
 			lock (this)

@@ -67,7 +67,7 @@ public class StanzaFactoryTests(ITestOutputHelper Output)
 			ext = StanzaExtensionFactory.Create<DiscoInfo>(element);
 		}
 
-		Assert.True(ext.HasFeature(feature));
+		Assert.Contains(feature, ext.Features);
 
 		var identity = ext.Identities.FirstOrDefault();
 

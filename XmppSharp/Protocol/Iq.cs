@@ -3,10 +3,17 @@ using XmppSharp.Serialization;
 
 namespace XmppSharp.Protocol;
 
+/// <summary>
+/// An abstraction of a info-query stanza.
+/// </summary>
 public class Iq : Stanza
 {
 	static readonly XmppEnumMapping<IqType> s_TypeParser = XmppEnumMapping<IqType>.Shared;
 
+	/// <summary>
+	/// Initialize a new instance of <see cref="Iq"/> class.
+	/// </summary>
+	/// <param name="type">The type of iq.</param>
 	public Iq(IqType type)
 	{
 		if (!Enum.IsDefined(type))
@@ -15,6 +22,9 @@ public class Iq : Stanza
 		Type = type;
 	}
 
+	/// <summary>
+	/// Initialize a new instance of <see cref="Iq"/> class from given element.
+	/// </summary>
 	public Iq(Element element) : base(element)
 	{
 		Type = s_TypeParser.Parse(element.Attribute("type"));
@@ -23,8 +33,16 @@ public class Iq : Stanza
 			AddExtension(child);
 	}
 
-	public IqType Type { get; set; }
+	/// <summary>
+	/// Gets or sets the IQ type.
+	/// </summary>
+	public IqType Type
+	{
+		get;
+		set;
+	}
 
+	/// <inheritdoc />
 	public override Element Serialize()
 	{
 		var result = new Element("iq", DefaultNamespace);

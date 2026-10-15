@@ -22,7 +22,9 @@ public sealed class Delay : BaseStanzaExtension
 	/// </summary>
 	public DateTimeOffset Timestamp { get; set; }
 
-	/// <inheritdoc />
+	/// <summary>
+	/// Initialize a new instance of <see cref="Delay"/> class.
+	/// </summary>
 	public Delay()
 	{
 
@@ -32,7 +34,9 @@ public sealed class Delay : BaseStanzaExtension
 	internal Delay(Element element)
 	{
 		From = (string?)element.Attribute("from");
+
 		Timestamp = XmlConvert.ToDateTimeOffset(element.Attribute("stamp")!);
+
 		Description = element.Value;
 	}
 
@@ -51,6 +55,7 @@ public sealed class Delay : BaseStanzaExtension
 		var result = new Element("delay", XMLNS_DELAY);
 
 		result.SetAttribute("from", From);
+
 		result.SetAttribute("stamp", XmlConvert.ToString(Timestamp));
 
 		if (Description != null)

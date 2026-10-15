@@ -5,20 +5,37 @@ using XmppSharp.Dom.Abstractions;
 
 namespace XmppSharp.Dom;
 
+/// <summary>
+/// Represents an XML attribute.
+/// </summary>
 public sealed class Attribute : IXmppNode
 {
 	internal Element? _parent;
 
+
+	/// <inheritdoc/>
 	public Element? Parent => _parent;
 
-	int _prefixEnd;
+	readonly int _prefixEnd;
 
+	/// <summary>
+	/// Gets the attribute qualified name.
+	/// </summary>
 	public string Name { get; }
 
+	/// <summary>
+	/// Gets or sets the attribute value.
+	/// </summary>
 	public string Value { get; set; }
 
+	/// <summary>
+	/// Gets the local name part of the attribute name.
+	/// </summary>
 	public ReadOnlySpan<char> Prefix => _prefixEnd > 0 ? Name.AsSpan(0.._prefixEnd) : [];
 
+	/// <summary>
+	/// Gets the prefix part of the attribute name.
+	/// </summary>
 	public ReadOnlySpan<char> LocalName => _prefixEnd > 0 ? Name.AsSpan((_prefixEnd + 1)..) : Name;
 
 	internal Attribute(string name, object? value)
@@ -32,20 +49,37 @@ public sealed class Attribute : IXmppNode
 		Value = Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
 	}
 
+	/// <summary>
+	/// Gets a value indicating if this attribute is a namespace declaration.
+	/// </summary>
+	/// <remarks>
+	/// An attribute declaration should be:
+	/// <list type="bullet">
+	/// <item>The <see cref="Prefix"/> equals to <c>xmlns</c>.</item>
+	/// <item>The <see cref="Prefix"/> should be <b>empty</b> and <see cref="LocalName"/> equals to <c>xmlns</c>.</item>
+	/// </list>
+	/// </remarks>
 	public bool IsNamespaceDeclaration => Prefix.Equals("xmlns", StringComparison.Ordinal)
 		|| (Prefix.IsEmpty && LocalName.Equals("xmlns", StringComparison.Ordinal));
 
+	/// <summary>
+	/// Sets the attribute value from converting <paramref name="value"/> to string representation.
+	/// </summary>
+	/// <param name="value">The new value of attribute.</param>
 	public void SetValue(object? value)
 	{
 		Value = Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
 	}
 
-	public Attribute Clone() => new(Name, Value);
+	internal Attribute Clone() => new(Name, Value);
 
 	IXmppNode IXmppNode.Clone() => Clone();
 
 	void IXmppNode.WriteTo(XmlWriter writer) => WriteTo(writer);
 
+	/// <summary>
+	/// Remove this attribute from its parent.
+	/// </summary>
 	public void Remove()
 	{
 		lock (this)
@@ -89,6 +123,8 @@ public sealed class Attribute : IXmppNode
 
 		return default;
 	}
+
+#pragma warning disable
 
 	public static implicit operator bool(Attribute? a)
 	{
@@ -135,4 +171,6 @@ public sealed class Attribute : IXmppNode
 	public static implicit operator float?(Attribute? a) => ParseOrNull<float>(a?.Value);
 	public static implicit operator double(Attribute? a) => ParseOrDefault<double>(a?.Value);
 	public static implicit operator double?(Attribute? a) => ParseOrNull<double>(a?.Value);
+
+#pragma warning restore
 }

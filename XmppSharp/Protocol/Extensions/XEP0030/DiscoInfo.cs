@@ -65,7 +65,11 @@ public class DiscoInfo : BaseStanzaExtension
 	/// <summary>
 	/// Gets or sets the node identifier.
 	/// </summary>
-	public string? Node { get; set; }
+	public string? Node
+	{
+		get;
+		set;
+	}
 
 	/// <summary>
 	/// Gets or sets supported features by the entity.

@@ -9,7 +9,9 @@ namespace XmppSharp.Protocol.Core;
 [StanzaExtension("session", Namespaces.Session)]
 public sealed class Session : BaseStanzaExtension
 {
-	/// <inheritdoc/>
+	/// <summary>
+	/// Initialize a new instance of <see cref="Session"/> class.
+	/// </summary>
 	public Session()
 	{
 

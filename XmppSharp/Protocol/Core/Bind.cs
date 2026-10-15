@@ -9,7 +9,9 @@ namespace XmppSharp.Protocol.Core;
 [StanzaExtension("bind", Namespaces.Bind)]
 public sealed class Bind : BaseStanzaExtension
 {
-	/// <inheritdoc/>
+	/// <summary>
+	/// Initialize a new instance of <see cref="Bind"/> class.
+	/// </summary>
 	public Bind()
 	{
 

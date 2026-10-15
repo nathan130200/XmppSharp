@@ -11,7 +11,7 @@ namespace XmppSharp.Protocol.Extensions.XEP0045;
 public sealed class Muc : BaseStanzaExtension
 {
 	/// <summary>
-	/// Creates a new MUC object.
+	/// Initialize a new instance of <see cref="Muc"/> class.
 	/// </summary>
 	public Muc()
 	{
@@ -42,12 +42,20 @@ public sealed class Muc : BaseStanzaExtension
 	/// <summary>
 	/// Gets or sets room history to request.
 	/// </summary>
-	public History? History { get; set; }
+	public History? History
+	{
+		get;
+		set;
+	}
 
 	/// <summary>
 	/// Gets or sets room password to join.
 	/// </summary>
-	public string? Password { get; set; }
+	public string? Password
+	{
+		get;
+		set;
+	}
 
 	/// <inheritdoc />
 	public override Element Serialize()
