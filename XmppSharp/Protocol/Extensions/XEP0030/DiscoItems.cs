@@ -1,5 +1,4 @@
-﻿using XmppSharp.Abstractions;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
 namespace XmppSharp.Protocol.Extensions.XEP0030;

@@ -1,8 +1,7 @@
-﻿using XmppSharp.Abstractions;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
-namespace XmppSharp.Protocol.Client;
+namespace XmppSharp.Protocol.Core;
 
 [StanzaExtension("bind", Namespaces.Bind)]
 public sealed class Bind : StanzaExtension

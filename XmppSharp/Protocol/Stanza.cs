@@ -1,9 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using XmppSharp.Abstractions;
 using XmppSharp.Dom;
 using XmppSharp.Serialization;
 
-namespace XmppSharp.Protocol.Base;
+namespace XmppSharp.Protocol;
 
 public abstract class Stanza : IXmppSerializable
 {

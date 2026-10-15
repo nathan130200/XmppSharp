@@ -1,9 +1,8 @@
-﻿using XmppSharp.Abstractions;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
 using XmppSharp.Serialization;
 
-namespace XmppSharp.Protocol.Base;
+namespace XmppSharp.Protocol;
 
 [StanzaExtension("error", Namespaces.Client)]
 [StanzaExtension("error", Namespaces.Server)]
@@ -33,10 +32,8 @@ public sealed class Error : StanzaExtension
 
 		Text = element.GetTag("text", Namespaces.Stanzas);
 
-		foreach (var tag in element.Elements())
+		foreach (var tag in element.Elements().Where(x => x.Namespace == Namespaces.Stanzas))
 		{
-			if (tag.Namespace != Namespaces.Stanzas) continue;
-
 			foreach (var (name, value) in s_ErrorConditionParser.NameToValue)
 			{
 				if (element.HasTag(name, Namespaces.Stanzas))

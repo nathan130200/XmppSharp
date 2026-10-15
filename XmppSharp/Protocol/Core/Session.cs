@@ -1,8 +1,7 @@
-﻿using XmppSharp.Abstractions;
-using XmppSharp.Attributes;
+﻿using XmppSharp.Attributes;
 using XmppSharp.Dom;
 
-namespace XmppSharp.Protocol.Client;
+namespace XmppSharp.Protocol.Core;
 
 [StanzaExtension("session", Namespaces.Session)]
 public sealed class Session : StanzaExtension

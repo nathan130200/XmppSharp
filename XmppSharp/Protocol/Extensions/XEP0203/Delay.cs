@@ -1,5 +1,4 @@
 ﻿using System.Xml;
-using XmppSharp.Abstractions;
 using XmppSharp.Attributes;
 using XmppSharp.Dom;
 

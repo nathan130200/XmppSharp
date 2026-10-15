@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Dom;
-using XmppSharp.Protocol.Base;
-using XmppSharp.Protocol.Client;
+using XmppSharp.Protocol;
+using XmppSharp.Protocol.Core;
 using XmppSharp.Protocol.Extensions.XEP0030;
 using XmppSharp.Serialization;
 using Xunit.Abstractions;

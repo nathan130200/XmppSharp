@@ -1,5 +1,4 @@
 ﻿using XmppSharp.Dom;
-using XmppSharp.Protocol.Base;
 using XmppSharp.Serialization;
 
 namespace XmppSharp.Protocol;

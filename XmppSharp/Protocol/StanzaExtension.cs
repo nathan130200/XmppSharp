@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using XmppSharp.Dom;
 
-namespace XmppSharp.Abstractions;
+namespace XmppSharp.Protocol;
 
 public abstract class StanzaExtension : IXmppSerializable
 {

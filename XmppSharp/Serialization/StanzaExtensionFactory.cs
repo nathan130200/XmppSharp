@@ -5,9 +5,9 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Xml.Linq;
-using XmppSharp.Abstractions;
 using XmppSharp.Attributes;
 using XmppSharp.Dom;
+using XmppSharp.Protocol;
 
 namespace XmppSharp.Serialization;
 

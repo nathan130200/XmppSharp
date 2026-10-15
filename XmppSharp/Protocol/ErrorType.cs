@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Attributes;
 
-namespace XmppSharp.Protocol.Base;
+namespace XmppSharp.Protocol;
 
 public enum ErrorType
 {

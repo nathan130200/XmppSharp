@@ -1,6 +1,6 @@
 ﻿using XmppSharp.Dom;
 
-namespace XmppSharp.Abstractions;
+namespace XmppSharp.Protocol;
 
 public interface IXmppSerializable
 {

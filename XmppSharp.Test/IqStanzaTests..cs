@@ -1,5 +1,5 @@
 ﻿using XmppSharp.Protocol;
-using XmppSharp.Protocol.Client;
+using XmppSharp.Protocol.Core;
 using XmppSharp.Protocol.Extensions.XEP0114;
 using Xunit.Abstractions;
 
