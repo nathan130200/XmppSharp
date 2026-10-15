@@ -5,7 +5,8 @@ namespace XmppSharp.Protocol;
 
 public sealed class Message : Stanza
 {
-	static readonly XmppEnumMapping<MessageType> s_TypeParser = XmppEnumMapping<MessageType>.Shared;
+	static readonly XmppEnumMapping<MessageType> s_TypeParser
+		= XmppEnumMapping<MessageType>.Shared;
 
 	Dictionary<string, string>? _bodies;
 	Dictionary<string, string>? _subjects;
