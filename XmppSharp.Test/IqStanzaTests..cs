@@ -1,11 +1,24 @@
 ﻿using XmppSharp.Protocol;
 using XmppSharp.Protocol.Client;
+using XmppSharp.Protocol.Extensions.XEP0114;
 using Xunit.Abstractions;
 
 namespace XmppSharp.Test;
 
-public class IqStanzaTests(ITestOutputHelper Output)
+public class StanzaTests(ITestOutputHelper Output)
 {
+	[Fact]
+	public void TestForComponentHandshake()
+	{
+		var streamId = "1234";
+
+		var secret = "youshallnotpass";
+
+		var token = Handshake.CreateAuthenticationToken(streamId, secret);
+
+		Assert.Equal("fec9cff708f704a7f92e226c63825a4b54bc85f6", token);
+	}
+
 	[Fact]
 	public void CreateStanza()
 	{
