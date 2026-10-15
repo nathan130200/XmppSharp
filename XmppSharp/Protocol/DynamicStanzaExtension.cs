@@ -5,7 +5,7 @@ namespace XmppSharp.Protocol;
 
 public sealed class DynamicStanzaExtension : StanzaExtension
 {
-	readonly Element _element;
+	internal readonly Element _element;
 
 	public DynamicStanzaExtension(string name, string? ns)
 	{

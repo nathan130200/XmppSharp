@@ -80,6 +80,18 @@ public abstract class Stanza : IXmppSerializable
 		}
 	}
 
+	public void AddExtension(StanzaExtension extension)
+	{
+		ArgumentNullException.ThrowIfNull(extension);
+
+		lock (this)
+		{
+			_extensions ??= [];
+
+			_extensions.Add(extension);
+		}
+	}
+
 	public T AddExtension<T>() where T : StanzaExtension, new()
 	{
 		lock (this)

@@ -1,4 +1,5 @@
-﻿using XmppSharp.Protocol;
+﻿using XmppSharp.Dom;
+using XmppSharp.Protocol;
 using XmppSharp.Protocol.Core;
 using XmppSharp.Protocol.Extensions.XEP0114;
 using Xunit.Abstractions;
@@ -7,6 +8,38 @@ namespace XmppSharp.Test;
 
 public class StanzaTests(ITestOutputHelper Output)
 {
+	[Fact]
+	public void TestDynamicStanzaExtension()
+	{
+		var stz = new Iq(IqType.Result)
+		{
+			Id = $"uid{3:x8}",
+			From = "k01.warface.servers",
+			To = "dedicated@warface/GameClient"
+		};
+
+		{
+			var query = new Element("query", Namespaces.CryOnline);
+
+			query.C("setserver", x =>
+			{
+				x.SetAttribute("master_node", "localhost");
+			});
+
+			stz.AddExtension(new DynamicStanzaExtension(query));
+		}
+
+		var result = stz.Serialize();
+
+		var attr = result["query", Namespaces.CryOnline]?["setserver"]?.Attribute("master_node");
+
+		Assert.NotNull(attr);
+
+		Assert.Equal("localhost", attr.Value);
+
+		Output.WriteLine("XML: " + result.ToString(true));
+	}
+
 	[Fact]
 	public void TestForComponentHandshake()
 	{
