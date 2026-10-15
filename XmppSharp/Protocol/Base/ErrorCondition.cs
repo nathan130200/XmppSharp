@@ -1,6 +1,6 @@
 ﻿using Jabber.Attributes;
 
-namespace Jabber.Protocol.Base;
+namespace XmppSharp.Protocol.Base;
 
 public enum ErrorCondition
 {

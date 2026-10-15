@@ -1,7 +1,7 @@
-﻿using Jabber.Dom;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
+using XmppSharp.Dom;
 
-namespace Jabber.Abstractions;
+namespace XmppSharp.Abstractions;
 
 public abstract class StanzaExtension : IXmppSerializable
 {

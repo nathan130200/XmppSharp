@@ -1,9 +1,9 @@
-﻿using Jabber.Abstractions;
-using Jabber.Attributes;
-using Jabber.Dom;
-using Jabber.Serialization;
+﻿using Jabber.Attributes;
+using XmppSharp.Abstractions;
+using XmppSharp.Dom;
+using XmppSharp.Serialization;
 
-namespace Jabber.Protocol.Base;
+namespace XmppSharp.Protocol.Base;
 
 [StanzaExtension("error", Namespaces.Client)]
 [StanzaExtension("error", Namespaces.Server)]

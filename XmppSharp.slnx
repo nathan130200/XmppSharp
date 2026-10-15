@@ -1,4 +1,4 @@
 <Solution>
-  <Project Path="src/XmppSharp/XmppSharp.csproj" />
-  <Project Path="src/XmppSharp.Test/XmppSharp.Test.csproj" />
+  <Project Path="XmppSharp.Test/XmppSharp.Test.csproj" />
+  <Project Path="XmppSharp/XmppSharp.csproj" />
 </Solution>

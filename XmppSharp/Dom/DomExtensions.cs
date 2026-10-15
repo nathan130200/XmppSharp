@@ -1,4 +1,4 @@
-﻿namespace Jabber.Dom;
+﻿namespace XmppSharp.Dom;
 
 public static class DomExtensions
 {

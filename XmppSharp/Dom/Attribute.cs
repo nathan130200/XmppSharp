@@ -1,9 +1,10 @@
-﻿using Jabber.Dom.Abstractions;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Xml;
+using XmppSharp;
+using XmppSharp.Dom.Abstractions;
 
-namespace Jabber.Dom;
+namespace XmppSharp.Dom;
 
 public sealed class Attribute : IXmppNode
 {

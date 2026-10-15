@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace Jabber.Dom.Abstractions;
+namespace XmppSharp.Dom.Abstractions;
 
 public abstract class Container : Node
 {

@@ -1,8 +1,8 @@
-﻿using Jabber.Dom.Abstractions;
-using System.Text;
+﻿using System.Text;
 using System.Xml;
+using XmppSharp.Dom.Abstractions;
 
-namespace Jabber.Dom;
+namespace XmppSharp.Dom;
 
 public sealed class Text : Node
 {

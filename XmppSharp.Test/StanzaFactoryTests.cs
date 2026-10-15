@@ -6,7 +6,7 @@ using Jabber.Serialization;
 using System.Runtime.CompilerServices;
 using Xunit.Abstractions;
 
-namespace Jabber.Test;
+namespace XmppSharp.Test;
 
 public class StanzaFactoryTests(ITestOutputHelper Output)
 {

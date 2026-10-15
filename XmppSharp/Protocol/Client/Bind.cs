@@ -1,8 +1,9 @@
-﻿using Jabber.Abstractions;
-using Jabber.Attributes;
-using Jabber.Dom;
+﻿using Jabber.Attributes;
+using XmppSharp;
+using XmppSharp.Abstractions;
+using XmppSharp.Dom;
 
-namespace Jabber.Protocol.Client;
+namespace XmppSharp.Protocol.Client;
 
 [StanzaExtension("bind", Namespaces.Bind)]
 public sealed class Bind : StanzaExtension

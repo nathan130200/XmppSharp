@@ -1,15 +1,15 @@
-﻿using Jabber.Abstractions;
-using Jabber.Attributes;
-using Jabber.Dom;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Xml.Linq;
+using XmppSharp.Abstractions;
+using XmppSharp.Attributes;
+using XmppSharp.Dom;
 
-namespace Jabber.Serialization;
+namespace XmppSharp.Serialization;
 
 public static class StanzaExtensionFactory
 {

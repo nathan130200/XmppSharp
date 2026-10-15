@@ -1,8 +1,8 @@
-﻿using Jabber.Abstractions;
-using Jabber.Attributes;
-using Jabber.Dom;
+﻿using Jabber.Attributes;
+using XmppSharp.Abstractions;
+using XmppSharp.Dom;
 
-namespace Jabber.Protocol.Extensions.XEP0030;
+namespace XmppSharp.Protocol.Extensions.XEP0030;
 
 [StanzaExtension("query", Namespaces.DiscoItems)]
 public sealed class DiscoItems : StanzaExtension

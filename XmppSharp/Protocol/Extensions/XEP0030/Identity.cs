@@ -1,4 +1,4 @@
-﻿namespace Jabber.Protocol.Extensions.XEP0030;
+﻿namespace XmppSharp.Protocol.Extensions.XEP0030;
 
 public sealed class Identity
 {

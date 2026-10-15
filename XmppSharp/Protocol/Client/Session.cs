@@ -1,8 +1,8 @@
-﻿using Jabber.Abstractions;
-using Jabber.Attributes;
-using Jabber.Dom;
+﻿using Jabber.Attributes;
+using XmppSharp.Abstractions;
+using XmppSharp.Dom;
 
-namespace Jabber.Protocol.Client;
+namespace XmppSharp.Protocol.Client;
 
 [StanzaExtension("session", Namespaces.Session)]
 public sealed class Session : StanzaExtension

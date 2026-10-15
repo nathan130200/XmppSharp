@@ -1,6 +1,6 @@
 ﻿using System.Xml;
 
-namespace Jabber.Attributes;
+namespace XmppSharp.Attributes;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public sealed class StanzaExtensionAttribute(string localName, string uri) : Attribute

@@ -4,7 +4,6 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<RootNamespace>Jabber</RootNamespace>
 		<Version>8.0.0-preview-1</Version>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageTags>xmpp, xmpp library, xmpp parser, xml parser, jabber</PackageTags>

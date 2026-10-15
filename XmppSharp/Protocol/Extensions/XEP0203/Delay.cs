@@ -1,9 +1,10 @@
-﻿using Jabber.Abstractions;
-using Jabber.Attributes;
-using Jabber.Dom;
+﻿using Jabber.Attributes;
 using System.Xml;
+using XmppSharp;
+using XmppSharp.Abstractions;
+using XmppSharp.Dom;
 
-namespace Jabber.Protocol.Extensions.XEP0203;
+namespace XmppSharp.Protocol.Extensions.XEP0203;
 
 [StanzaExtension("delay", Namespaces.Delay)]
 public sealed class Delay : StanzaExtension

@@ -1,9 +1,9 @@
-﻿using Jabber.Abstractions;
-using Jabber.Attributes;
-using Jabber.Dom;
+﻿using Jabber.Attributes;
 using System.Xml;
+using XmppSharp.Abstractions;
+using XmppSharp.Dom;
 
-namespace Jabber.Protocol.Extensions.XEP0045;
+namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 [StanzaExtension("x", Namespaces.Muc)]
 public sealed class Muc : StanzaExtension

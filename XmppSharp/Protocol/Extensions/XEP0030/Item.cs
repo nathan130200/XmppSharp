@@ -1,4 +1,6 @@
-﻿namespace Jabber.Protocol.Extensions.XEP0030;
+﻿using XmppSharp;
+
+namespace XmppSharp.Protocol.Extensions.XEP0030;
 
 public class Item(Jid jid, string? name = default, string? node = default)
 {

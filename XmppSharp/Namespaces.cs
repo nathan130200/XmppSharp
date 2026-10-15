@@ -2,7 +2,7 @@
 
 [assembly: InternalsVisibleTo("Jabber.Net.Test")]
 
-namespace Jabber;
+namespace XmppSharp;
 
 
 public static class Namespaces

@@ -1,6 +1,6 @@
-﻿using Jabber.Dom;
+﻿using XmppSharp.Dom;
 
-namespace Jabber.Abstractions;
+namespace XmppSharp.Abstractions;
 
 public interface IXmppSerializable
 {

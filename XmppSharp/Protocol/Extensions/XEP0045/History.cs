@@ -1,4 +1,4 @@
-﻿namespace Jabber.Protocol.Extensions.XEP0045;
+﻿namespace XmppSharp.Protocol.Extensions.XEP0045;
 
 public sealed record History
 {

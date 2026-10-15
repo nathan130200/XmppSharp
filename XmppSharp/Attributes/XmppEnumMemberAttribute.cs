@@ -1,4 +1,4 @@
-﻿namespace Jabber.Attributes;
+﻿namespace XmppSharp.Attributes;
 
 [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
 public sealed class XmppEnumMemberAttribute(string name) : Attribute

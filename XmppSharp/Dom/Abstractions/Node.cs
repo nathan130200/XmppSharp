@@ -1,6 +1,6 @@
 ﻿using System.Xml;
 
-namespace Jabber.Dom.Abstractions;
+namespace XmppSharp.Dom.Abstractions;
 
 public abstract class Node : IXmppNode
 {

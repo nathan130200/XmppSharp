@@ -1,9 +1,10 @@
-﻿using Jabber.Abstractions;
-using Jabber.Dom;
-using Jabber.Serialization;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
+using XmppSharp;
+using XmppSharp.Abstractions;
+using XmppSharp.Dom;
+using XmppSharp.Serialization;
 
-namespace Jabber.Protocol.Base;
+namespace XmppSharp.Protocol.Base;
 
 public abstract class Stanza : IXmppSerializable
 {

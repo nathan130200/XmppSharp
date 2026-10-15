@@ -2,7 +2,7 @@
 using System.Xml;
 using Xunit.Abstractions;
 
-namespace Jabber.Test;
+namespace XmppSharp.Test;
 
 public class MucExtensionTests(ITestOutputHelper Output)
 {
