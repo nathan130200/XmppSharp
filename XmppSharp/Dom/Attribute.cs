@@ -49,7 +49,7 @@ public sealed class Attribute : IXmppNode
 	public void Remove()
 	{
 		lock (this)
-			_parent?.RemoveAttributeCore(this);
+			_parent?.RemoveAttribute(this);
 	}
 
 	internal void WriteTo(XmlWriter writer)

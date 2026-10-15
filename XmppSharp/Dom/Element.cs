@@ -212,13 +212,13 @@ public sealed class Element : Container
 			if (entry is null) return false;
 
 			lock (entry)
-				RemoveAttributeCore(entry);
+				RemoveAttribute(entry);
 
 			return true;
 		}
 	}
 
-	internal void RemoveAttributeCore(Attribute? attr)
+	internal void RemoveAttribute(Attribute? attr)
 	{
 		if (attr is null) return;
 
@@ -260,7 +260,7 @@ public sealed class Element : Container
 			var entry = Element(name, ns);
 
 			if (entry is null)
-				AddChild(entry = new Element(name, ns));
+				AddChild(entry = new Element(name, ns ?? Namespace));
 
 			if (value is not null)
 				entry.Value = Convert.ToString(value, CultureInfo.InvariantCulture);

@@ -4,5 +4,5 @@ namespace XmppSharp.Protocol;
 
 public interface IXmppSerializable
 {
-    Element? Serialize();
+	Element? Serialize();
 }
